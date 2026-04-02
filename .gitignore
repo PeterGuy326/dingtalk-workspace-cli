@@ -3,3 +3,7 @@ dws
 dist
 plans
 _docs
+
+
+__pycache__/
+.pytest_cache/
