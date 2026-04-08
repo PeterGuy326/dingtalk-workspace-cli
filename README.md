@@ -35,7 +35,7 @@ func main() {
 |--------|-----------|
 | `Name` / `ScenarioCode` | "wukong" / "com.dingtalk.scenario.wukong" |
 | `IsEmbedded` / `HideAuthLogin` | 嵌入模式，隐藏 `dws auth login` |
-| `AutoPurgeToken` | token 过期自动清除 |
+| `[]()AutoPurgeToken` | token 过期自动清除 |
 | `ConfigDir` | 配置目录跟随二进制位置 |
 | `MergeHeaders` | 注入 x-dingtalk-* 来源标识头 |
 | `StaticServers` | 硬编码 MCP 端点，跳过 Market 服务发现 |

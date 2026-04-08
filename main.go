@@ -9,9 +9,10 @@ import (
 )
 
 var (
-	version   = "0.2.30"
+	version   = "0.2.39"
 	buildTime = "unknown"
 	gitCommit = "unknown"
+	buildMode = "dev"
 )
 
 func main() {

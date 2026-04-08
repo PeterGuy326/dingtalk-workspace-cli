@@ -25,4 +25,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/DingTalk-Real-AI/dingtalk-workspace-cli => ../github/dingtalk-workspace-cli
+replace github.com/DingTalk-Real-AI/dingtalk-workspace-cli => ../dingtalk-workspace-cli

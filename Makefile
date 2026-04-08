@@ -1,14 +1,16 @@
 .PHONY: build build-all test clean package dist real-platform sign public release help
 
-VERSION ?= 0.2.30
+VERSION ?= 0.2.39
 BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_MODE ?= dev
 
 LDFLAGS := -ldflags "\
 	-s -w \
 	-X main.version=$(VERSION) \
 	-X main.buildTime=$(BUILD_TIME) \
-	-X main.gitCommit=$(GIT_COMMIT)"
+	-X main.gitCommit=$(GIT_COMMIT) \
+	-X main.buildMode=$(BUILD_MODE)"
 
 BUILDFLAGS := -trimpath -buildmode=pie
 
@@ -149,7 +151,7 @@ SIGN_INPUT = $(TARGET)/dws_res_mac.zip
 SIGN_OUTPUT = $(TARGET)/dws_res_mac_signed.zip
 
 real-platform:
-	@$(MAKE) build-all
+	@$(MAKE) build-all BUILD_MODE=real
 	@echo "📦 Creating platform packages..."
 	@mkdir -p $(TARGET)/dws_res_win $(TARGET)/dws_res_mac
 	@rm -rf $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
