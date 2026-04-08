@@ -1,6 +1,6 @@
-.PHONY: build build-all test clean package dist real-platform sign public release help
+.PHONY: build build-all test clean npm-pack package dist real-platform sign public release help
 
-VERSION ?= 0.2.39
+VERSION ?= 0.2.40
 BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_MODE ?= dev
@@ -47,6 +47,20 @@ test:
 clean:
 	rm -f dws dws-darwin-* dws-linux-* dws-windows-*
 	rm -rf $(DIST)
+	rm -rf npm/bin
+
+## npm-pack: Prepare npm package with pre-built binary
+npm-pack: build-all
+	mkdir -p npm/bin
+	@ARCH=$$(uname -m); \
+	if [ "$$ARCH" = "arm64" ]; then \
+		cp $(DIST)/dws-darwin-arm64 npm/bin/dws; \
+	else \
+		cp $(DIST)/dws-darwin-amd64 npm/bin/dws; \
+	fi
+	chmod +x npm/bin/dws
+	cd npm && npm pack
+	@echo "✅ npm package created in npm/"
 
 # ── Workspace & packaging ────────────────────────────────────────────
 
