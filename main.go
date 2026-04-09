@@ -16,7 +16,7 @@ var (
 )
 
 func main() {
-	edition.Override(wukong.NewHooks())
+	edition.Override(wukong.NewHooks(buildMode))
 	cli.SetVersion(version, buildTime, gitCommit)
 	os.Exit(cli.Execute())
 }
