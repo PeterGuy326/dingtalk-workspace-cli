@@ -1,6 +1,6 @@
 .PHONY: build build-all test clean npm-pack package dist real-platform sign public release help
 
-VERSION ?= 0.2.40
+VERSION ?= 0.2.41
 BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_MODE ?= dev
