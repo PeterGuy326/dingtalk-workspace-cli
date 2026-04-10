@@ -4,6 +4,11 @@ dist
 plans
 _docs
 
+# IDE / tooling / local logs
+.cursor/
+.idea/
+.qoder/
+user_logs/
 
 __pycache__/
 .pytest_cache/
