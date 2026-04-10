@@ -65,7 +65,7 @@ npm-pack: build-all
 # ── Workspace & packaging ────────────────────────────────────────────
 
 WORKSPACE_DIR := ./dingtalk-workspace
-TARGET := ../target
+TARGET := target
 PKG_NAME := dws_res
 ENTITLEMENTS := entitlements.plist
 
