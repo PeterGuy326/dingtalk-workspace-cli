@@ -5,6 +5,11 @@ plans
 _docs
 _assets
 
+# IDE / tooling / local logs
+.cursor/
+.idea/
+.qoder/
+user_logs/
 
 __pycache__/
 .pytest_cache/
