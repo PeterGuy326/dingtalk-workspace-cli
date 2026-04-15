@@ -3,6 +3,7 @@ dws
 dist
 plans
 _docs
+_assets
 
 
 __pycache__/
