@@ -8,3 +8,5 @@ _docs
 __pycache__/
 .pytest_cache/
 target
+
+.env
