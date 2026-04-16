@@ -271,9 +271,9 @@ func buildFlagsFromDetailSchema(cmd *cobra.Command, schemaJSON string, flagOverr
 		}
 
 		switch prop.Type {
-		case "integer", "number":
+		case "integer", "number", "int":
 			cmd.Flags().Int(flagName, 0, help)
-		case "boolean":
+		case "boolean", "bool":
 			cmd.Flags().Bool(flagName, false, help)
 		case "array":
 			cmd.Flags().StringSlice(flagName, nil, help+" (comma-separated)")
