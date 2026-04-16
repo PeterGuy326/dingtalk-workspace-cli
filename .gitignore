@@ -3,7 +3,7 @@ dws
 dist
 plans
 _docs
-
+.DS_Store
 
 __pycache__/
 .pytest_cache/
