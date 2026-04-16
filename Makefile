@@ -161,11 +161,11 @@ dist: build-all
 	@ls -lh $(TARGET)/dws_res_*.zip
 
 # ── Upstream sync ─────────────────────────────────────────────────────
-CLI_DIR := .
+CLI_DIR := ../dingtalk-workspace-cli
 CLI_UPSTREAM_REMOTE := upstream
 CLI_UPSTREAM_URL := https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git
 
-## sync-upstream: Sync local repo with upstream main
+## sync-upstream: Sync local dingtalk-workspace-cli with upstream main
 sync-upstream:
 	@echo "🔄 Syncing $(CLI_DIR) with upstream main..."
 	@cd $(CLI_DIR) && \
@@ -174,7 +174,7 @@ sync-upstream:
 			git remote add $(CLI_UPSTREAM_REMOTE) $(CLI_UPSTREAM_URL); \
 		fi && \
 		git fetch $(CLI_UPSTREAM_REMOTE) && \
-		git merge $(CLI_UPSTREAM_REMOTE)/main --allow-unrelated-histories --no-edit || true && \
+		git merge $(CLI_UPSTREAM_REMOTE)/main --no-edit && \
 		echo "✅ $(CLI_DIR) is up to date with upstream/main"
 
 ## real-platform: REAL 打包使用 (win+mac only, with signing)
