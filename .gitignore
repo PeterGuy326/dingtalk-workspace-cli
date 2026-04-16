@@ -14,3 +14,4 @@ user_logs/
 __pycache__/
 .pytest_cache/
 target
+/auto-test/cli_to_mcp/testcases/.raw_cmd_results.json
