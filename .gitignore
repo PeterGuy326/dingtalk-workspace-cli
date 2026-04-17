@@ -6,6 +6,7 @@ _docs
 _assets
 
 # IDE / tooling / local logs
+.DS_Store
 .cursor/
 .idea/
 .qoder/
@@ -14,3 +15,9 @@ user_logs/
 __pycache__/
 .pytest_cache/
 target
+/auto-test/cli_to_mcp/testcases/.raw_cmd_results.json
+
+.env
+
+# App Assistant 规范文档（由 Skill 自动分发，无需提交）
+.app_assistant/

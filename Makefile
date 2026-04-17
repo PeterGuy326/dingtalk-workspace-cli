@@ -1,6 +1,6 @@
-.PHONY: build build-all test clean npm-pack package dist real-platform sign public release help sync-upstream
+.PHONY: build build-all test clean npm-pack package dist real-platform sign public release help sync-upstream integration-regression
 
-VERSION ?= 0.2.44
+VERSION ?= 0.2.46
 BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_MODE ?= dev
@@ -42,6 +42,11 @@ build-all: clean
 ## test: Run all tests
 test:
 	go test ./...
+
+## integration-regression: Pre-release checks (legacy command paths + PAT), no product code changes
+integration-regression:
+	@chmod +x integration/regression.sh 2>/dev/null || true
+	@./integration/regression.sh
 
 ## clean: Remove build artifacts
 clean:
