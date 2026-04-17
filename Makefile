@@ -1,6 +1,6 @@
-.PHONY: build build-all test clean npm-pack package dist real-platform sign public release help
+.PHONY: build build-all test clean npm-pack package dist real-platform sign public release help sync-upstream
 
-VERSION ?= 0.2.43.1
+VERSION ?= 0.2.45
 BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_MODE ?= dev
@@ -160,11 +160,28 @@ dist: build-all
 	@echo "📦 Final packages:"
 	@ls -lh $(TARGET)/dws_res_*.zip
 
+# ── Upstream sync ─────────────────────────────────────────────────────
+CLI_DIR := ../dingtalk-workspace-cli
+CLI_UPSTREAM_REMOTE := upstream
+CLI_UPSTREAM_URL := https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git
+
+## sync-upstream: Sync local dingtalk-workspace-cli with upstream main
+sync-upstream:
+	@echo "🔄 Syncing $(CLI_DIR) with upstream main..."
+	@cd $(CLI_DIR) && \
+		if ! git remote get-url $(CLI_UPSTREAM_REMOTE) >/dev/null 2>&1; then \
+			echo "  Adding remote $(CLI_UPSTREAM_REMOTE) → $(CLI_UPSTREAM_URL)"; \
+			git remote add $(CLI_UPSTREAM_REMOTE) $(CLI_UPSTREAM_URL); \
+		fi && \
+		git fetch $(CLI_UPSTREAM_REMOTE) && \
+		git merge $(CLI_UPSTREAM_REMOTE)/main --no-edit && \
+		echo "✅ $(CLI_DIR) is up to date with upstream/main"
+
 ## real-platform: REAL 打包使用 (win+mac only, with signing)
 SIGN_INPUT = $(TARGET)/dws_res_mac.zip
 SIGN_OUTPUT = $(TARGET)/dws_res_mac_signed.zip
 
-real-platform:
+real-platform: sync-upstream
 	@$(MAKE) build-all BUILD_MODE=real
 	@echo "📦 Creating platform packages..."
 	@mkdir -p $(TARGET)/dws_res_win $(TARGET)/dws_res_mac
