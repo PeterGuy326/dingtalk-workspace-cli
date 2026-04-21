@@ -1,4 +1,4 @@
-.PHONY: build build-all test clean npm-pack package dist real-platform sign public release help sync-upstream integration-regression
+.PHONY: build build-all test clean package dist real-platform sign public release help sync-upstream integration-regression
 
 VERSION ?= 0.2.47
 BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
@@ -45,27 +45,13 @@ test:
 
 ## integration-regression: Pre-release checks (legacy command paths + PAT), no product code changes
 integration-regression:
-	@chmod +x integration/regression.sh 2>/dev/null || true
-	@./integration/regression.sh
+	@chmod +x auto-test/integration/regression.sh 2>/dev/null || true
+	@./auto-test/integration/regression.sh
 
 ## clean: Remove build artifacts
 clean:
 	rm -f dws dws-darwin-* dws-linux-* dws-windows-*
 	rm -rf $(DIST)
-	rm -rf npm/bin
-
-## npm-pack: Prepare npm package with pre-built binary
-npm-pack: build-all
-	mkdir -p npm/bin
-	@ARCH=$$(uname -m); \
-	if [ "$$ARCH" = "arm64" ]; then \
-		cp $(DIST)/dws-darwin-arm64 npm/bin/dws; \
-	else \
-		cp $(DIST)/dws-darwin-amd64 npm/bin/dws; \
-	fi
-	chmod +x npm/bin/dws
-	cd npm && npm pack
-	@echo "✅ npm package created in npm/"
 
 # ── Workspace & packaging ────────────────────────────────────────────
 
