@@ -1,6 +1,6 @@
 .PHONY: build build-all test clean npm-pack package dist real-platform sign public release help sync-upstream integration-regression
 
-VERSION ?= 0.2.47.2
+VERSION ?= 0.2.48
 BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_MODE ?= dev
@@ -169,18 +169,34 @@ dist: build-all
 CLI_DIR := ../dingtalk-workspace-cli
 CLI_UPSTREAM_REMOTE := upstream
 CLI_UPSTREAM_URL := https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git
+CLI_UPSTREAM_TAG ?= v1.0.11
+CLI_RELEASE_BRANCH ?= release/$(CLI_UPSTREAM_TAG)
 
-## sync-upstream: Sync local dingtalk-workspace-cli with upstream main
+## sync-upstream: Recreate a fresh release branch from upstream tag in CLI repo
 sync-upstream:
-	@echo "🔄 Syncing $(CLI_DIR) with upstream main..."
+	@echo "🔄 Syncing $(CLI_DIR): recreate $(CLI_RELEASE_BRANCH) from $(CLI_UPSTREAM_TAG)..."
 	@cd $(CLI_DIR) && \
 		if ! git remote get-url $(CLI_UPSTREAM_REMOTE) >/dev/null 2>&1; then \
 			echo "  Adding remote $(CLI_UPSTREAM_REMOTE) → $(CLI_UPSTREAM_URL)"; \
 			git remote add $(CLI_UPSTREAM_REMOTE) $(CLI_UPSTREAM_URL); \
 		fi && \
-		git fetch $(CLI_UPSTREAM_REMOTE) && \
-		git merge $(CLI_UPSTREAM_REMOTE)/main --no-edit && \
-		echo "✅ $(CLI_DIR) is up to date with upstream/main"
+		git fetch $(CLI_UPSTREAM_REMOTE) --tags && \
+		if ! git diff-index --quiet HEAD --; then \
+			echo "⚠️  Discarding uncommitted tracked changes (remote tag wins):"; \
+			git status --short --untracked-files=no; \
+			git reset --hard HEAD; \
+		fi && \
+		if [ "$$(git symbolic-ref --short -q HEAD)" = "$(CLI_RELEASE_BRANCH)" ]; then \
+			echo "  Currently on $(CLI_RELEASE_BRANCH), detaching before recreate"; \
+			git checkout --quiet --detach; \
+		fi && \
+		if git show-ref --verify --quiet refs/heads/$(CLI_RELEASE_BRANCH); then \
+			echo "  Deleting existing $(CLI_RELEASE_BRANCH)"; \
+			git branch -D $(CLI_RELEASE_BRANCH); \
+		fi && \
+		echo "  Creating $(CLI_RELEASE_BRANCH) from $(CLI_UPSTREAM_TAG)" && \
+		git checkout -b $(CLI_RELEASE_BRANCH) refs/tags/$(CLI_UPSTREAM_TAG) && \
+		echo "✅ $(CLI_DIR) on $(CLI_RELEASE_BRANCH) @ $(CLI_UPSTREAM_TAG)"
 
 ## real-platform: REAL 打包使用 (win+mac only, with signing)
 SIGN_INPUT = $(TARGET)/dws_res_mac.zip
