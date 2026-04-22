@@ -3,9 +3,23 @@ dws
 dist
 plans
 _docs
+_assets
 
+# IDE / tooling / local logs
+.DS_Store
+.cursor/
+.idea/
+.qoder/
+.vscode/
+user_logs/
+CLAUDE.md
 
 __pycache__/
 .pytest_cache/
 target
-.DS_Store
+/auto-test/cli_to_mcp/testcases/.raw_cmd_results.json
+
+.env
+
+# App Assistant 规范文档（由 Skill 自动分发，无需提交）
+.app_assistant/
