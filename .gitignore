@@ -4,6 +4,7 @@ dist
 plans
 _docs
 _assets
+docs/changes
 
 # IDE / tooling / local logs
 .DS_Store
