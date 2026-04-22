@@ -1,6 +1,6 @@
-.PHONY: build build-all test clean package dist real-platform sign public release help sync-upstream integration-regression
+.PHONY: build build-all test clean package dist real-platform sign public release help sync-upstream integration-regression bundle bundle-platform
 
-VERSION ?= 0.2.47
+VERSION ?= 0.2.49
 BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_MODE ?= dev
@@ -74,6 +74,16 @@ define build-workspace-zip
 		echo "⚠️  $(WORKSPACE_DIR) not found, skipping workspace files"; \
 	fi
 endef
+
+BUNDLE_VERSION  ?= $(VERSION)
+BUNDLE_VARIANT  ?= dev
+BUNDLE_OUTPUT   ?= $(TARGET)/dingtalk-workspace.zip
+
+## bundle: Build dingtalk-workspace.zip as multi-skill bundle (manifest.json + skills/*.zip)
+bundle:
+	@mkdir -p $(TARGET)
+	@chmod +x scripts/build-bundle.sh
+	@./scripts/build-bundle.sh $(CURDIR)/$(BUNDLE_OUTPUT) $(BUNDLE_VARIANT) $(BUNDLE_VERSION)
 
 ## package: Build all platforms and create unified release zip in ../target/
 package: build-all
@@ -155,18 +165,34 @@ dist: build-all
 CLI_DIR := ../dingtalk-workspace-cli
 CLI_UPSTREAM_REMOTE := upstream
 CLI_UPSTREAM_URL := https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git
+CLI_UPSTREAM_TAG ?= v1.0.11
+CLI_RELEASE_BRANCH ?= release/$(CLI_UPSTREAM_TAG)
 
-## sync-upstream: Sync local dingtalk-workspace-cli with upstream main
+## sync-upstream: Recreate a fresh release branch from upstream tag in CLI repo
 sync-upstream:
-	@echo "🔄 Syncing $(CLI_DIR) with upstream main..."
+	@echo "🔄 Syncing $(CLI_DIR): recreate $(CLI_RELEASE_BRANCH) from $(CLI_UPSTREAM_TAG)..."
 	@cd $(CLI_DIR) && \
 		if ! git remote get-url $(CLI_UPSTREAM_REMOTE) >/dev/null 2>&1; then \
 			echo "  Adding remote $(CLI_UPSTREAM_REMOTE) → $(CLI_UPSTREAM_URL)"; \
 			git remote add $(CLI_UPSTREAM_REMOTE) $(CLI_UPSTREAM_URL); \
 		fi && \
-		git fetch $(CLI_UPSTREAM_REMOTE) && \
-		git merge $(CLI_UPSTREAM_REMOTE)/main --no-edit && \
-		echo "✅ $(CLI_DIR) is up to date with upstream/main"
+		git fetch $(CLI_UPSTREAM_REMOTE) --tags && \
+		if ! git diff-index --quiet HEAD --; then \
+			echo "⚠️  Discarding uncommitted tracked changes (remote tag wins):"; \
+			git status --short --untracked-files=no; \
+			git reset --hard HEAD; \
+		fi && \
+		if [ "$$(git symbolic-ref --short -q HEAD)" = "$(CLI_RELEASE_BRANCH)" ]; then \
+			echo "  Currently on $(CLI_RELEASE_BRANCH), detaching before recreate"; \
+			git checkout --quiet --detach; \
+		fi && \
+		if git show-ref --verify --quiet refs/heads/$(CLI_RELEASE_BRANCH); then \
+			echo "  Deleting existing $(CLI_RELEASE_BRANCH)"; \
+			git branch -D $(CLI_RELEASE_BRANCH); \
+		fi && \
+		echo "  Creating $(CLI_RELEASE_BRANCH) from $(CLI_UPSTREAM_TAG)" && \
+		git checkout -b $(CLI_RELEASE_BRANCH) refs/tags/$(CLI_UPSTREAM_TAG) && \
+		echo "✅ $(CLI_DIR) on $(CLI_RELEASE_BRANCH) @ $(CLI_UPSTREAM_TAG)"
 
 ## real-platform: REAL 打包使用 (win+mac only, with signing)
 SIGN_INPUT = $(TARGET)/dws_res_mac.zip
@@ -199,6 +225,60 @@ real-platform: sync-upstream
 
 	@echo ""
 	@echo "✅ Platform packages created:"
+	@ls -lh $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
+
+	@if [ -f "$(ENTITLEMENTS)" ]; then \
+		echo ""; \
+		echo "🔏 Signing macOS binary via $(SIGN_SERVER)..."; \
+		curl -X POST $(SIGN_SERVER)/sign \
+			-F "file=@$(SIGN_INPUT)" \
+			-F "entitlements=@$(ENTITLEMENTS)" \
+			-o $(SIGN_OUTPUT) \
+			--fail --silent --show-error && \
+		mv $(SIGN_OUTPUT) $(SIGN_INPUT) && \
+		echo "✅ macOS package signed successfully" && \
+		ls -lh $(SIGN_INPUT); \
+	else \
+		echo ""; \
+		echo "⚠️  $(ENTITLEMENTS) not found, skipping macOS signing"; \
+	fi
+
+	@echo ""
+	@echo "📂 Windows package contents:"
+	@unzip -l $(TARGET)/dws_res_win.zip
+	@echo ""
+	@echo "📂 macOS package contents (signed):"
+	@unzip -l $(TARGET)/dws_res_mac.zip
+
+## bundle-platform: REAL 打包 (bundle 版: dingtalk-workspace.zip 为多 skill bundle)
+bundle-platform: sync-upstream
+	@$(MAKE) build-all BUILD_MODE=real
+	@echo "📦 Creating platform packages (bundle)..."
+	@mkdir -p $(TARGET)/dws_res_win $(TARGET)/dws_res_mac
+	@rm -rf $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
+
+	@chmod +x scripts/build-bundle.sh
+	@./scripts/build-bundle.sh $(CURDIR)/$(TARGET)/dingtalk-workspace.zip real $(VERSION)
+
+	@cp $(DIST)/dws-windows-amd64.exe $(TARGET)/dws_res_win/
+	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
+		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_win/; \
+	fi
+	@cd $(TARGET) && zip -qr dws_res_win.zip dws_res_win -x '*/__MACOSX/*' '*/.DS_Store'
+	@rm -rf $(TARGET)/dws_res_win
+
+	@cp $(DIST)/dws-darwin-amd64 $(TARGET)/dws_res_mac/
+	@cp $(DIST)/dws-darwin-arm64 $(TARGET)/dws_res_mac/
+	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
+		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_mac/; \
+	fi
+	@cd $(TARGET) && zip -qr dws_res_mac.zip dws_res_mac -x '*/__MACOSX/*' '*/.DS_Store'
+	@rm -rf $(TARGET)/dws_res_mac
+
+	@rm -f $(TARGET)/dingtalk-workspace.zip
+
+	@echo ""
+	@echo "✅ Bundle platform packages created:"
 	@ls -lh $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
 
 	@if [ -f "$(ENTITLEMENTS)" ]; then \
