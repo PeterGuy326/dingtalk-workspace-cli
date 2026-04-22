@@ -10,6 +10,7 @@ _assets
 .cursor/
 .idea/
 .qoder/
+.kiro/
 user_logs/
 
 __pycache__/
