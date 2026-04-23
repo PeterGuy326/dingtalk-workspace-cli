@@ -11,7 +11,9 @@ docs/changes
 .cursor/
 .idea/
 .qoder/
+.vscode/
 user_logs/
+CLAUDE.md
 
 __pycache__/
 .pytest_cache/
