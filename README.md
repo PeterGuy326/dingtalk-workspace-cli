@@ -30,7 +30,7 @@ dingtalk-workspace-cli (开源核心)             dws-wukong (悟空覆盖层)
 
 ```go
 func main() {
-    edition.Override(wukong.NewHooks(buildMode))   // 注入悟空钩子
+    edition.Override(wukong.NewHooks(buildMode, version))   // 注入悟空钩子（version 透传给服务发现 header）
     cli.SetVersion(version, buildTime, gitCommit)
     os.Exit(cli.Execute())                         // 启动开源版 CLI 引擎
 }
