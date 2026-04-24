@@ -4,13 +4,16 @@ dist
 plans
 _docs
 _assets
+docs/changes
 
 # IDE / tooling / local logs
 .DS_Store
 .cursor/
 .idea/
 .qoder/
+.vscode/
 user_logs/
+CLAUDE.md
 
 __pycache__/
 .pytest_cache/
