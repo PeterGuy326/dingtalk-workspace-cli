@@ -11,6 +11,7 @@ docs/changes
 .cursor/
 .idea/
 .qoder/
+.kiro/
 .vscode/
 user_logs/
 CLAUDE.md
