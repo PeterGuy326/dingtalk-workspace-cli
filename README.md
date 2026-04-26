@@ -30,7 +30,7 @@ dingtalk-workspace-cli (开源核心)             dws-wukong (悟空覆盖层)
 
 ```go
 func main() {
-    edition.Override(wukong.NewHooks(buildMode))   // 注入悟空钩子
+    edition.Override(wukong.NewHooks(buildMode, version))   // 注入悟空钩子（version 透传给服务发现 header）
     cli.SetVersion(version, buildTime, gitCommit)
     os.Exit(cli.Execute())                         // 启动开源版 CLI 引擎
 }
@@ -161,16 +161,18 @@ dws-wukong/
 │   ├── dingtalk-daily-work-summary/  # 每日工作总结
 │   ├── minutes-to-doc/              # 妙记转文档
 │   └── ...                           # 更多专题技能
-├── tool_skills/                      # 工具级技能
-│   ├── dingtalk-open-spec/           # 开放平台 API 规范探索
-│   ├── skill-evaluator/              # 技能质量评估
-│   └── window-invocation-count/      # 调用计数
-├── cli-troubleshoot/                 # CLI 诊断排障技能
+├── test-tools/                       # 测试工具集
+│   ├── tool_skills/                  # 工具级技能
+│   │   ├── dingtalk-open-spec/       # 开放平台 API 规范探索
+│   │   ├── skill-evaluator/          # 技能质量评估
+│   │   └── window-invocation-count/  # 调用计数
+│   ├── deploy-to-local.sh            # 本地构建安装
+│   ├── deploy-to-wukong.sh           # Real 环境部署
+│   └── run-regression.sh             # 回归测试
 ├── auto-test/                        # 自动化测试体系
 │   ├── cli_to_mcp/                   # CLI ↔ MCP 集成测试
 │   ├── end_to_end/                   # 端到端评测
 │   └── model_to_cli/                 # 模型 → CLI 测试
-├── npm/                              # macOS npm 分发包
 ├── scripts/                          # build.sh, package.sh, sign.sh, deploy/
 ├── _docs/                            # 内部架构文档
 └── entitlements.plist                # macOS 签名 entitlements
@@ -250,7 +252,6 @@ Go:             go1.25.8
 | `make real-platform` | 内部打包 (win + mac + macOS 签名，real 模式) |
 | `make public` | 公开发布包（dws/ + skill/ 分目录） |
 | `make release` | 准备 git release + latest.json manifest |
-| `make npm-pack` | 构建 macOS npm 分发包 |
 | `make sign` | 独立 macOS 签名 |
 | `make clean` | 清理构建产物 |
 
@@ -302,7 +303,7 @@ go test ./...
 
 ### CI
 
-- GitLab CI：`go test ./...` + 多平台构建
+- GitLab CI：已移除
 - AoneCI：CLI-to-MCP 集成测试
 
 ## Agent 技能生态
@@ -328,7 +329,7 @@ go test ./...
 
 ### 工具级技能
 
-`tool_skills/` 包含基础工具能力：
+`tool_skills/`（位于 `test-tools/tool_skills/`）包含基础工具能力：
 - `dingtalk-open-spec/`：探索未经 CLI 封装的原生 OpenAPI
 - `skill-evaluator/`：技能质量评估打分
 - `window-invocation-count/`：调用频次统计

@@ -9,14 +9,14 @@ import (
 )
 
 var (
-	version   = "0.2.52"
+	version   = "0.2.54"
 	buildTime = "unknown"
 	gitCommit = "unknown"
 	buildMode = "dev"
 )
 
 func main() {
-	edition.Override(wukong.NewHooks(buildMode))
+	edition.Override(wukong.NewHooks(buildMode, version))
 	cli.SetVersion(version, buildTime, gitCommit)
 	os.Exit(cli.Execute())
 }
