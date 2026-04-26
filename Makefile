@@ -1,6 +1,6 @@
-.PHONY: build build-all test clean package dist real-platform local-platform sign public release help sync-upstream integration-regression bundle bundle-platform
+.PHONY: build build-all test clean npm-pack package dist real-platform sign public release help sync-upstream integration-regression bundle bundle-platform
 
-VERSION ?= 0.2.52
+VERSION ?= 0.2.54
 BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_MODE ?= dev
@@ -45,13 +45,27 @@ test:
 
 ## integration-regression: Pre-release checks (legacy command paths + PAT), no product code changes
 integration-regression:
-	@chmod +x auto-test/integration/regression.sh 2>/dev/null || true
-	@./auto-test/integration/regression.sh
+	@chmod +x integration/regression.sh 2>/dev/null || true
+	@./integration/regression.sh
 
 ## clean: Remove build artifacts
 clean:
 	rm -f dws dws-darwin-* dws-linux-* dws-windows-*
 	rm -rf $(DIST)
+	rm -rf npm/bin
+
+## npm-pack: Prepare npm package with pre-built binary
+npm-pack: build-all
+	mkdir -p npm/bin
+	@ARCH=$$(uname -m); \
+	if [ "$$ARCH" = "arm64" ]; then \
+		cp $(DIST)/dws-darwin-arm64 npm/bin/dws; \
+	else \
+		cp $(DIST)/dws-darwin-amd64 npm/bin/dws; \
+	fi
+	chmod +x npm/bin/dws
+	cd npm && npm pack
+	@echo "✅ npm package created in npm/"
 
 # ── Workspace & packaging ────────────────────────────────────────────
 
@@ -165,34 +179,24 @@ dist: build-all
 CLI_DIR := ../dingtalk-workspace-cli
 CLI_UPSTREAM_REMOTE := upstream
 CLI_UPSTREAM_URL := https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git
-CLI_UPSTREAM_TAG ?= v1.0.11
-CLI_RELEASE_BRANCH ?= release/$(CLI_UPSTREAM_TAG)
+CLI_UPSTREAM_BRANCH ?= main
 
-## sync-upstream: Recreate a fresh release branch from upstream tag in CLI repo
+## sync-upstream: Reset CLI repo to latest upstream main branch
 sync-upstream:
-	@echo "🔄 Syncing $(CLI_DIR): recreate $(CLI_RELEASE_BRANCH) from $(CLI_UPSTREAM_TAG)..."
+	@echo "🔄 Syncing $(CLI_DIR): reset to $(CLI_UPSTREAM_REMOTE)/$(CLI_UPSTREAM_BRANCH)..."
 	@cd $(CLI_DIR) && \
 		if ! git remote get-url $(CLI_UPSTREAM_REMOTE) >/dev/null 2>&1; then \
 			echo "  Adding remote $(CLI_UPSTREAM_REMOTE) → $(CLI_UPSTREAM_URL)"; \
 			git remote add $(CLI_UPSTREAM_REMOTE) $(CLI_UPSTREAM_URL); \
 		fi && \
-		git fetch $(CLI_UPSTREAM_REMOTE) --tags && \
+		git fetch $(CLI_UPSTREAM_REMOTE) $(CLI_UPSTREAM_BRANCH) && \
 		if ! git diff-index --quiet HEAD --; then \
-			echo "⚠️  Discarding uncommitted tracked changes (remote tag wins):"; \
+			echo "⚠️  Discarding uncommitted tracked changes (upstream wins):"; \
 			git status --short --untracked-files=no; \
 			git reset --hard HEAD; \
 		fi && \
-		if [ "$$(git symbolic-ref --short -q HEAD)" = "$(CLI_RELEASE_BRANCH)" ]; then \
-			echo "  Currently on $(CLI_RELEASE_BRANCH), detaching before recreate"; \
-			git checkout --quiet --detach; \
-		fi && \
-		if git show-ref --verify --quiet refs/heads/$(CLI_RELEASE_BRANCH); then \
-			echo "  Deleting existing $(CLI_RELEASE_BRANCH)"; \
-			git branch -D $(CLI_RELEASE_BRANCH); \
-		fi && \
-		echo "  Creating $(CLI_RELEASE_BRANCH) from $(CLI_UPSTREAM_TAG)" && \
-		git checkout -b $(CLI_RELEASE_BRANCH) refs/tags/$(CLI_UPSTREAM_TAG) && \
-		echo "✅ $(CLI_DIR) on $(CLI_RELEASE_BRANCH) @ $(CLI_UPSTREAM_TAG)"
+		git checkout -B $(CLI_UPSTREAM_BRANCH) $(CLI_UPSTREAM_REMOTE)/$(CLI_UPSTREAM_BRANCH) && \
+		echo "✅ $(CLI_DIR) on $(CLI_UPSTREAM_BRANCH) @ $$(git rev-parse --short HEAD)"
 
 ## real-platform: REAL 打包使用 (win+mac only, with signing)
 SIGN_INPUT = $(TARGET)/dws_res_mac.zip
@@ -249,40 +253,6 @@ real-platform: sync-upstream
 	@echo ""
 	@echo "📂 macOS package contents (signed):"
 	@unzip -l $(TARGET)/dws_res_mac.zip
-
-## local-platform: 本地开发部署 — 不 sync-upstream，不远程签名，使用 ../dingtalk-workspace-cli 当前分支
-##                  专供 scripts/deploy/deploy-to-wukong.sh 调用，禁止用于正式发版。
-##                  正式发版仍走 real-platform / bundle-platform。
-local-platform:
-	@echo "🏠 LOCAL build mode — 跳过 sync-upstream，使用 $(CLI_DIR) 当前分支"
-	@cd $(CLI_DIR) && echo "   CLI 当前: $$(git rev-parse --abbrev-ref HEAD) @ $$(git rev-parse --short HEAD)"
-	@$(MAKE) build-all BUILD_MODE=real
-	@echo "📦 Creating platform packages (LOCAL, unsigned)..."
-	@mkdir -p $(TARGET)/dws_res_win $(TARGET)/dws_res_mac
-	@rm -rf $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
-
-	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace.zip,real)
-
-	@cp $(DIST)/dws-windows-amd64.exe $(TARGET)/dws_res_win/
-	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_win/; \
-	fi
-	@cd $(TARGET) && zip -qr dws_res_win.zip dws_res_win -x '*/__MACOSX/*' '*/.DS_Store'
-	@rm -rf $(TARGET)/dws_res_win
-
-	@cp $(DIST)/dws-darwin-amd64 $(TARGET)/dws_res_mac/
-	@cp $(DIST)/dws-darwin-arm64 $(TARGET)/dws_res_mac/
-	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_mac/; \
-	fi
-	@cd $(TARGET) && zip -qr dws_res_mac.zip dws_res_mac -x '*/__MACOSX/*' '*/.DS_Store'
-	@rm -rf $(TARGET)/dws_res_mac
-
-	@rm -f $(TARGET)/dingtalk-workspace.zip
-
-	@echo ""
-	@echo "✅ Local platform packages created (UNSIGNED — dev only):"
-	@ls -lh $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
 
 ## bundle-platform: REAL 打包 (bundle 版: dingtalk-workspace.zip 为多 skill bundle)
 bundle-platform: sync-upstream
