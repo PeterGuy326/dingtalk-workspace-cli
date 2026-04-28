@@ -1,5 +1,7 @@
 .dws
 dws
+/dump-commands
+scripts/dump-commands/dump-commands
 dist
 plans
 _docs

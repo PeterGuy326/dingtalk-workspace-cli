@@ -1,4 +1,4 @@
-.PHONY: build build-all test clean npm-pack package dist real-platform sign public release help sync-upstream integration-regression bundle bundle-platform
+.PHONY: build build-all test clean npm-pack package dist real-platform sign public release help sync-upstream integration-regression bundle bundle-platform dump-commands
 
 VERSION ?= 0.2.54
 BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
@@ -50,9 +50,13 @@ integration-regression:
 
 ## clean: Remove build artifacts
 clean:
-	rm -f dws dws-darwin-* dws-linux-* dws-windows-*
+	rm -f dws dws-darwin-* dws-linux-* dws-windows-* scripts/dump-commands/dump-commands
 	rm -rf $(DIST)
 	rm -rf npm/bin
+
+## dump-commands: Build CSV exporter for full cobra tree → scripts/dump-commands/dump-commands
+dump-commands:
+	go build $(BUILDFLAGS) -o scripts/dump-commands/dump-commands ./scripts/dump-commands
 
 ## npm-pack: Prepare npm package with pre-built binary
 npm-pack: build-all
