@@ -26,7 +26,3 @@ target
 # App Assistant 规范文档（由 Skill 自动分发，无需提交）
 .app_assistant/
 dws_master
-
-# 本地工作文档（个人笔记/调研/报告，不提交）
-mydocs/
-出参入参规范.md
