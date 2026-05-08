@@ -1,4 +1,4 @@
-.PHONY: build build-all test clean npm-pack package dist real-platform sign public release help sync-upstream integration-regression bundle bundle-platform dump-commands local-platform local-real-platform
+.PHONY: build build-all test clean npm-pack package dist real-platform sign public release help sync-upstream integration-regression bundle bundle-platform dump-commands local-platform
 
 VERSION ?= 0.2.55
 BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
@@ -281,31 +281,6 @@ local-platform:
 	@rm -f $(TARGET)/dingtalk-workspace.zip
 	@echo ""
 	@echo "✅ Local platform packages created (no signing):"
-	@ls -lh $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
-
-## local-real-platform: 本地当前分支 REAL 打包 (跳过 sync-upstream / signing)
-local-real-platform:
-	@$(MAKE) build-all BUILD_MODE=real
-	@echo "📦 Creating platform packages (local real, no sync-upstream / signing)..."
-	@mkdir -p $(TARGET)/dws_res_win $(TARGET)/dws_res_mac
-	@rm -rf $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
-	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace.zip,real)
-	@cp $(DIST)/dws-windows-amd64.exe $(TARGET)/dws_res_win/
-	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_win/; \
-	fi
-	@cd $(TARGET) && zip -qr dws_res_win.zip dws_res_win -x '*/__MACOSX/*' '*/.DS_Store'
-	@rm -rf $(TARGET)/dws_res_win
-	@cp $(DIST)/dws-darwin-amd64 $(TARGET)/dws_res_mac/
-	@cp $(DIST)/dws-darwin-arm64 $(TARGET)/dws_res_mac/
-	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_mac/; \
-	fi
-	@cd $(TARGET) && zip -qr dws_res_mac.zip dws_res_mac -x '*/__MACOSX/*' '*/.DS_Store'
-	@rm -rf $(TARGET)/dws_res_mac
-	@rm -f $(TARGET)/dingtalk-workspace.zip
-	@echo ""
-	@echo "✅ Local REAL platform packages created (no signing):"
 	@ls -lh $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
 
 ## bundle-platform: REAL 打包 (bundle 版: dingtalk-workspace.zip 为多 skill bundle)
