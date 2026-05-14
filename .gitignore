@@ -31,3 +31,4 @@ dws_master
 
 /auto-test/end_to_end/dws_calendar_scenes
 .aone_copilot/
+auto-test/chat_commands_suite/
