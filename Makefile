@@ -1,6 +1,6 @@
 .PHONY: build build-all test clean npm-pack package dist real-platform sign public release help sync-upstream integration-regression bundle bundle-platform dump-commands local-platform
 
-VERSION ?= 0.2.64
+VERSION ?= 0.2.65
 BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_MODE ?= dev
@@ -218,7 +218,7 @@ dist: build-all
 CLI_DIR := ../dingtalk-workspace-cli
 CLI_UPSTREAM_REMOTE := upstream
 CLI_UPSTREAM_URL := https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git
-CLI_UPSTREAM_TAG ?= v1.0.19
+CLI_UPSTREAM_TAG ?= v1.0.24
 CLI_RELEASE_BRANCH ?= release/$(CLI_UPSTREAM_TAG)
 
 ## sync-upstream: Recreate a fresh release branch from upstream tag in CLI repo

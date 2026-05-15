@@ -14,6 +14,7 @@ docs/changes
 .idea/
 .qoder/
 .kiro/
+.aone_copilot/
 .vscode/
 user_logs/
 CLAUDE.md
@@ -27,5 +28,9 @@ target
 
 # App Assistant 规范文档（由 Skill 自动分发，无需提交）
 .app_assistant/
-
+.code
 dws_master
+
+/auto-test/end_to_end/dws_calendar_scenes
+.aone_copilot/
+auto-test/chat_commands_suite/
