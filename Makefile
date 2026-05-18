@@ -220,7 +220,7 @@ dist: build-all
 CLI_DIR := ../dingtalk-workspace-cli
 CLI_UPSTREAM_REMOTE := upstream
 CLI_UPSTREAM_URL := https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git
-CLI_UPSTREAM_TAG ?= v1.0.24
+CLI_UPSTREAM_TAG ?= v1.0.29
 CLI_RELEASE_BRANCH ?= release/$(CLI_UPSTREAM_TAG)
 
 ## sync-upstream: Recreate a fresh release branch from upstream tag in CLI repo
