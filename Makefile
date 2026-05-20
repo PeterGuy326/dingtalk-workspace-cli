@@ -77,8 +77,10 @@ WORKSPACE_DIR := ./dingtalk-workspace
 TARGET := target
 PKG_NAME := dws_res
 ENTITLEMENTS := entitlements.plist
+BUNDLED_PLUGINS ?= bundled-plugins
 
 # $(1) = output zip path, $(2) = workspace variant: dev | real (real applies overlays/real)
+# $(3) = platform: darwin | windows (for plugin binary selection; omit to exclude plugins)
 define build-workspace-zip
 	@if [ -d "$(WORKSPACE_DIR)" ]; then \
 		_ws_tmp=$$(mktemp -d); \
@@ -86,7 +88,39 @@ define build-workspace-zip
 		if [ "$(strip $(2))" != "dev" ] && [ -d "$(WORKSPACE_DIR)/overlays/$(strip $(2))/references" ]; then \
 			cp -Rf "$(WORKSPACE_DIR)/overlays/$(strip $(2))/references/." "$$_ws_tmp/references/"; \
 		fi; \
-		cd "$$_ws_tmp" && zip -qr "$(1)" SKILL.md references scripts -x '*/__MACOSX/*' '*/.DS_Store' 2>/dev/null || true; \
+		_zip_items="SKILL.md references scripts"; \
+		if [ -n "$(strip $(3))" ] && [ -d "$(BUNDLED_PLUGINS)" ]; then \
+			for _plugin_dir in "$(BUNDLED_PLUGINS)"/*/; do \
+				[ -d "$$_plugin_dir" ] || continue; \
+				_pname=$$(basename "$$_plugin_dir"); \
+				[ -f "$$_plugin_dir/plugin.json" ] || continue; \
+				_dest="$$_ws_tmp/plugins/$$_pname"; \
+				mkdir -p "$$_dest/bin"; \
+				cp "$$_plugin_dir/plugin.json" "$$_dest/"; \
+				[ -f "$$_plugin_dir/overlay.json" ] && cp "$$_plugin_dir/overlay.json" "$$_dest/"; \
+				[ -d "$$_plugin_dir/skills" ] && cp -r "$$_plugin_dir/skills" "$$_dest/"; \
+				[ -d "$$_plugin_dir/references" ] && cp -r "$$_plugin_dir/references" "$$_dest/"; \
+				case "$(strip $(3))" in \
+					darwin) \
+						for _darwinbin in "$$_plugin_dir/bin/"*-darwin; do \
+							[ -f "$$_darwinbin" ] || continue; \
+							_base=$$(basename "$$_darwinbin" | sed 's/-darwin$$//'); \
+							cp "$$_darwinbin" "$$_dest/bin/$$_base"; \
+						done; \
+						chmod +x "$$_dest/bin/"* 2>/dev/null; \
+						;; \
+					windows) \
+						for _winbin in "$$_plugin_dir/bin/"*-windows-amd64.exe; do \
+							[ -f "$$_winbin" ] || continue; \
+							_base=$$(basename "$$_winbin" | sed 's/-windows-amd64\.exe$$/.exe/'); \
+							cp "$$_winbin" "$$_dest/bin/$$_base"; \
+						done; \
+						;; \
+				esac; \
+			done; \
+			[ -d "$$_ws_tmp/plugins" ] && _zip_items="$$_zip_items plugins"; \
+		fi; \
+		cd "$$_ws_tmp" && zip -qr "$(1)" $$_zip_items -x '*/__MACOSX/*' '*/.DS_Store' 2>/dev/null || true; \
 		rm -rf "$$_ws_tmp"; \
 	else \
 		echo "⚠️  $(WORKSPACE_DIR) not found, skipping workspace files"; \
@@ -111,7 +145,7 @@ package: build-all
 
 	@cp $(DIST)/* $(TARGET)/$(PKG_NAME)/
 
-	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/$(PKG_NAME)/dingtalk-workspace.zip,dev)
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/$(PKG_NAME)/dingtalk-workspace.zip,dev,darwin)
 
 	@cd $(TARGET) && zip -qr $(PKG_NAME).zip $(PKG_NAME) -x '*/__MACOSX/*' '*/.DS_Store'
 	@rm -rf $(TARGET)/$(PKG_NAME)
@@ -129,26 +163,29 @@ PLATFORMS := darwin-arm64 darwin-amd64 linux-amd64 linux-arm64 windows-amd64 win
 dist: build-all
 	@echo "📦 Creating all platform packages..."
 
-	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace.zip,dev)
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-darwin.zip,dev,darwin)
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-windows.zip,dev,windows)
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-linux.zip,dev)
 
 	@mkdir -p $(TARGET)
 	@for plat in $(PLATFORMS); do \
 		case $$plat in \
-			windows-*) bin="dws-$$plat.exe" ;; \
-			*)         bin="dws-$$plat" ;; \
+			windows-*) bin="dws-$$plat.exe"; _ws="dingtalk-workspace-windows.zip" ;; \
+			darwin-*)  bin="dws-$$plat";     _ws="dingtalk-workspace-darwin.zip" ;; \
+			*)         bin="dws-$$plat";     _ws="dingtalk-workspace-linux.zip" ;; \
 		esac; \
 		pkg="dws_res_$$plat"; \
 		mkdir -p $(TARGET)/$$pkg; \
 		cp $(DIST)/$$bin $(TARGET)/$$pkg/; \
-		if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-			cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/$$pkg/; \
+		if [ -f "$(TARGET)/$$_ws" ]; then \
+			cp $(TARGET)/$$_ws $(TARGET)/$$pkg/dingtalk-workspace.zip; \
 		fi; \
 		cd $(TARGET) && zip -qr $$pkg.zip $$pkg -x '*/__MACOSX/*' '*/.DS_Store' && cd $(CURDIR); \
 		rm -rf $(TARGET)/$$pkg; \
 		echo "  ✅ $$pkg.zip"; \
 	done
 
-	@rm -f $(TARGET)/dingtalk-workspace.zip
+	@rm -f $(TARGET)/dingtalk-workspace-darwin.zip $(TARGET)/dingtalk-workspace-windows.zip $(TARGET)/dingtalk-workspace-linux.zip
 
 	@echo ""
 	@echo "📦 All platform packages:"
@@ -183,7 +220,7 @@ dist: build-all
 CLI_DIR := ../dingtalk-workspace-cli
 CLI_UPSTREAM_REMOTE := upstream
 CLI_UPSTREAM_URL := https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git
-CLI_UPSTREAM_TAG ?= v1.0.24
+CLI_UPSTREAM_TAG ?= v1.0.29
 CLI_RELEASE_BRANCH ?= release/$(CLI_UPSTREAM_TAG)
 
 ## sync-upstream: Recreate a fresh release branch from upstream tag in CLI repo
@@ -227,24 +264,28 @@ real-platform: sync-upstream
 	@mkdir -p $(TARGET)/dws_res_win $(TARGET)/dws_res_mac
 	@rm -rf $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
 
-	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace.zip,real)
+	@# ── Mac workspace zip (with universal plugin binaries) ──
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-mac.zip,real,darwin)
+
+	@# ── Win workspace zip (with Windows plugin binaries) ──
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-win.zip,real,windows)
 
 	@cp $(DIST)/dws-windows-amd64.exe $(TARGET)/dws_res_win/
-	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_win/; \
+	@if [ -f "$(TARGET)/dingtalk-workspace-win.zip" ]; then \
+		cp $(TARGET)/dingtalk-workspace-win.zip $(TARGET)/dws_res_win/dingtalk-workspace.zip; \
 	fi
 	@cd $(TARGET) && zip -qr dws_res_win.zip dws_res_win -x '*/__MACOSX/*' '*/.DS_Store'
 	@rm -rf $(TARGET)/dws_res_win
 
 	@cp $(DIST)/dws-darwin-amd64 $(TARGET)/dws_res_mac/
 	@cp $(DIST)/dws-darwin-arm64 $(TARGET)/dws_res_mac/
-	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_mac/; \
+	@if [ -f "$(TARGET)/dingtalk-workspace-mac.zip" ]; then \
+		cp $(TARGET)/dingtalk-workspace-mac.zip $(TARGET)/dws_res_mac/dingtalk-workspace.zip; \
 	fi
 	@cd $(TARGET) && zip -qr dws_res_mac.zip dws_res_mac -x '*/__MACOSX/*' '*/.DS_Store'
 	@rm -rf $(TARGET)/dws_res_mac
 
-	@rm -f $(TARGET)/dingtalk-workspace.zip
+	@rm -f $(TARGET)/dingtalk-workspace-mac.zip $(TARGET)/dingtalk-workspace-win.zip
 
 	@echo ""
 	@echo "✅ Platform packages created:"
@@ -279,21 +320,27 @@ local-platform:
 	@echo "📦 Creating platform packages (local dev, no sync-upstream)..."
 	@mkdir -p $(TARGET)/dws_res_win $(TARGET)/dws_res_mac
 	@rm -rf $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
-	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace.zip,dev)
+
+	@# ── Mac workspace zip (with macOS plugin binaries) ──
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-mac.zip,dev,darwin)
+
+	@# ── Win workspace zip (with Windows plugin binaries) ──
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-win.zip,dev,windows)
+
 	@cp $(DIST)/dws-windows-amd64.exe $(TARGET)/dws_res_win/
-	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_win/; \
+	@if [ -f "$(TARGET)/dingtalk-workspace-win.zip" ]; then \
+		cp $(TARGET)/dingtalk-workspace-win.zip $(TARGET)/dws_res_win/dingtalk-workspace.zip; \
 	fi
 	@cd $(TARGET) && zip -qr dws_res_win.zip dws_res_win -x '*/__MACOSX/*' '*/.DS_Store'
 	@rm -rf $(TARGET)/dws_res_win
 	@cp $(DIST)/dws-darwin-amd64 $(TARGET)/dws_res_mac/
 	@cp $(DIST)/dws-darwin-arm64 $(TARGET)/dws_res_mac/
-	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_mac/; \
+	@if [ -f "$(TARGET)/dingtalk-workspace-mac.zip" ]; then \
+		cp $(TARGET)/dingtalk-workspace-mac.zip $(TARGET)/dws_res_mac/dingtalk-workspace.zip; \
 	fi
 	@cd $(TARGET) && zip -qr dws_res_mac.zip dws_res_mac -x '*/__MACOSX/*' '*/.DS_Store'
 	@rm -rf $(TARGET)/dws_res_mac
-	@rm -f $(TARGET)/dingtalk-workspace.zip
+	@rm -f $(TARGET)/dingtalk-workspace-mac.zip $(TARGET)/dingtalk-workspace-win.zip
 	@echo ""
 	@echo "✅ Local platform packages created (no signing):"
 	@ls -lh $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
@@ -308,22 +355,26 @@ bundle-platform: sync-upstream
 	@chmod +x scripts/build-bundle.sh
 	@./scripts/build-bundle.sh $(CURDIR)/$(TARGET)/dingtalk-workspace.zip real $(VERSION)
 
+	@# ── Platform workspace zips (with bundled plugins) ──
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-mac.zip,real,darwin)
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-win.zip,real,windows)
+
 	@cp $(DIST)/dws-windows-amd64.exe $(TARGET)/dws_res_win/
-	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_win/; \
+	@if [ -f "$(TARGET)/dingtalk-workspace-win.zip" ]; then \
+		cp $(TARGET)/dingtalk-workspace-win.zip $(TARGET)/dws_res_win/dingtalk-workspace.zip; \
 	fi
 	@cd $(TARGET) && zip -qr dws_res_win.zip dws_res_win -x '*/__MACOSX/*' '*/.DS_Store'
 	@rm -rf $(TARGET)/dws_res_win
 
 	@cp $(DIST)/dws-darwin-amd64 $(TARGET)/dws_res_mac/
 	@cp $(DIST)/dws-darwin-arm64 $(TARGET)/dws_res_mac/
-	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_mac/; \
+	@if [ -f "$(TARGET)/dingtalk-workspace-mac.zip" ]; then \
+		cp $(TARGET)/dingtalk-workspace-mac.zip $(TARGET)/dws_res_mac/dingtalk-workspace.zip; \
 	fi
 	@cd $(TARGET) && zip -qr dws_res_mac.zip dws_res_mac -x '*/__MACOSX/*' '*/.DS_Store'
 	@rm -rf $(TARGET)/dws_res_mac
 
-	@rm -f $(TARGET)/dingtalk-workspace.zip
+	@rm -f $(TARGET)/dingtalk-workspace.zip $(TARGET)/dingtalk-workspace-mac.zip $(TARGET)/dingtalk-workspace-win.zip
 
 	@echo ""
 	@echo "✅ Bundle platform packages created:"
@@ -379,22 +430,27 @@ public: build-all
 	@mkdir -p $(TARGET)/public/dws $(TARGET)/public/skill
 
 	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/public/skill/dingtalk-workspace.zip,dev)
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-mac.zip,dev,darwin)
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-win.zip,dev,windows)
 
 	@mkdir -p $(TARGET)/dws_res_win
 	@cp $(DIST)/dws-windows-amd64.exe $(TARGET)/dws_res_win/
-	@if [ -f "$(TARGET)/public/skill/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/public/skill/dingtalk-workspace.zip $(TARGET)/dws_res_win/; \
+	@if [ -f "$(TARGET)/dingtalk-workspace-win.zip" ]; then \
+		cp $(TARGET)/dingtalk-workspace-win.zip $(TARGET)/dws_res_win/dingtalk-workspace.zip; \
 	fi
 	@cd $(TARGET) && zip -qr public/dws/dws_res_win.zip dws_res_win -x '*/__MACOSX/*' '*/.DS_Store'
 	@rm -rf $(TARGET)/dws_res_win
 
 	@mkdir -p $(TARGET)/dws_res_mac
+	@cp $(DIST)/dws-darwin-amd64 $(TARGET)/dws_res_mac/
 	@cp $(DIST)/dws-darwin-arm64 $(TARGET)/dws_res_mac/
-	@if [ -f "$(TARGET)/public/skill/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/public/skill/dingtalk-workspace.zip $(TARGET)/dws_res_mac/; \
+	@if [ -f "$(TARGET)/dingtalk-workspace-mac.zip" ]; then \
+		cp $(TARGET)/dingtalk-workspace-mac.zip $(TARGET)/dws_res_mac/dingtalk-workspace.zip; \
 	fi
 	@cd $(TARGET) && zip -qr public/dws/dws_res_mac.zip dws_res_mac -x '*/__MACOSX/*' '*/.DS_Store'
 	@rm -rf $(TARGET)/dws_res_mac
+
+	@rm -f $(TARGET)/dingtalk-workspace-mac.zip $(TARGET)/dingtalk-workspace-win.zip
 
 	@cp README.md $(TARGET)/public/
 
@@ -478,31 +534,35 @@ ci-prepare-cli:
 		echo "✅ $(CLI_DIR) ready ($$(du -sh $(CLI_DIR) | cut -f1))"; \
 	fi
 
-## ci-platform: CI 专用打包（不依赖 sync-upstream，BUILD_MODE=real，含签名）
+## ci-platform: CI 专用打包（不依赖 sync-upstream，BUILD_MODE=real，含签名，含平台插件）
 ci-platform: ci-prepare-cli
 	@$(MAKE) build-all BUILD_MODE=$(CI_BUILD_MODE)
 	@echo "📦 [CI] Creating platform packages..."
 	@mkdir -p $(TARGET)/dws_res_win $(TARGET)/dws_res_mac
 	@rm -rf $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
 
-	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace.zip,$(CI_WORKSPACE_VARIANT))
+	@# ── Mac workspace zip (with macOS plugin binaries) ──
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-mac.zip,$(CI_WORKSPACE_VARIANT),darwin)
+
+	@# ── Win workspace zip (with Windows plugin binaries) ──
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-win.zip,$(CI_WORKSPACE_VARIANT),windows)
 
 	@cp $(DIST)/dws-windows-amd64.exe $(TARGET)/dws_res_win/
-	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_win/; \
+	@if [ -f "$(TARGET)/dingtalk-workspace-win.zip" ]; then \
+		cp $(TARGET)/dingtalk-workspace-win.zip $(TARGET)/dws_res_win/dingtalk-workspace.zip; \
 	fi
 	@cd $(TARGET) && zip -qr dws_res_win.zip dws_res_win -x '*/__MACOSX/*' '*/.DS_Store'
 	@rm -rf $(TARGET)/dws_res_win
 
 	@cp $(DIST)/dws-darwin-amd64 $(TARGET)/dws_res_mac/
 	@cp $(DIST)/dws-darwin-arm64 $(TARGET)/dws_res_mac/
-	@if [ -f "$(TARGET)/dingtalk-workspace.zip" ]; then \
-		cp $(TARGET)/dingtalk-workspace.zip $(TARGET)/dws_res_mac/; \
+	@if [ -f "$(TARGET)/dingtalk-workspace-mac.zip" ]; then \
+		cp $(TARGET)/dingtalk-workspace-mac.zip $(TARGET)/dws_res_mac/dingtalk-workspace.zip; \
 	fi
 	@cd $(TARGET) && zip -qr dws_res_mac.zip dws_res_mac -x '*/__MACOSX/*' '*/.DS_Store'
 	@rm -rf $(TARGET)/dws_res_mac
 
-	@rm -f $(TARGET)/dingtalk-workspace.zip
+	@rm -f $(TARGET)/dingtalk-workspace-mac.zip $(TARGET)/dingtalk-workspace-win.zip
 
 	@echo ""
 	@echo "✅ [CI] Platform packages created:"
