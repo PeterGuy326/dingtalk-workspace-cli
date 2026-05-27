@@ -16,6 +16,8 @@ docs/changes
 .kiro/
 .aone_copilot/
 .vscode/
+.claude/
+.mcp.json
 user_logs/
 CLAUDE.md
 
