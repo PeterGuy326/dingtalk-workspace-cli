@@ -314,18 +314,19 @@ real-platform: sync-upstream
 	@echo "📂 macOS package contents (signed):"
 	@unzip -l $(TARGET)/dws_res_mac.zip
 
-## local-platform: 本地开发部署 (跳过 sync-upstream，使用本地 CLI 分支)
+## local-platform: 本地 real 部署 (嵌入悟空运行时；不 sync-upstream，使用本地 CLI 分支)
+## 必须出 real 产物：dev 二进制走 keychain，在悟空沙箱里读不到 DEK。
 local-platform:
-	@$(MAKE) build-all BUILD_MODE=dev
-	@echo "📦 Creating platform packages (local dev, no sync-upstream)..."
+	@$(MAKE) build-all BUILD_MODE=real
+	@echo "📦 Creating platform packages (local real, no sync-upstream)..."
 	@mkdir -p $(TARGET)/dws_res_win $(TARGET)/dws_res_mac
 	@rm -rf $(TARGET)/dws_res_win.zip $(TARGET)/dws_res_mac.zip
 
 	@# ── Mac workspace zip (with macOS plugin binaries) ──
-	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-mac.zip,dev,darwin)
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-mac.zip,real,darwin)
 
 	@# ── Win workspace zip (with Windows plugin binaries) ──
-	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-win.zip,dev,windows)
+	@$(call build-workspace-zip,$(CURDIR)/$(TARGET)/dingtalk-workspace-win.zip,real,windows)
 
 	@cp $(DIST)/dws-windows-amd64.exe $(TARGET)/dws_res_win/
 	@if [ -f "$(TARGET)/dingtalk-workspace-win.zip" ]; then \

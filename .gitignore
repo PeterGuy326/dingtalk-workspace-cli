@@ -36,3 +36,6 @@ dws_master
 /auto-test/end_to_end/dws_calendar_scenes
 .aone_copilot/
 auto-test/chat_commands_suite/
+
+# test_runner 本地评测套件 — 不进仓库
+auto-test/test_runner/
