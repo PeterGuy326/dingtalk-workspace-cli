@@ -14,6 +14,7 @@ docs/changes
 .idea/
 .qoder/
 .kiro/
+.claude/
 .aone_copilot/
 .vscode/
 .claude/
