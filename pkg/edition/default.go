@@ -37,5 +37,9 @@ func defaultHooks() *Hooks {
 			base["claw-type"] = DefaultOSSClawType
 			return base
 		},
+		// AD-1: the open edition resolves commands from a hardcoded registry
+		// (openStaticServers) instead of Market service discovery. A non-nil
+		// StaticServers makes the core inject these and skip discovery entirely.
+		StaticServers: openStaticServers,
 	}
 }
