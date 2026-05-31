@@ -5,6 +5,16 @@ BUILD_TIME := $(shell date '+%Y-%m-%dT%H:%M:%S%z')
 GIT_COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_MODE ?= dev
 
+# EDITION selects the build at link time: wukong (internal superset, default) or
+# open (open-source; excludes the entire wukong/ tree via build tags). Orthogonal
+# to BUILD_MODE (dev|real). open passes no tag → editions/selector_open.go.
+EDITION ?= wukong
+ifeq ($(EDITION),wukong)
+GOTAGS := -tags wukong
+else
+GOTAGS :=
+endif
+
 LDFLAGS := -ldflags "\
 	-s -w \
 	-X main.version=$(VERSION) \
@@ -19,19 +29,19 @@ SIGN_SERVER ?= http://30.45.44.83:7770
 
 ## build: Build for current platform
 build:
-	go build $(BUILDFLAGS) $(LDFLAGS) -o dws .
+	go build $(BUILDFLAGS) $(GOTAGS) $(LDFLAGS) -o dws .
 
 ## build-all: Build for all 6 platforms (darwin/linux/windows x amd64/arm64)
 build-all: clean
 	@mkdir -p $(DIST)
 	@echo "🔨 Building v$(VERSION) for all platforms..."
 
-	GOOS=darwin  GOARCH=amd64 go build $(BUILDFLAGS) $(LDFLAGS) -o $(DIST)/dws-darwin-amd64 .
-	GOOS=darwin  GOARCH=arm64 go build $(BUILDFLAGS) $(LDFLAGS) -o $(DIST)/dws-darwin-arm64 .
-	GOOS=linux   GOARCH=amd64 go build $(BUILDFLAGS) $(LDFLAGS) -o $(DIST)/dws-linux-amd64 .
-	GOOS=linux   GOARCH=arm64 go build $(BUILDFLAGS) $(LDFLAGS) -o $(DIST)/dws-linux-arm64 .
-	GOOS=windows GOARCH=amd64 go build $(BUILDFLAGS) $(LDFLAGS) -o $(DIST)/dws-windows-amd64.exe .
-	GOOS=windows GOARCH=arm64 go build $(BUILDFLAGS) $(LDFLAGS) -o $(DIST)/dws-windows-arm64.exe .
+	GOOS=darwin  GOARCH=amd64 go build $(BUILDFLAGS) $(GOTAGS) $(LDFLAGS) -o $(DIST)/dws-darwin-amd64 .
+	GOOS=darwin  GOARCH=arm64 go build $(BUILDFLAGS) $(GOTAGS) $(LDFLAGS) -o $(DIST)/dws-darwin-arm64 .
+	GOOS=linux   GOARCH=amd64 go build $(BUILDFLAGS) $(GOTAGS) $(LDFLAGS) -o $(DIST)/dws-linux-amd64 .
+	GOOS=linux   GOARCH=arm64 go build $(BUILDFLAGS) $(GOTAGS) $(LDFLAGS) -o $(DIST)/dws-linux-arm64 .
+	GOOS=windows GOARCH=amd64 go build $(BUILDFLAGS) $(GOTAGS) $(LDFLAGS) -o $(DIST)/dws-windows-amd64.exe .
+	GOOS=windows GOARCH=arm64 go build $(BUILDFLAGS) $(GOTAGS) $(LDFLAGS) -o $(DIST)/dws-windows-arm64.exe .
 
 	@echo ""
 	@echo "✅ Built 6 binaries in $(DIST)/:"
@@ -56,7 +66,7 @@ clean:
 
 ## dump-commands: Build CSV exporter for full cobra tree → scripts/dump-commands/dump-commands
 dump-commands:
-	go build $(BUILDFLAGS) -o scripts/dump-commands/dump-commands ./scripts/dump-commands
+	go build $(BUILDFLAGS) -tags wukong -o scripts/dump-commands/dump-commands ./scripts/dump-commands
 
 ## npm-pack: Prepare npm package with pre-built binary
 npm-pack: build-all

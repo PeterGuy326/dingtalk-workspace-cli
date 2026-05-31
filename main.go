@@ -3,9 +3,8 @@ package main
 import (
 	"os"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/editions"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/cli"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/wukong"
 )
 
 var (
@@ -16,7 +15,7 @@ var (
 )
 
 func main() {
-	edition.Override(wukong.NewHooks(buildMode, version))
+	editions.InstallEdition(buildMode, version)
 	cli.SetVersion(version, buildTime, gitCommit)
 	os.Exit(cli.Execute())
 }
