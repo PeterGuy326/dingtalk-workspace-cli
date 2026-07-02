@@ -67,6 +67,10 @@ type daemonState struct {
 	UnifiedAppID string `json:"unifiedAppId,omitempty"`
 	Channel      string `json:"channel,omitempty"`
 	NotifyStaffID string `json:"notifyStaffId,omitempty"`
+	// Profile records the --profile selector the connector was started with,
+	// so `restart` re-fetches credentials against the same org instead of the
+	// default profile (which may not know the unifiedAppId at all).
+	Profile string `json:"profile,omitempty"`
 }
 
 // connectDaemonDirOverride lets tests redirect the per-client daemon directory
@@ -194,7 +198,7 @@ func buildWorkerArgs(args []string) []string {
 // startDaemon implements `connect --daemon`: it re-execs dws in supervisor mode
 // detached from the terminal, writes nothing itself to the worker log (the
 // supervisor does), prints the pid + log path, and returns so the parent exits.
-func startDaemon(cmd *cobra.Command, dirKey, clientID, unifiedAppID, channel, notifyStaffID string) error {
+func startDaemon(cmd *cobra.Command, dirKey, clientID, unifiedAppID, channel, notifyStaffID, profile string) error {
 	if !daemonDetachSupported {
 		return apperrors.NewValidation("--daemon is not supported on this OS; run the foreground connector under a service manager instead")
 	}
@@ -235,6 +239,7 @@ func startDaemon(cmd *cobra.Command, dirKey, clientID, unifiedAppID, channel, no
 		"DWS_CONNECT_DAEMON_UNIFIEDAPPID="+unifiedAppID,
 		"DWS_CONNECT_DAEMON_CHANNEL="+channel,
 		"DWS_CONNECT_DAEMON_NOTIFY_STAFF_ID="+notifyStaffID,
+		"DWS_CONNECT_DAEMON_PROFILE="+profile,
 	)
 	if connectDaemonDirOverride != "" {
 		child.Env = append(child.Env, "DWS_CONNECT_DAEMON_DIR="+connectDaemonDirOverride)
@@ -255,8 +260,8 @@ func startDaemon(cmd *cobra.Command, dirKey, clientID, unifiedAppID, channel, no
 func writeConnectDaemonStarted(w io.Writer, pid int, logPath, clientID, dirKey string) {
 	fmt.Fprintf(w, "connect daemon started (pid %d)\n", pid)
 	fmt.Fprintf(w, "  logs:   %s\n", logPath)
-	fmt.Fprintf(w, "  status: dws devapp robot connect status%s\n", statusHintArgs(clientID, dirKey))
-	fmt.Fprintf(w, "  stop:   dws devapp robot connect stop%s\n", statusHintArgs(clientID, dirKey))
+	fmt.Fprintf(w, "  status: dws dev connect status%s\n", statusHintArgs(clientID, dirKey))
+	fmt.Fprintf(w, "  stop:   dws dev connect stop%s\n", statusHintArgs(clientID, dirKey))
 	fmt.Fprint(w, connectLocalDebugNotice())
 }
 
@@ -301,6 +306,7 @@ func runSupervisor(cmd *cobra.Command) error {
 	unifiedAppID := strings.TrimSpace(os.Getenv("DWS_CONNECT_DAEMON_UNIFIEDAPPID"))
 	channel := strings.TrimSpace(os.Getenv("DWS_CONNECT_DAEMON_CHANNEL"))
 	notifyStaffID := strings.TrimSpace(os.Getenv("DWS_CONNECT_DAEMON_NOTIFY_STAFF_ID"))
+	profile := strings.TrimSpace(os.Getenv("DWS_CONNECT_DAEMON_PROFILE"))
 	dir, err := connectDaemonDir(dirKey)
 	if err != nil {
 		return apperrors.NewInternal("create daemon dir: " + err.Error())
@@ -314,6 +320,7 @@ func runSupervisor(cmd *cobra.Command) error {
 		UnifiedAppID:  unifiedAppID,
 		Channel:       channel,
 		NotifyStaffID: notifyStaffID,
+		Profile:       profile,
 	}
 	if err := writeDaemonState(dir, st); err != nil {
 		return apperrors.NewInternal("write daemon pid file: " + err.Error())
@@ -643,25 +650,38 @@ func newDevAppRobotConnectRestartCommand() *cobra.Command {
 			if err := daemonStop(cmd.OutOrStdout(), dirKey); err != nil {
 				fmt.Fprintf(cmd.OutOrStderr(), "warning: stop returned %v (continuing with restart)\n", err)
 			}
-			// Re-exec dws dev connect --daemon with the stored flags.
+			// Re-exec dws dev connect --daemon with the stored flags. An explicit
+			// --profile on this invocation overrides the persisted one.
 			exe, err := os.Executable()
 			if err != nil {
 				return apperrors.NewInternal("resolve executable: " + err.Error())
+			}
+			profile := st.Profile
+			if v, _ := cmd.Root().PersistentFlags().GetString("profile"); strings.TrimSpace(v) != "" {
+				profile = strings.TrimSpace(v)
 			}
 			args := []string{"dev", "connect", "--daemon", "--unified-app-id", unifiedAppID}
 			if st.Channel != "" {
 				args = append(args, "--channel", st.Channel)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "restarting connector: --unified-app-id %s --channel %s\n", unifiedAppID, st.Channel)
+			if st.NotifyStaffID != "" {
+				args = append(args, "--notify-staff-id", st.NotifyStaffID)
+			}
+			if profile != "" {
+				args = append(args, "--profile", profile)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "restarting connector: dws %s\n", strings.Join(args, " "))
+			// Run synchronously: `--daemon` itself detaches the supervisor and
+			// returns quickly, so waiting here costs nothing and lets a failed
+			// relaunch (e.g. credential fetch error) surface as a non-zero exit
+			// instead of a silent success.
 			restartCmd := exec.Command(exe, args...)
 			restartCmd.Stdout = cmd.OutOrStdout()
 			restartCmd.Stderr = cmd.OutOrStderr()
 			restartCmd.Stdin = nil
-			applyDetach(restartCmd)
-			if err := restartCmd.Start(); err != nil {
-				return apperrors.NewInternal("start restart daemon: " + err.Error())
+			if err := restartCmd.Run(); err != nil {
+				return apperrors.NewInternal(fmt.Sprintf("重启失败（旧守护进程已停止，连接器记录已清除）；恢复请手动执行: dws %s", strings.Join(args, " ")))
 			}
-			_ = restartCmd.Process.Release()
 			return nil
 		},
 	}

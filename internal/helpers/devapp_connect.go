@@ -536,7 +536,8 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 			// the parent fails fast on bad input before forking, then re-exec.
 			if daemonMode, _ := cmd.Flags().GetBool(daemonFlag); daemonMode {
 				notifyStaffID := devAppStringFlag(cmd, "notify-staff-id")
-				return startDaemon(cmd, daemonDirKey(clientID, unifiedAppID), clientID, unifiedAppID, channel, notifyStaffID)
+				profile, _ := cmd.Root().PersistentFlags().GetString("profile")
+				return startDaemon(cmd, daemonDirKey(clientID, unifiedAppID), clientID, unifiedAppID, channel, notifyStaffID, strings.TrimSpace(profile))
 			}
 
 			fmt.Fprintf(cmd.ErrOrStderr(), "[connect] channel=%s（%s）凭证来源=%s\n", channel, detectedBy, resolvedBy)
