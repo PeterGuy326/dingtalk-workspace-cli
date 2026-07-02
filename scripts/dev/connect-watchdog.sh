@@ -56,8 +56,12 @@ if command -v jq >/dev/null 2>&1; then
   STATE="$(printf '%s' "$STATUS_JSON" | jq -r '.state // "unknown"')"
 else
   STATE="$(printf '%s' "$STATUS_JSON" | sed -n 's/.*"state"[[:space:]]*:[[:space:]]*"\([a-z_]*\)".*/\1/p' | head -n1)"
-  [ -n "$STATE" ] || STATE="unknown"
 fi
+# Empty means `status` produced no JSON at all (crashed, bad config dir, wrong
+# DWS path, corrupt heartbeat...). That must fall into the relaunch path below,
+# not the silent catch-all — jq on empty input prints nothing, so both branches
+# need this guard.
+[ -n "$STATE" ] || STATE="unknown"
 
 case "$STATE" in
   healthy)
