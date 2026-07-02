@@ -128,7 +128,7 @@ func TestDaemonStateRoundTrip(t *testing.T) {
 	if st, err := readDaemonState(dir); err != nil || st != nil {
 		t.Fatalf("expected (nil,nil) for missing pid file, got (%v,%v)", st, err)
 	}
-	want := daemonState{Pid: 4242, StartUnix: time.Now().Unix(), LogPath: "/x/y.log", DirKey: "roundtrip", ClientID: "cid"}
+	want := daemonState{Pid: 4242, StartUnix: time.Now().Unix(), LogPath: "/x/y.log", DirKey: "roundtrip", ClientID: "cid", Profile: "ding123", AlwaysOn: true}
 	if err := writeDaemonState(dir, want); err != nil {
 		t.Fatalf("writeDaemonState: %v", err)
 	}
@@ -138,6 +138,12 @@ func TestDaemonStateRoundTrip(t *testing.T) {
 	}
 	if got.Pid != want.Pid || got.DirKey != want.DirKey || got.ClientID != want.ClientID || got.LogPath != want.LogPath {
 		t.Errorf("round trip mismatch: got %+v want %+v", *got, want)
+	}
+	if got.Profile != want.Profile {
+		t.Errorf("Profile round trip: got %q want %q", got.Profile, want.Profile)
+	}
+	if got.AlwaysOn != want.AlwaysOn {
+		t.Errorf("AlwaysOn round trip: got %v want %v", got.AlwaysOn, want.AlwaysOn)
 	}
 }
 
