@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -78,6 +79,47 @@ func TestDeriveConnectHealth(t *testing.T) {
 	}
 }
 
+func TestHeartbeatProcessCurrent(t *testing.T) {
+	alive := os.Getpid()
+	if heartbeatProcessCurrent(nil) {
+		t.Error("nil heartbeat must not be current")
+	}
+	if heartbeatProcessCurrent(&connectHeartbeat{Pid: deadPid(t), ProcStartUnix: 1}) {
+		t.Error("dead pid must not be current")
+	}
+	if !heartbeatProcessCurrent(&connectHeartbeat{Pid: alive}) {
+		t.Error("live pid without a recorded start time must pass (older heartbeat)")
+	}
+	probed, ok := processStartUnix(alive)
+	if !ok {
+		t.Skip("process start-time probe unavailable on this platform")
+	}
+	if !heartbeatProcessCurrent(&connectHeartbeat{Pid: alive, ProcStartUnix: probed}) {
+		t.Error("matching start time must be current")
+	}
+	if heartbeatProcessCurrent(&connectHeartbeat{Pid: alive, ProcStartUnix: probed - 3600}) {
+		t.Error("start-time mismatch must be treated as pid reuse")
+	}
+}
+
+func TestDeriveConnectHealthPidReuse(t *testing.T) {
+	alive := os.Getpid()
+	if _, ok := processStartUnix(alive); !ok {
+		t.Skip("process start-time probe unavailable on this platform")
+	}
+	now := time.Now()
+	// The recorded start time belongs to a long-dead connector; the pid now
+	// hosts an unrelated (here: our own) process. Must read as down.
+	hb := &connectHeartbeat{Pid: alive, ProcStartUnix: 1, StartUnix: now.Unix() - 100, ConnectedUnix: now.Unix() - 90}
+	got := deriveConnectHealth(hb, false, now)
+	if got.State != healthDown {
+		t.Fatalf("state = %q, want %q (detail=%q)", got.State, healthDown, got.Detail)
+	}
+	if !strings.Contains(got.Detail, "pid reused") {
+		t.Errorf("detail should mention pid reuse, got %q", got.Detail)
+	}
+}
+
 func TestConnectHeartbeatRoundTrip(t *testing.T) {
 	connectDaemonDirOverride = t.TempDir()
 	t.Cleanup(func() { connectDaemonDirOverride = "" })
@@ -102,6 +144,9 @@ func TestConnectHeartbeatRoundTrip(t *testing.T) {
 	}
 	if hb.Pid != os.Getpid() || hb.Channel != "opencode" || hb.ClientID != "cid-round" {
 		t.Errorf("unexpected heartbeat identity: %+v", hb)
+	}
+	if ps, ok := processStartUnix(os.Getpid()); ok && hb.ProcStartUnix != ps {
+		t.Errorf("ProcStartUnix = %d, want the writer's own start time %d", hb.ProcStartUnix, ps)
 	}
 	if hb.ConnectedUnix == 0 || hb.LastPushUnix == 0 || hb.LastReplyUnix == 0 {
 		t.Errorf("expected all activity timestamps set: %+v", hb)

@@ -16,6 +16,7 @@ package helpers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -59,6 +60,7 @@ const (
 // unix seconds; a zero value means "never happened".
 type connectHeartbeat struct {
 	Pid           int    `json:"pid"`
+	ProcStartUnix int64  `json:"procStartUnix,omitempty"`
 	Channel       string `json:"channel,omitempty"`
 	ClientID      string `json:"clientId,omitempty"`
 	StartUnix     int64  `json:"startUnix"`
@@ -94,13 +96,15 @@ func newConnectHealth(clientID, channel string) *connectHealth {
 	if err != nil {
 		return nil
 	}
+	procStart, _ := processStartUnix(os.Getpid()) // 0 when unavailable: readers skip the check
 	return &connectHealth{
 		dir: dir,
 		hb: connectHeartbeat{
-			Pid:       os.Getpid(),
-			Channel:   channel,
-			ClientID:  clientID,
-			StartUnix: time.Now().Unix(),
+			Pid:           os.Getpid(),
+			ProcStartUnix: procStart,
+			Channel:       channel,
+			ClientID:      clientID,
+			StartUnix:     time.Now().Unix(),
 		},
 	}
 }
@@ -223,6 +227,37 @@ func readConnectHeartbeat(dir string) (*connectHeartbeat, error) {
 	return &hb, nil
 }
 
+// connectProcStartTolerance absorbs rounding and clock-step drift between the
+// recorded and probed process start times. Kept far below any realistic gap
+// between a connector dying and its pid being recycled.
+const connectProcStartTolerance = 15 // seconds
+
+// heartbeatProcessCurrent reports whether hb.Pid is alive AND still the process
+// that wrote the heartbeat. Pid liveness alone goes stale: after a crash or a
+// reboot the heartbeat file survives on disk and the pid can be recycled by an
+// unrelated process, which would read as a live connector forever (and starve
+// the watchdog of its restart signal). When the heartbeat carries the writer's
+// OS-reported start time, the current owner of the pid must match it.
+// Heartbeats without the field (older writers) and platforms where the probe is
+// unavailable fall back to plain liveness.
+func heartbeatProcessCurrent(hb *connectHeartbeat) bool {
+	if hb == nil || hb.Pid <= 0 || !processAlive(hb.Pid) {
+		return false
+	}
+	if hb.ProcStartUnix <= 0 {
+		return true
+	}
+	probed, ok := processStartUnix(hb.Pid)
+	if !ok {
+		return true
+	}
+	diff := probed - hb.ProcStartUnix
+	if diff < 0 {
+		diff = -diff
+	}
+	return diff <= connectProcStartTolerance
+}
+
 // Health states, ordered worst-to-best for reporting.
 const (
 	healthNotRunning = "not_running"
@@ -275,12 +310,16 @@ func deriveConnectHealth(hb *connectHeartbeat, supervised bool, now time.Time) c
 		r.LastReplyAgo = nowUnix - hb.LastReplyUnix
 	}
 
-	// Connector process gone: down. A supervisor (if any) will restart it.
-	if hb.Pid <= 0 || !processAlive(hb.Pid) {
+	// Connector process gone — or its pid recycled by an unrelated process —
+	// counts as down. A supervisor (if any) will restart it.
+	if !heartbeatProcessCurrent(hb) {
 		r.State = healthDown
-		if supervised {
+		switch {
+		case hb.Pid > 0 && processAlive(hb.Pid):
+			r.Detail = fmt.Sprintf("pid %d is alive but is not the connector that wrote the heartbeat (pid reused); treating as down", hb.Pid)
+		case supervised:
 			r.Detail = "connector process not alive; supervisor should restart it"
-		} else {
+		default:
 			r.Detail = "connector process not alive"
 		}
 		return r

@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -263,6 +264,81 @@ func TestDaemonStopStaleCleansPidFile(t *testing.T) {
 	}
 	if !strings.Contains(buf.String(), "stale") {
 		t.Errorf("expected stale cleanup message, got %q", buf.String())
+	}
+}
+
+func TestDaemonStopOrphanWorker(t *testing.T) {
+	connectDaemonDirOverride = t.TempDir()
+	t.Cleanup(func() { connectDaemonDirOverride = "" })
+
+	// A worker that outlived its supervisor: a real child process with a
+	// heartbeat, plus a pid file pointing at a dead supervisor.
+	worker := exec.Command("sleep", "30")
+	if err := worker.Start(); err != nil {
+		t.Skipf("cannot spawn helper process: %v", err)
+	}
+	t.Cleanup(func() { _ = worker.Process.Kill() })
+	// Reap in the background so the SIGTERMed worker does not linger as a
+	// zombie — kill(pid, 0) still reports zombies as alive.
+	reaped := make(chan struct{})
+	go func() { _ = worker.Wait(); close(reaped) }()
+
+	procStart, _ := processStartUnix(worker.Process.Pid)
+	seedHeartbeat(t, "orphan", connectHeartbeat{
+		Pid: worker.Process.Pid, ProcStartUnix: procStart, ClientID: "orphan",
+		StartUnix: time.Now().Unix() - 60, ConnectedUnix: time.Now().Unix() - 50,
+	})
+	dir, _ := connectDaemonDir("orphan")
+	writeDaemonState(dir, daemonState{Pid: deadPid(t), StartUnix: time.Now().Unix() - 60, DirKey: "orphan"})
+
+	var buf bytes.Buffer
+	if err := daemonStop(&buf, "orphan"); err != nil {
+		t.Fatalf("daemonStop: %v", err)
+	}
+	if !strings.Contains(buf.String(), "orphaned connector worker") {
+		t.Fatalf("expected orphan worker handling, got %q", buf.String())
+	}
+	select {
+	case <-reaped:
+	case <-time.After(5 * time.Second):
+		t.Fatal("orphan worker still alive after stop")
+	}
+	if hb, _ := readConnectHeartbeat(dir); hb != nil {
+		t.Errorf("heartbeat should be cleaned up after stopping the orphan, got %+v", hb)
+	}
+}
+
+func TestDaemonStopOrphanWorkerWithoutPidFile(t *testing.T) {
+	connectDaemonDirOverride = t.TempDir()
+	t.Cleanup(func() { connectDaemonDirOverride = "" })
+
+	// Same orphan, but the supervisor's pid file is gone entirely (e.g. a
+	// previous stop cleaned it while the worker survived).
+	worker := exec.Command("sleep", "30")
+	if err := worker.Start(); err != nil {
+		t.Skipf("cannot spawn helper process: %v", err)
+	}
+	t.Cleanup(func() { _ = worker.Process.Kill() })
+	reaped := make(chan struct{})
+	go func() { _ = worker.Wait(); close(reaped) }()
+
+	procStart, _ := processStartUnix(worker.Process.Pid)
+	seedHeartbeat(t, "orphan2", connectHeartbeat{
+		Pid: worker.Process.Pid, ProcStartUnix: procStart, ClientID: "orphan2",
+		StartUnix: time.Now().Unix() - 60, ConnectedUnix: time.Now().Unix() - 50,
+	})
+
+	var buf bytes.Buffer
+	if err := daemonStop(&buf, "orphan2"); err != nil {
+		t.Fatalf("daemonStop: %v", err)
+	}
+	if !strings.Contains(buf.String(), "orphaned connector worker") {
+		t.Fatalf("expected orphan worker handling, got %q", buf.String())
+	}
+	select {
+	case <-reaped:
+	case <-time.After(5 * time.Second):
+		t.Fatal("orphan worker still alive after stop")
 	}
 }
 

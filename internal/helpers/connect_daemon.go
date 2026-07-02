@@ -483,12 +483,16 @@ func daemonStop(w io.Writer, dirKey string) error {
 		return apperrors.NewInternal(err.Error())
 	}
 	if st == nil || st.Pid <= 0 {
+		if stopOrphanWorker(w, dir) {
+			return nil
+		}
 		fmt.Fprintf(w, "connect daemon: not running (nothing to stop)\n")
 		return nil
 	}
 	if !processAlive(st.Pid) {
 		_ = os.Remove(daemonPidPath(dir))
 		fmt.Fprintf(w, "connect daemon: was not running (cleaned up stale pid file for pid %d)\n", st.Pid)
+		_ = stopOrphanWorker(w, dir)
 		return nil
 	}
 	proc, err := os.FindProcess(st.Pid)
@@ -515,6 +519,48 @@ func daemonStop(w io.Writer, dirKey string) error {
 	_ = os.Remove(daemonPidPath(dir))
 	fmt.Fprintf(w, "connect daemon did not stop in %s; sent SIGKILL (pid %d)\n", daemonStopTimeout, st.Pid)
 	return nil
+}
+
+// stopOrphanWorker terminates a connector worker that outlived its supervisor
+// (e.g. the supervisor was SIGKILLed or crashed). daemonStop only knows the
+// supervisor's pid; without this fallback it reports success while the orphan
+// keeps holding the Stream connection — the dual-connector failure mode the
+// single-instance lock exists to prevent, minus any way to stop it. The worker
+// is located via the connector heartbeat, validated against pid reuse
+// (heartbeatProcessCurrent), SIGTERMed for a graceful shutdown, and escalated
+// to SIGKILL on timeout. Returns true when an orphan was found and stopped.
+func stopOrphanWorker(w io.Writer, dir string) bool {
+	hb, err := readConnectHeartbeat(dir)
+	if err != nil || hb == nil {
+		return false
+	}
+	if hb.Pid == os.Getpid() || !heartbeatProcessCurrent(hb) {
+		return false
+	}
+	proc, err := os.FindProcess(hb.Pid)
+	if err != nil {
+		return false
+	}
+	if err := proc.Signal(syscall.SIGTERM); err != nil {
+		return false
+	}
+	fmt.Fprintf(w, "found orphaned connector worker (pid %d, supervisor gone); sent SIGTERM, waiting for graceful stop...\n", hb.Pid)
+	deadline := time.Now().Add(daemonStopTimeout)
+	for time.Now().Before(deadline) {
+		if !processAlive(hb.Pid) {
+			// The worker removes its own heartbeat on graceful shutdown; clean
+			// up in case it was torn down before reaching that point.
+			_ = os.Remove(connectHeartbeatPath(dir))
+			fmt.Fprintf(w, "orphaned connector worker stopped (pid %d)\n", hb.Pid)
+			return true
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	_ = proc.Signal(syscall.SIGKILL)
+	time.Sleep(200 * time.Millisecond)
+	_ = os.Remove(connectHeartbeatPath(dir))
+	fmt.Fprintf(w, "orphaned connector worker did not stop in %s; sent SIGKILL (pid %d)\n", daemonStopTimeout, hb.Pid)
+	return true
 }
 
 // newDevAppRobotConnectStatusCommand implements `dws devapp robot connect
