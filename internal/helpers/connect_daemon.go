@@ -71,6 +71,9 @@ type daemonState struct {
 	// so `restart` re-fetches credentials against the same org instead of the
 	// default profile (which may not know the unifiedAppId at all).
 	Profile string `json:"profile,omitempty"`
+	// AlwaysOn controls whether the supervisor auto-restarts the worker on
+	// crash. Without it the supervisor exits after the first worker exit.
+	AlwaysOn bool `json:"alwaysOn,omitempty"`
 }
 
 // connectDaemonDirOverride lets tests redirect the per-client daemon directory
@@ -198,7 +201,7 @@ func buildWorkerArgs(args []string) []string {
 // startDaemon implements `connect --daemon`: it re-execs dws in supervisor mode
 // detached from the terminal, writes nothing itself to the worker log (the
 // supervisor does), prints the pid + log path, and returns so the parent exits.
-func startDaemon(cmd *cobra.Command, dirKey, clientID, unifiedAppID, channel, notifyStaffID, profile string) error {
+func startDaemon(cmd *cobra.Command, dirKey, clientID, unifiedAppID, channel, notifyStaffID, profile string, alwaysOn bool) error {
 	if !daemonDetachSupported {
 		return apperrors.NewValidation("--daemon is not supported on this OS; run the foreground connector under a service manager instead")
 	}
@@ -241,6 +244,9 @@ func startDaemon(cmd *cobra.Command, dirKey, clientID, unifiedAppID, channel, no
 		"DWS_CONNECT_DAEMON_NOTIFY_STAFF_ID="+notifyStaffID,
 		"DWS_CONNECT_DAEMON_PROFILE="+profile,
 	)
+	if alwaysOn {
+		child.Env = append(child.Env, "DWS_CONNECT_DAEMON_ALWAYSON=true")
+	}
 	if connectDaemonDirOverride != "" {
 		child.Env = append(child.Env, "DWS_CONNECT_DAEMON_DIR="+connectDaemonDirOverride)
 	}
@@ -307,6 +313,7 @@ func runSupervisor(cmd *cobra.Command) error {
 	channel := strings.TrimSpace(os.Getenv("DWS_CONNECT_DAEMON_CHANNEL"))
 	notifyStaffID := strings.TrimSpace(os.Getenv("DWS_CONNECT_DAEMON_NOTIFY_STAFF_ID"))
 	profile := strings.TrimSpace(os.Getenv("DWS_CONNECT_DAEMON_PROFILE"))
+	alwaysOn := strings.TrimSpace(os.Getenv("DWS_CONNECT_DAEMON_ALWAYSON")) == "true"
 	dir, err := connectDaemonDir(dirKey)
 	if err != nil {
 		return apperrors.NewInternal("create daemon dir: " + err.Error())
@@ -321,6 +328,7 @@ func runSupervisor(cmd *cobra.Command) error {
 		Channel:       channel,
 		NotifyStaffID: notifyStaffID,
 		Profile:       profile,
+		AlwaysOn:      alwaysOn,
 	}
 	if err := writeDaemonState(dir, st); err != nil {
 		return apperrors.NewInternal("write daemon pid file: " + err.Error())
@@ -390,6 +398,12 @@ func runSupervisor(cmd *cobra.Command) error {
 			// We were asked to stop; the worker has been (or is being) signalled.
 			fmt.Fprintln(out, "[daemon] stop requested, worker shut down; exiting supervisor")
 			daemonNotifyStateChange(notifyStaffID, channel, clientID, "stopped", "")
+			return nil
+		}
+
+		if !alwaysOn {
+			fmt.Fprintln(out, "[daemon] worker exited; not restarting (--alwayson not set)")
+			daemonNotifyStateChange(notifyStaffID, channel, clientID, "stopped", "worker 退出，未启用 --alwayson")
 			return nil
 		}
 
@@ -669,6 +683,9 @@ func newDevAppRobotConnectRestartCommand() *cobra.Command {
 			}
 			if profile != "" {
 				args = append(args, "--profile", profile)
+			}
+			if st.AlwaysOn {
+				args = append(args, "--alwayson")
 			}
 			fmt.Fprintf(cmd.OutOrStdout(), "restarting connector: dws %s\n", strings.Join(args, " "))
 			// Run synchronously: `--daemon` itself detaches the supervisor and

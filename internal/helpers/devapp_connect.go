@@ -537,7 +537,8 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 			if daemonMode, _ := cmd.Flags().GetBool(daemonFlag); daemonMode {
 				notifyStaffID := devAppStringFlag(cmd, "notify-staff-id")
 				profile, _ := cmd.Root().PersistentFlags().GetString("profile")
-				return startDaemon(cmd, daemonDirKey(clientID, unifiedAppID), clientID, unifiedAppID, channel, notifyStaffID, strings.TrimSpace(profile))
+				alwaysOn, _ := cmd.Flags().GetBool("alwayson")
+				return startDaemon(cmd, daemonDirKey(clientID, unifiedAppID), clientID, unifiedAppID, channel, notifyStaffID, strings.TrimSpace(profile), alwaysOn)
 			}
 
 			fmt.Fprintf(cmd.ErrOrStderr(), "[connect] channel=%s（%s）凭证来源=%s\n", channel, detectedBy, resolvedBy)
@@ -548,7 +549,8 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 	preferLegacyLeaf(cmd)
 	// Daemon mode (see connect_daemon.go). --daemon detaches the connector into a
 	// self-restarting background supervisor; status/stop are sibling subcommands.
-	cmd.Flags().Bool(daemonFlag, false, "守护进程模式：把连接器放到后台常驻（脱离终端、崩溃自拉起），父进程打印 pid/日志路径后退出（Windows 暂不支持）")
+	cmd.Flags().Bool(daemonFlag, false, "守护进程模式：把连接器放到后台运行（脱离终端），父进程打印 pid/日志路径后退出（Windows 暂不支持）")
+	cmd.Flags().Bool("alwayson", false, "常驻模式：worker 崩溃后自动重启（仅 --daemon 生效）")
 	// Internal re-exec mode flags, hidden from help.
 	cmd.Flags().Bool(daemonSuperviseFlag, false, "internal: run the daemon supervisor (set automatically by --daemon)")
 	cmd.Flags().Bool(daemonWorkerFlag, false, "internal: run a single supervised connector worker (set automatically by the supervisor)")
