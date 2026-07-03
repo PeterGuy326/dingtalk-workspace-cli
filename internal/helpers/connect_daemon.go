@@ -110,38 +110,42 @@ func connectDaemonDir(dirKey string) (string, error) {
 	return dir, nil
 }
 
-func daemonPidPath(dir string) string { return filepath.Join(dir, "daemon.pid") }
-func daemonLogPath(dir string) string { return filepath.Join(dir, "daemon.log") }
+func daemonPidPath(dir string) string   { return filepath.Join(dir, "daemon.pid") }
+func daemonStatePath(dir string) string { return filepath.Join(dir, "daemon-state.json") }
+func daemonLogPath(dir string) string    { return filepath.Join(dir, "daemon.log") }
 
-// writeDaemonState atomically persists the daemon pid file (write temp + rename)
-// so a reader never sees a half-written file.
+// writeDaemonState atomically persists the daemon state to daemon-state.json
+// (persistent, survives supervisor exit) so restart/list can recover config.
 func writeDaemonState(dir string, st daemonState) error {
 	data, err := json.MarshalIndent(st, "", "  ")
 	if err != nil {
 		return err
 	}
-	tmp := daemonPidPath(dir) + ".tmp"
+	tmp := daemonStatePath(dir) + ".tmp"
 	if err := os.WriteFile(tmp, data, config.FilePerm); err != nil {
 		return err
 	}
-	return os.Rename(tmp, daemonPidPath(dir))
+	return os.Rename(tmp, daemonStatePath(dir))
 }
 
-// readDaemonState loads the daemon pid file. A missing file yields (nil, nil) so
-// callers can treat "not running" distinctly from a real I/O error.
+// readDaemonState loads the daemon state. Reads daemon-state.json (persistent)
+// first, falls back to daemon.pid for backward compat with old connectors.
 func readDaemonState(dir string) (*daemonState, error) {
-	data, err := os.ReadFile(daemonPidPath(dir))
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
+	for _, p := range []string{daemonStatePath(dir), daemonPidPath(dir)} {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
 		}
-		return nil, err
+		var st daemonState
+		if err := json.Unmarshal(data, &st); err != nil {
+			return nil, fmt.Errorf("daemon state file %s is corrupt: %w", p, err)
+		}
+		return &st, nil
 	}
-	var st daemonState
-	if err := json.Unmarshal(data, &st); err != nil {
-		return nil, fmt.Errorf("daemon pid file %s is corrupt: %w", daemonPidPath(dir), err)
-	}
-	return &st, nil
+	return nil, nil
 }
 
 // backoffDelay computes the restart delay for the Nth consecutive worker
