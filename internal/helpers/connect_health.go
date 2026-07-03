@@ -245,6 +245,8 @@ type connectHealthReport struct {
 	Pid            int    `json:"pid,omitempty"`
 	Channel        string `json:"channel,omitempty"`
 	ClientID       string `json:"clientId,omitempty"`
+	AppName        string `json:"appName,omitempty"`
+	UnifiedAppID   string `json:"unifiedAppId,omitempty"`
 	UptimeSec      int64  `json:"uptimeSec,omitempty"`
 	ConnectedAgo   int64  `json:"connectedAgoSec,omitempty"`
 	LastPushAgoSec int64  `json:"lastPushAgoSec,omitempty"`
@@ -364,6 +366,9 @@ func listConnectors(now time.Time) ([]connectHealthReport, error) {
 		r := deriveConnectHealth(hb, supervised, now)
 		if r.ClientID == "" {
 			r.ClientID = e.Name() // fall back to the dir key when no heartbeat identity
+		}
+		if st != nil {
+			r.UnifiedAppID = st.UnifiedAppID
 		}
 		out = append(out, r)
 	}

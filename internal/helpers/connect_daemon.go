@@ -30,6 +30,8 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/logging"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/tui"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/config"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cobracmd"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/executor"
 	"github.com/spf13/cobra"
 )
 
@@ -712,7 +714,7 @@ func newDevAppRobotConnectRestartCommand() *cobra.Command {
 // every connector on this machine and its health, so a developer running
 // several robots sees at a glance which are alive/degraded/down without
 // querying each clientId. `--json` emits the array for scripts.
-func newDevAppRobotConnectListCommand() *cobra.Command {
+func newDevAppRobotConnectListCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "list",
 		Short:             "列出本机所有连接器及健康状态（healthy/degraded/down）；--json 供脚本消费",
@@ -723,6 +725,7 @@ func newDevAppRobotConnectListCommand() *cobra.Command {
 			if err != nil {
 				return apperrors.NewInternal(err.Error())
 			}
+			resolveAppNames(cmd, runner, reports)
 			w := cmd.OutOrStdout()
 			if jsonOut, _ := cmd.Flags().GetBool("json"); jsonOut {
 				data, merr := json.MarshalIndent(reports, "", "  ")
@@ -742,6 +745,93 @@ func newDevAppRobotConnectListCommand() *cobra.Command {
 	preferLegacyLeaf(cmd)
 	cmd.Flags().Bool("json", false, "以 JSON 数组输出（供脚本消费）")
 	return cmd
+}
+
+// resolveAppNames calls list_dev_app once to build a unifiedAppId→name map,
+// then fills in AppName on each report. Failures are silent (name stays empty)
+// so the list still works offline or when the API is unreachable.
+func resolveAppNames(cmd *cobra.Command, runner executor.Runner, reports []connectHealthReport) {
+	need := false
+	for i := range reports {
+		if reports[i].UnifiedAppID != "" {
+			need = true
+			break
+		}
+	}
+	if !need {
+		return
+	}
+	nameMap, err := devAppNameMap(cmd, runner)
+	if err != nil || nameMap == nil {
+		return
+	}
+	for i := range reports {
+		if reports[i].UnifiedAppID == "" {
+			continue
+		}
+		if name, ok := nameMap[reports[i].UnifiedAppID]; ok && name != "" {
+			reports[i].AppName = name
+		}
+	}
+}
+
+// devAppNameMap calls list_dev_app with pagination to build a full
+// unifiedAppId→appName map. It is best-effort: any error returns an empty map.
+func devAppNameMap(cmd *cobra.Command, runner executor.Runner) (map[string]string, error) {
+	out := make(map[string]string)
+	cursor := ""
+	for page := 0; page < 20; page++ {
+		params := map[string]any{"pageSize": 100}
+		if cursor != "" {
+			params["cursor"] = cursor
+		}
+		inv := executor.NewHelperInvocation(cobracmd.LegacyCommandPath(cmd), devAppProduct, devAppListTool, params)
+		res, err := runner.Run(cmd.Context(), inv)
+		if err != nil {
+			return out, err
+		}
+		payload := devAppConnectUnwrap(res.Response)
+		items := devAppConnectList(payload)
+		for _, item := range items {
+			uid := devAppConnectFirst(item, "unifiedAppId", "id")
+			name := devAppConnectFirst(item, "name", "appName")
+			if uid != "" && name != "" {
+				out[uid] = name
+			}
+		}
+		hasMore := false
+		if v, ok := payload["hasMore"].(bool); ok {
+			hasMore = v
+		}
+		if !hasMore {
+			break
+		}
+		cursor = devAppConnectFirst(payload, "nextCursor", "cursor")
+		if cursor == "" {
+			break
+		}
+	}
+	return out, nil
+}
+
+// devAppConnectList extracts the array of app items from a list_dev_app payload,
+// tolerating various wrapper shapes.
+func devAppConnectList(payload map[string]any) []map[string]any {
+	if payload == nil {
+		return nil
+	}
+	for _, key := range []string{"items", "list", "data"} {
+		if arr, ok := payload[key].([]any); ok {
+			out := make([]map[string]any, 0, len(arr))
+			for _, e := range arr {
+				if m, ok := e.(map[string]any); ok {
+					out = append(out, m)
+				}
+			}
+			return out
+		}
+	}
+	return nil
 }
 
 // connectDaemonDirKeyFromFlags resolves the daemon directory key from the
@@ -776,6 +866,7 @@ func writeConnectListTable(w io.Writer, reports []connectHealthReport) error {
 	}
 	cols := []col{
 		{"STATE", 11},
+		{"APP NAME", 8},
 		{"CLIENT", 8},
 		{"PID", 6},
 		{"CHANNEL", 7},
@@ -783,11 +874,14 @@ func writeConnectListTable(w io.Writer, reports []connectHealthReport) error {
 	}
 	// compute column widths from data
 	for _, r := range reports {
-		if w := tui.PlainRuneWidth(r.ClientID); w > cols[1].width {
+		if w := tui.PlainRuneWidth(r.AppName); w > cols[1].width {
 			cols[1].width = w
 		}
-		if w := tui.PlainRuneWidth(r.Channel); w > cols[3].width {
-			cols[3].width = w
+		if w := tui.PlainRuneWidth(r.ClientID); w > cols[2].width {
+			cols[2].width = w
+		}
+		if w := tui.PlainRuneWidth(r.Channel); w > cols[4].width {
+			cols[4].width = w
 		}
 	}
 	for i := range cols {
@@ -842,8 +936,13 @@ func writeConnectListTable(w io.Writer, reports []connectHealthReport) error {
 		if r.Channel != "" {
 			channel = tui.White(r.Channel)
 		}
+		appName := tui.Dim("-")
+		if r.AppName != "" {
+			appName = tui.White(r.AppName)
+		}
 		writeRowCells([]string{
 			colorConnectState(r.State),
+			appName,
 			tui.White(r.ClientID),
 			pid,
 			channel,
