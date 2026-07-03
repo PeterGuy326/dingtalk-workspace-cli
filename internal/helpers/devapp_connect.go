@@ -519,6 +519,16 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 				}
 			}
 
+			// Security: if the caller pasted clientSecret onto argv, warn once —
+			// any user on the box can lift it with `ps -ef`. The safe path is
+			// --unified-app-id, which resolves the secret through
+			// `dev app credentials get` at runtime so it never touches argv.
+			// Emit before dry-run so both preview and real launch surface the
+			// warning; the warning is idempotent (one line per invocation).
+			if strings.HasPrefix(resolvedBy, "flag:") {
+				fmt.Fprintln(cmd.ErrOrStderr(), "[connect] WARNING: --robot-client-secret 出现在命令行，任何本机用户都能通过 `ps` 看到；建议改用 --unified-app-id <uappid>，由 dev app credentials get 后台取密钥。")
+			}
+
 			if commandDryRun(cmd) {
 				return writeCommandPayload(cmd, connectPreviewEnvelope(map[string]any{
 					"channel":          channel,

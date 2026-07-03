@@ -663,7 +663,7 @@ func newDevAppRobotConnectRestartCommand() *cobra.Command {
 			}
 			unifiedAppID := st.UnifiedAppID
 			if unifiedAppID == "" {
-				return apperrors.NewValidation("该连接器未持久化 unifiedAppId（可能是用 --robot-client-id 直接启动的）；重启请用 `dws dev connect --daemon --robot-client-id <id> --robot-client-secret <secret>` 手动指定凭证，或改用 --unified-app-id 启动以便后续重启")
+				return apperrors.NewValidation("该连接器未持久化 unifiedAppId（可能是用 --robot-client-id/--robot-client-secret 直接启动的，无法安全重启：clientSecret 不落盘）；请停掉后用 `dws dev connect --daemon --unified-app-id <uappid>` 重新启动，之后 restart 就能自动从 credentials get 拉密钥、命令行不出现 secret")
 			}
 			// Stop the running daemon first (ignore "not running" — that's fine).
 			fmt.Fprintln(cmd.OutOrStdout(), "stopping existing daemon...")
