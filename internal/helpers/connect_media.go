@@ -47,6 +47,28 @@ func pictureDownloadCode(content interface{}) string {
 	return ""
 }
 
+// fileDownloadInfo extracts downloadCode and fileName from a file callback's
+// content payload (msgtype="file"). Returns ("","") when not parseable.
+func fileDownloadInfo(content interface{}) (downloadCode, fileName string) {
+	m, ok := content.(map[string]interface{})
+	if !ok {
+		return "", ""
+	}
+	for _, key := range []string{"downloadCode", "fileDownloadCode"} {
+		if v, ok := m[key].(string); ok && strings.TrimSpace(v) != "" {
+			downloadCode = strings.TrimSpace(v)
+			break
+		}
+	}
+	if v, ok := m["fileName"].(string); ok {
+		fileName = strings.TrimSpace(v)
+	}
+	if fileName == "" {
+		fileName = "未知文件"
+	}
+	return downloadCode, fileName
+}
+
 // extractCallbackText pulls the visible text out of a structured-text callback
 // payload (msgtype=richText / markdown / etc.) for the case where the SDK's
 // data.Text.Content is empty. This matters because `dws chat message send

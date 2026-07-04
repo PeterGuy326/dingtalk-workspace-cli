@@ -966,6 +966,11 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 		if strings.EqualFold(msgtype, "picture") {
 			picCode = pictureDownloadCode(data.Content)
 		}
+		// File messages also carry a downloadCode + fileName.
+		fileCode, fileName := "", ""
+		if strings.EqualFold(msgtype, "file") {
+			fileCode, fileName = fileDownloadInfo(data.Content)
+		}
 		// Structured-text fallback: DingTalk leaves data.Text.Content blank on
 		// markdown / richText callbacks (the body ships in data.Content). Without
 		// this, `dws chat message send --group ... --text ...` — which defaults
@@ -976,7 +981,7 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 				text = fallback
 			}
 		}
-		if (text == "" && picCode == "") || data.SessionWebhook == "" {
+		if (text == "" && picCode == "" && fileCode == "") || data.SessionWebhook == "" {
 			// Observability: silent drops are the #1 reason a working connector
 			// looks dead. Log msgtype so an unhandled type shows up in stderr
 			// instead of being invisible.
@@ -1011,8 +1016,10 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 			sender = strings.TrimSpace(data.SenderStaffId)
 		}
 		shown := text
-		if shown == "" {
+		if shown == "" && picCode != "" {
 			shown = "[图片]"
+		} else if shown == "" && fileCode != "" {
+			shown = "[文件: " + fileName + "]"
 		}
 		fmt.Fprintf(os.Stderr, "[connect] 收到 @%s: %s (convType=%s convId=%s staffId=%s msgId=%s)\n",
 			sender, truncateRunes(shown, 80), data.ConversationType, data.ConversationId, data.SenderStaffId, data.MsgId)
@@ -1089,6 +1096,20 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 					prompt = "用户发来一张图片（本地路径 " + localPath + "），请查看图片内容并回答其中的问题。"
 				} else {
 					prompt = prompt + "\n（用户同时附了一张图片，本地路径 " + localPath + "，请结合图片内容回答。）"
+				}
+			}
+			if fileCode != "" {
+				if localPath, derr := mediaCli.downloadMessageFile(context.Background(), clientID, fileCode); derr != nil {
+					fmt.Fprintf(os.Stderr, "[connect][media] 文件下载失败: %v\n", derr)
+					if prompt == "" {
+						prompt = "（用户发来一个文件「" + fileName + "」，但文件下载失败了。请告知用户文件没收到，建议重新发送。）"
+					}
+				} else {
+					if prompt == "" {
+						prompt = "用户发来一个文件「" + fileName + "」（本地路径 " + localPath + "），请读取文件内容并回答。"
+					} else {
+						prompt = prompt + "\n（用户同时附了一个文件「" + fileName + "」，本地路径 " + localPath + "，请结合文件内容回答。）"
+					}
 				}
 			}
 			if extras.kb != nil {
