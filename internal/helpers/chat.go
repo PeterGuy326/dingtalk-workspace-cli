@@ -556,6 +556,8 @@ func newChatMessageSendByBotCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("text", "", "消息内容 Markdown (必填)")
 	cmd.Flags().String("title", "", "消息标题 (必填)")
 	cmd.Flags().String("users", "", "接收者 userId 列表，逗号分隔，最多 20 个 (单聊必填)")
+	cmd.Flags().Bool("at-all", false, "@所有人 (仅 --group 群聊生效)")
+	cmd.Flags().String("at-open-dingtalk-ids", "", "@指定成员 openDingTalkId 列表，逗号分隔 (仅 --group 群聊生效)")
 	return cmd
 }
 
@@ -690,6 +692,14 @@ func buildChatMessageSendByBotInvocation(cmd *cobra.Command) (map[string]any, st
 	}
 	if strings.TrimSpace(group) != "" {
 		params["openConversationId"] = group
+		atAll, _ := cmd.Flags().GetBool("at-all")
+		atOpenIDs, _ := cmd.Flags().GetString("at-open-dingtalk-ids")
+		if atAll {
+			params["atAll"] = true
+		}
+		if strings.TrimSpace(atOpenIDs) != "" {
+			params["atOpenDingTalkIds"] = splitCSVStrings(atOpenIDs)
+		}
 		return params, "send_robot_group_message", nil
 	}
 
