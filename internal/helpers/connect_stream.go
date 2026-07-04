@@ -959,13 +959,29 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 	)
 	cli.RegisterChatBotCallbackRouter(func(_ context.Context, data *chatbot.BotCallbackDataModel) ([]byte, error) {
 		text := strings.TrimSpace(data.Text.Content)
+		msgtype := strings.TrimSpace(data.Msgtype)
 		// Picture messages carry no text — their payload is a downloadCode
 		// resolved to a local file in the forward goroutine below.
 		picCode := ""
-		if strings.EqualFold(strings.TrimSpace(data.Msgtype), "picture") {
+		if strings.EqualFold(msgtype, "picture") {
 			picCode = pictureDownloadCode(data.Content)
 		}
+		// Structured-text fallback: DingTalk leaves data.Text.Content blank on
+		// markdown / richText callbacks (the body ships in data.Content). Without
+		// this, `dws chat message send --group ... --text ...` — which defaults
+		// to msgType=markdown — hits the drop branch below and the bot looks
+		// dead to the sender.
+		if text == "" && picCode == "" {
+			if fallback := extractCallbackText(data.Content); fallback != "" {
+				text = fallback
+			}
+		}
 		if (text == "" && picCode == "") || data.SessionWebhook == "" {
+			// Observability: silent drops are the #1 reason a working connector
+			// looks dead. Log msgtype so an unhandled type shows up in stderr
+			// instead of being invisible.
+			fmt.Fprintf(os.Stderr, "[connect] 丢弃消息 msgtype=%q staffId=%s convId=%s msgId=%s (无正文/图片或 sessionWebhook 为空)\n",
+				msgtype, data.SenderStaffId, data.ConversationId, data.MsgId)
 			return []byte(""), nil
 		}
 		// Drop redelivered duplicates so a retried message is not replied twice.

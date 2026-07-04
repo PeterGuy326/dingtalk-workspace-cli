@@ -42,6 +42,40 @@ func TestPictureDownloadCode(t *testing.T) {
 	}
 }
 
+// TestExtractCallbackText covers the markdown / richText fallback path used
+// when SDK data.Text.Content is empty. This is the recovery path for
+// `dws chat message send --group ... --text ...` (defaults to msgType=markdown)
+// which otherwise gets silently dropped by the connector.
+func TestExtractCallbackText(t *testing.T) {
+	cases := []struct {
+		name    string
+		content interface{}
+		want    string
+	}{
+		{"raw string", "hello", "hello"},
+		{"text field", map[string]interface{}{"text": "hi"}, "hi"},
+		{"text preferred over title", map[string]interface{}{"title": "标题", "text": "body"}, "body"},
+		{"content field", map[string]interface{}{"content": "raw"}, "raw"},
+		{"markdown field", map[string]interface{}{"markdown": "**bold**"}, "**bold**"},
+		{"title only", map[string]interface{}{"title": "只有标题"}, "只有标题"},
+		{"richText array", map[string]interface{}{"richText": []interface{}{
+			map[string]interface{}{"text": "part1 "},
+			map[string]interface{}{"text": "part2"},
+		}}, "part1 part2"},
+		{"whitespace trimmed", map[string]interface{}{"text": "  spaced  "}, "spaced"},
+		{"nil returns empty", nil, ""},
+		{"unknown shape returns empty", map[string]interface{}{"foo": "bar"}, ""},
+		{"empty text falls through", map[string]interface{}{"text": "", "content": "backup"}, "backup"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := extractCallbackText(tc.content); got != tc.want {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 // TestDownloadMessageFile drives the full resolve-then-fetch flow against a
 // fake API: token → messageFiles/download (must carry robotCode+downloadCode)
 // → presigned GET → local temp file.

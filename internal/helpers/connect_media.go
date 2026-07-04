@@ -47,6 +47,42 @@ func pictureDownloadCode(content interface{}) string {
 	return ""
 }
 
+// extractCallbackText pulls the visible text out of a structured-text callback
+// payload (msgtype=richText / markdown / etc.) for the case where the SDK's
+// data.Text.Content is empty. This matters because `dws chat message send
+// --group ... --text ...` sends msgType="markdown" by default, and DingTalk's
+// stream callback for markdown messages routinely leaves data.Text.Content
+// blank while stashing the real body in data.Content (loosely-typed).
+// Returns "" if no text-shaped field is found.
+func extractCallbackText(content interface{}) string {
+	switch v := content.(type) {
+	case string:
+		return strings.TrimSpace(v)
+	case map[string]interface{}:
+		// Common shapes: {"text":"..."}, {"title":"...","text":"..."},
+		// {"content":"..."}, richText {"richText":[{"text":"..."}]}.
+		for _, key := range []string{"text", "content", "markdown", "title"} {
+			if s, ok := v[key].(string); ok && strings.TrimSpace(s) != "" {
+				return strings.TrimSpace(s)
+			}
+		}
+		if arr, ok := v["richText"].([]interface{}); ok {
+			var b strings.Builder
+			for _, item := range arr {
+				if m, ok := item.(map[string]interface{}); ok {
+					if s, ok := m["text"].(string); ok {
+						b.WriteString(s)
+					}
+				}
+			}
+			if s := strings.TrimSpace(b.String()); s != "" {
+				return s
+			}
+		}
+	}
+	return ""
+}
+
 // downloadMessageFile resolves a chatbot media callback (picture etc.) to a
 // local temp file via the robot messageFiles/download API. Error-screenshot
 // questions are the top Q&A inbound; without this the connector silently
