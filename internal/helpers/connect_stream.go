@@ -1218,22 +1218,40 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 
 			if !delivered {
 				// Fallback path: plain reply via the inbound sessionWebhook.
-				// Long replies go as markdown, short ones as text.
+				// Retry up to 3 times with exponential backoff (1s, 2s, 4s)
+				// to handle transient network errors (EOF, timeout).
 				var sendErr error
-				if len([]rune(reply)) > 200 {
-					sendErr = replier.SimpleReplyMarkdown(context.Background(), webhook, []byte(channel), []byte(reply))
-				} else {
-					sendErr = replier.SimpleReplyText(context.Background(), webhook, []byte(reply))
+				backoffs := []time.Duration{1 * time.Second, 2 * time.Second, 4 * time.Second}
+				for attempt := 0; attempt <= len(backoffs); attempt++ {
+					if len([]rune(reply)) > 200 {
+						sendErr = replier.SimpleReplyMarkdown(context.Background(), webhook, []byte(channel), []byte(reply))
+					} else {
+						sendErr = replier.SimpleReplyText(context.Background(), webhook, []byte(reply))
+					}
+					if sendErr == nil {
+						break
+					}
+					if attempt < len(backoffs) {
+						fmt.Fprintf(os.Stderr, "[connect] 普通消息发送失败 (%s, attempt %d/%d, msgId=%s): %v，%v 后重试\n",
+							channel, attempt+1, len(backoffs)+1, msgID, sendErr, backoffs[attempt])
+						time.Sleep(backoffs[attempt])
+					}
 				}
 				if sendErr != nil {
-					fmt.Fprintf(os.Stderr, "[connect] 普通消息发送失败 (%s, msgId=%s): %v\n", channel, msgID, sendErr)
+					fmt.Fprintf(os.Stderr, "[connect] 普通消息发送失败（重试耗尽） (%s, msgId=%s): %v\n", channel, msgID, sendErr)
+					delivered = false
 				} else {
 					fmt.Fprintf(os.Stderr, "[connect] 普通消息已发送 (%s, msgId=%s)\n", channel, msgID)
+					delivered = true
 				}
 			}
 
 			if thinking {
-				cardCli.swapThinkingToDone(context.Background(), callbackData.ConversationId, msgID)
+				if delivered {
+					cardCli.swapThinkingToDone(context.Background(), callbackData.ConversationId, msgID)
+				} else {
+					fmt.Fprintf(os.Stderr, "[connect] 回复发送失败，保留思考表态不切换完成 (%s, msgId=%s)\n", channel, msgID)
+				}
 			}
 		})
 		return []byte(""), nil
