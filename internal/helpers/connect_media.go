@@ -241,6 +241,79 @@ func (c *aiCardClient) downloadMessageFile(ctx context.Context, robotCode, downl
 	return dest, nil
 }
 
+// getUserUnionID resolves a staffId (userId) to unionId via the contact API.
+// The connector needs unionId to call the storage/drive download APIs.
+func (c *aiCardClient) getUserUnionID(ctx context.Context, userID string) (string, error) {
+	raw, err := c.callRaw(ctx, http.MethodGet, "/v1.0/contact/users/"+userID, nil)
+	if err != nil {
+		return "", fmt.Errorf("contact/users/%s: %w", userID, err)
+	}
+	var parsed struct {
+		UnionID string `json:"unionId"`
+	}
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil || strings.TrimSpace(parsed.UnionID) == "" {
+		return "", fmt.Errorf("contact/users/%s 未返回 unionId: %s", userID, truncateRunes(raw, 200))
+	}
+	return parsed.UnionID, nil
+}
+
+// downloadDentryFile downloads a file from DingTalk storage by numeric
+// dentryId + spaceId (the shape API-sent file callbacks provide). It resolves
+// download info via the v2.0 storage API and saves the file to a local temp
+// path, returning the path.
+func (c *aiCardClient) downloadDentryFile(ctx context.Context, spaceID, dentryID int64, unionID, fileName string) (string, error) {
+	path := fmt.Sprintf("/v2.0/storage/spaces/%d/dentries/%d/getDownloadInfo", spaceID, dentryID)
+	raw, err := c.callRaw(ctx, http.MethodPost, path, map[string]any{
+		"unionId": unionID,
+	})
+	if err != nil {
+		return "", fmt.Errorf("getDownloadInfo spaceId=%d dentryId=%d: %w", spaceID, dentryID, err)
+	}
+	var parsed struct {
+		ResourceURL string `json:"resourceUrl"`
+		HeadersMap  map[string]string `json:"headers"`
+	}
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil || strings.TrimSpace(parsed.ResourceURL) == "" {
+		return "", fmt.Errorf("getDownloadInfo 未返回 resourceUrl: %s", truncateRunes(raw, 200))
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, parsed.ResourceURL, nil)
+	if err != nil {
+		return "", err
+	}
+	for k, v := range parsed.HeadersMap {
+		req.Header.Set(k, v)
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		return "", fmt.Errorf("钉盘文件下载 HTTP %d", resp.StatusCode)
+	}
+
+	dir := filepath.Join(os.TempDir(), "dws-connect-media")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+	ext := filepath.Ext(fileName)
+	if ext == "" {
+		ext = mediaExt(parsed.ResourceURL, resp.Header.Get("Content-Type"))
+	}
+	dest := filepath.Join(dir, uuid.NewString()+ext)
+	f, err := os.Create(dest)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	if _, err := io.Copy(f, io.LimitReader(resp.Body, mediaMaxDownloadBytes)); err != nil {
+		_ = os.Remove(dest)
+		return "", err
+	}
+	return dest, nil
+}
+
 // mediaExt picks a file extension from the response content type, falling
 // back to the URL path, then ".png" (DingTalk screenshots default to png).
 func mediaExt(rawURL, contentType string) string {

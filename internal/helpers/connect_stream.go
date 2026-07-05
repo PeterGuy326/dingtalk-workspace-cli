@@ -1121,22 +1121,36 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 						prompt = prompt + "\n（用户同时附了一个文件「" + fileName + "」，本地路径 " + localPath + "，请结合文件内容回答。）"
 					}
 				case fileInfo.DentryID != 0 && fileInfo.SpaceID != 0:
-					// API-sent file: no downloadCode is issued, only
-					// dentryId/spaceId. Full download would require the drive
-					// API; for now surface the metadata so the agent can at
-					// least acknowledge the file and ask for detail rather
-					// than staying silent.
-					meta := fmt.Sprintf("文件名「%s」，dentryId=%d，spaceId=%d", fileName, fileInfo.DentryID, fileInfo.SpaceID)
-					if fileInfo.FileType != "" {
-						meta += "，类型=" + fileInfo.FileType
-					}
-					if fileInfo.FileSize > 0 {
-						meta += fmt.Sprintf("，大小=%d 字节", fileInfo.FileSize)
-					}
-					if prompt == "" {
-						prompt = "用户发来一个文件（" + meta + "）。此文件通过 OpenAPI 发出，暂不能直接下载正文；请基于文件名与用户随附的文字信息回答，必要时请用户改用客户端上传或补充文字描述。"
+					// API-sent file: resolve via storage API (userId→unionId,
+					// then getDownloadInfo). Falls back to metadata-only prompt
+					// if the download chain fails (e.g. missing permissions).
+					senderID := strings.TrimSpace(callbackData.SenderStaffId)
+					if unionID, uerr := mediaCli.getUserUnionID(context.Background(), senderID); uerr != nil {
+						fmt.Fprintf(os.Stderr, "[connect][media] userId→unionId 失败 (%s): %v\n", senderID, uerr)
+					} else if dp, derr := mediaCli.downloadDentryFile(context.Background(), fileInfo.SpaceID, fileInfo.DentryID, unionID, fileName); derr != nil {
+						fmt.Fprintf(os.Stderr, "[connect][media] 钉盘文件下载失败 spaceId=%d dentryId=%d: %v\n", fileInfo.SpaceID, fileInfo.DentryID, derr)
 					} else {
-						prompt = prompt + "\n（用户同时附了一个文件：" + meta + "。此文件通过 OpenAPI 发出，暂不能直接下载正文，请结合文件名与随附文字回答。）"
+						localPath = dp
+					}
+					if localPath != "" {
+						if prompt == "" {
+							prompt = "用户发来一个文件「" + fileName + "」（本地路径 " + localPath + "），请读取文件内容并回答。"
+						} else {
+							prompt = prompt + "\n（用户同时附了一个文件「" + fileName + "」，本地路径 " + localPath + "，请结合文件内容回答。）"
+						}
+					} else {
+						meta := fmt.Sprintf("文件名「%s」，dentryId=%d，spaceId=%d", fileName, fileInfo.DentryID, fileInfo.SpaceID)
+						if fileInfo.FileType != "" {
+							meta += "，类型=" + fileInfo.FileType
+						}
+						if fileInfo.FileSize > 0 {
+							meta += fmt.Sprintf("，大小=%d 字节", fileInfo.FileSize)
+						}
+						if prompt == "" {
+							prompt = "用户发来一个文件（" + meta + "）。文件下载失败，请基于文件名与用户随附的文字信息回答，必要时请用户改用客户端上传或补充文字描述。"
+						} else {
+							prompt = prompt + "\n（用户同时附了一个文件：" + meta + "。文件下载失败，请结合文件名与随附文字回答。）"
+						}
 					}
 				default:
 					if prompt == "" {

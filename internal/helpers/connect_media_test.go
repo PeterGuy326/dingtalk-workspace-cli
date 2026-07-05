@@ -275,3 +275,74 @@ func TestSummarizeContent(t *testing.T) {
 		t.Fatalf("summary %q missing keys", got)
 	}
 }
+
+func TestGetUserUnionID(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1.0/oauth2/accessToken", func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"accessToken": "tok-1", "expireIn": 7200})
+	})
+	mux.HandleFunc("/v1.0/contact/users/user-123", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("want GET, got %s", r.Method)
+		}
+		if r.Header.Get("x-acs-dingtalk-access-token") != "tok-1" {
+			t.Error("missing access token")
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"unionId": "union-abc"})
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	withCardAPIBase(t, srv.URL)
+
+	c := newAICardClient("ding-client", "ding-secret", "")
+	uid, err := c.getUserUnionID(context.Background(), "user-123")
+	if err != nil {
+		t.Fatalf("getUserUnionID: %v", err)
+	}
+	if uid != "union-abc" {
+		t.Fatalf("unionId = %q, want union-abc", uid)
+	}
+}
+
+func TestDownloadDentryFile(t *testing.T) {
+	mux := http.NewServeMux()
+	var srv *httptest.Server
+	mux.HandleFunc("/v1.0/oauth2/accessToken", func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"accessToken": "tok-1", "expireIn": 7200})
+	})
+	mux.HandleFunc("/v2.0/storage/spaces/999/dentries/123/getDownloadInfo", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("want POST, got %s", r.Method)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["unionId"] != "union-abc" {
+			t.Errorf("unionId = %v, want union-abc", body["unionId"])
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"resourceUrl": srv.URL + "/dl/report.pdf",
+		})
+	})
+	mux.HandleFunc("/dl/report.pdf", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/pdf")
+		_, _ = w.Write([]byte("%PDF-fake"))
+	})
+	srv = httptest.NewServer(mux)
+	defer srv.Close()
+	withCardAPIBase(t, srv.URL)
+
+	c := newAICardClient("ding-client", "ding-secret", "")
+	path, err := c.downloadDentryFile(context.Background(), 999, 123, "union-abc", "report.pdf")
+	if err != nil {
+		t.Fatalf("downloadDentryFile: %v", err)
+	}
+	defer os.Remove(path)
+
+	if !strings.HasSuffix(path, ".pdf") {
+		t.Fatalf("path = %q, want .pdf suffix", path)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil || string(raw) != "%PDF-fake" {
+		t.Fatalf("file content = %q, %v", raw, err)
+	}
+}
