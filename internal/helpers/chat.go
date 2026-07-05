@@ -17,6 +17,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
+	"regexp"
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
@@ -557,7 +560,8 @@ func newChatMessageSendByBotCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("title", "", "消息标题 (必填)")
 	cmd.Flags().String("users", "", "接收者 userId 列表，逗号分隔，最多 20 个 (单聊必填)")
 	cmd.Flags().Bool("at-all", false, "@所有人 (仅 --group 群聊生效)")
-	cmd.Flags().String("at-open-dingtalk-ids", "", "@指定成员 openDingTalkId 列表，逗号分隔 (仅 --group 群聊生效)")
+	cmd.Flags().String("at-user-ids", "", "@指定成员 userId 列表，逗号分隔 (仅 --group 生效)；文中的 <@userId> 会被替换为 markdown @userId 语法")
+	cmd.Flags().String("at-open-dingtalk-ids", "", "@指定成员 openDingTalkId 列表，逗号分隔 (仅 --group 生效)；⚠️ 钉钉机器人群发 API 不识别 openDingTalkId，请改用 --at-user-ids")
 	return cmd
 }
 
@@ -693,11 +697,29 @@ func buildChatMessageSendByBotInvocation(cmd *cobra.Command) (map[string]any, st
 	if strings.TrimSpace(group) != "" {
 		params["openConversationId"] = group
 		atAll, _ := cmd.Flags().GetBool("at-all")
+		atUserIDs, _ := cmd.Flags().GetString("at-user-ids")
 		atOpenIDs, _ := cmd.Flags().GetString("at-open-dingtalk-ids")
 		if atAll {
 			params["atAll"] = true
 		}
+		userIDList := splitCSVStrings(atUserIDs)
+		// Markdown @ needs both: (a) `@userId` written into the body text so
+		// the client renders the mention chip, and (b) the userId listed in
+		// atUserIds so the mentioned user gets the highlight notification.
+		// Without (a) the API still delivers but the recipient sees a normal
+		// message with no chip; without (b) the recipient sees the chip but
+		// no @-notification. Do both.
+		if len(userIDList) > 0 {
+			params["atUserIds"] = stringSliceToAny(userIDList)
+			params["markdown"] = renderAtMentions(params["markdown"].(string), userIDList)
+		}
 		if strings.TrimSpace(atOpenIDs) != "" {
+			// openDingTalkId path stays best-effort: the DingTalk robot group
+			// message API only recognises atUserIds/atMobiles, so passing
+			// atOpenDingTalkIds is a silent no-op. Keep the parameter so any
+			// downstream that DOES resolve it (future SDK, gateway shim) still
+			// gets the hint, but tell the caller to switch flags.
+			fmt.Fprintln(os.Stderr, "[chat send-by-bot] ⚠️ 钉钉机器人群发 API 不识别 atOpenDingTalkIds，@ 提醒不会触发，请改用 --at-user-ids <userId,userId>")
 			params["atOpenDingTalkIds"] = splitCSVStrings(atOpenIDs)
 		}
 		return params, "send_robot_group_message", nil
@@ -731,6 +753,52 @@ func splitCSVStrings(raw string) []string {
 		values = append(values, trimmed)
 	}
 	return values
+}
+
+// atMentionPlaceholder captures both <@userId> (angle-bracket) and standalone
+// @userId placeholders so a caller can write `<@u123>` or `@u123` in the body
+// and have it rendered as a DingTalk mention chip.
+var atMentionPlaceholder = regexp.MustCompile(`<@([^>\s]+)>`)
+
+// renderAtMentions rewrites mention placeholders in the markdown body so the
+// DingTalk client renders a highlight chip. In DingTalk markdown, a mention is
+// the literal token `@userId` followed by whitespace; the recipient side then
+// looks up the userId in the message's atUserIds array to render it as a chip.
+// We (a) rewrite `<@userId>` → `@userId `, and (b) if none of the mentioned
+// userIds appear in the body at all, prepend them so the chip still shows up.
+func renderAtMentions(body string, userIDs []string) string {
+	if len(userIDs) == 0 {
+		return body
+	}
+	rewritten := atMentionPlaceholder.ReplaceAllString(body, "@$1 ")
+	referenced := map[string]bool{}
+	matches := atMentionPlaceholder.FindAllStringSubmatch(body, -1)
+	for _, m := range matches {
+		if len(m) > 1 {
+			referenced[m[1]] = true
+		}
+	}
+	// Also detect bare @userId occurrences already present in the text.
+	for _, uid := range userIDs {
+		if strings.Contains(rewritten, "@"+uid) {
+			referenced[uid] = true
+		}
+	}
+	var missing []string
+	for _, uid := range userIDs {
+		if !referenced[uid] {
+			missing = append(missing, "@"+uid)
+		}
+	}
+	if len(missing) > 0 {
+		prefix := strings.Join(missing, " ")
+		if strings.TrimSpace(rewritten) == "" {
+			rewritten = prefix
+		} else {
+			rewritten = prefix + " " + rewritten
+		}
+	}
+	return rewritten
 }
 
 func stringSliceToAny(values []string) []any {

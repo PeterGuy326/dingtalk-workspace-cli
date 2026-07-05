@@ -966,10 +966,14 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 		if strings.EqualFold(msgtype, "picture") {
 			picCode = pictureDownloadCode(data.Content)
 		}
-		// File messages also carry a downloadCode + fileName.
-		fileCode, fileName := "", ""
+		// File callbacks come in two shapes: client-sent files carry a
+		// downloadCode; API-sent files (`dws chat message send --msg-type file
+		// --dentry-id --space-id`) carry dentryId + spaceId instead and have
+		// NO downloadCode. Both have to be recognisable or legit file messages
+		// get silently dropped below.
+		var fileInfo fileInboundInfo
 		if strings.EqualFold(msgtype, "file") {
-			fileCode, fileName = fileDownloadInfo(data.Content)
+			fileInfo = parseFileInbound(data.Content)
 		}
 		// Structured-text fallback: DingTalk leaves data.Text.Content blank on
 		// markdown / richText callbacks (the body ships in data.Content). Without
@@ -981,12 +985,13 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 				text = fallback
 			}
 		}
-		if (text == "" && picCode == "" && fileCode == "") || data.SessionWebhook == "" {
+		if (text == "" && picCode == "" && !fileInfo.hasActionable()) || data.SessionWebhook == "" {
 			// Observability: silent drops are the #1 reason a working connector
-			// looks dead. Log msgtype so an unhandled type shows up in stderr
-			// instead of being invisible.
-			fmt.Fprintf(os.Stderr, "[connect] 丢弃消息 msgtype=%q staffId=%s convId=%s msgId=%s (无正文/图片或 sessionWebhook 为空)\n",
-				msgtype, data.SenderStaffId, data.ConversationId, data.MsgId)
+			// looks dead. Log msgtype + a payload summary so an unhandled shape
+			// (e.g. new-style file callback without downloadCode) shows up in
+			// stderr instead of being invisible.
+			fmt.Fprintf(os.Stderr, "[connect] 丢弃消息 msgtype=%q staffId=%s convId=%s msgId=%s content=%s (无正文/图片/可下载文件或 sessionWebhook 为空)\n",
+				msgtype, data.SenderStaffId, data.ConversationId, data.MsgId, summarizeContent(data.Content))
 			return []byte(""), nil
 		}
 		// Drop redelivered duplicates so a retried message is not replied twice.
@@ -1018,8 +1023,8 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 		shown := text
 		if shown == "" && picCode != "" {
 			shown = "[图片]"
-		} else if shown == "" && fileCode != "" {
-			shown = "[文件: " + fileName + "]"
+		} else if shown == "" && fileInfo.hasActionable() {
+			shown = "[文件: " + fileInfo.FileName + "]"
 		}
 		fmt.Fprintf(os.Stderr, "[connect] 收到 @%s: %s (convType=%s convId=%s staffId=%s msgId=%s)\n",
 			sender, truncateRunes(shown, 80), data.ConversationType, data.ConversationId, data.SenderStaffId, data.MsgId)
@@ -1098,17 +1103,44 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 					prompt = prompt + "\n（用户同时附了一张图片，本地路径 " + localPath + "，请结合图片内容回答。）"
 				}
 			}
-			if fileCode != "" {
-				if localPath, derr := mediaCli.downloadMessageFile(context.Background(), clientID, fileCode); derr != nil {
-					fmt.Fprintf(os.Stderr, "[connect][media] 文件下载失败: %v\n", derr)
-					if prompt == "" {
-						prompt = "（用户发来一个文件「" + fileName + "」，但文件下载失败了。请告知用户文件没收到，建议重新发送。）"
+			if fileInfo.hasActionable() {
+				fileName := fileInfo.FileName
+				var localPath string
+				var derr error
+				if fileInfo.DownloadCode != "" {
+					localPath, derr = mediaCli.downloadMessageFile(context.Background(), clientID, fileInfo.DownloadCode)
+					if derr != nil {
+						fmt.Fprintf(os.Stderr, "[connect][media] 文件下载失败: %v\n", derr)
 					}
-				} else {
+				}
+				switch {
+				case localPath != "":
 					if prompt == "" {
 						prompt = "用户发来一个文件「" + fileName + "」（本地路径 " + localPath + "），请读取文件内容并回答。"
 					} else {
 						prompt = prompt + "\n（用户同时附了一个文件「" + fileName + "」，本地路径 " + localPath + "，请结合文件内容回答。）"
+					}
+				case fileInfo.DentryID != 0 && fileInfo.SpaceID != 0:
+					// API-sent file: no downloadCode is issued, only
+					// dentryId/spaceId. Full download would require the drive
+					// API; for now surface the metadata so the agent can at
+					// least acknowledge the file and ask for detail rather
+					// than staying silent.
+					meta := fmt.Sprintf("文件名「%s」，dentryId=%d，spaceId=%d", fileName, fileInfo.DentryID, fileInfo.SpaceID)
+					if fileInfo.FileType != "" {
+						meta += "，类型=" + fileInfo.FileType
+					}
+					if fileInfo.FileSize > 0 {
+						meta += fmt.Sprintf("，大小=%d 字节", fileInfo.FileSize)
+					}
+					if prompt == "" {
+						prompt = "用户发来一个文件（" + meta + "）。此文件通过 OpenAPI 发出，暂不能直接下载正文；请基于文件名与用户随附的文字信息回答，必要时请用户改用客户端上传或补充文字描述。"
+					} else {
+						prompt = prompt + "\n（用户同时附了一个文件：" + meta + "。此文件通过 OpenAPI 发出，暂不能直接下载正文，请结合文件名与随附文字回答。）"
+					}
+				default:
+					if prompt == "" {
+						prompt = "（用户发来一个文件「" + fileName + "」，但文件下载失败了。请告知用户文件没收到，建议重新发送。）"
 					}
 				}
 			}

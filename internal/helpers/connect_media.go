@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -47,26 +48,114 @@ func pictureDownloadCode(content interface{}) string {
 	return ""
 }
 
-// fileDownloadInfo extracts downloadCode and fileName from a file callback's
-// content payload (msgtype="file"). Returns ("","") when not parseable.
-func fileDownloadInfo(content interface{}) (downloadCode, fileName string) {
+// fileInboundInfo carries everything a msgtype="file" callback might expose.
+// Client-sent files (a user attaching a file in the DingTalk client) surface
+// DownloadCode + FileName; API-sent files (`dws chat message send --msg-type
+// file --dentry-id --space-id`) surface DentryID + SpaceID + FileName +
+// FileType + FileSize + FilePath and NO DownloadCode. Both shapes have to be
+// recognisable or the connector silently drops legitimate file messages.
+type fileInboundInfo struct {
+	DownloadCode string
+	FileName     string
+	FileType     string
+	FilePath     string
+	DentryID     int64
+	SpaceID      int64
+	FileSize     int64
+}
+
+func (f fileInboundInfo) hasActionable() bool {
+	return strings.TrimSpace(f.DownloadCode) != "" || (f.DentryID != 0 && f.SpaceID != 0)
+}
+
+// parseFileInbound reads every relevant field out of a file callback's
+// content payload (msgtype="file"). The content is a loosely-typed
+// map[string]interface{}; numeric fields (dentryId/spaceId/fileSize) can be
+// JSON strings or numbers depending on which endpoint sent the message, so
+// both branches are handled.
+func parseFileInbound(content interface{}) fileInboundInfo {
+	info := fileInboundInfo{}
 	m, ok := content.(map[string]interface{})
 	if !ok {
-		return "", ""
+		return info
 	}
 	for _, key := range []string{"downloadCode", "fileDownloadCode"} {
 		if v, ok := m[key].(string); ok && strings.TrimSpace(v) != "" {
-			downloadCode = strings.TrimSpace(v)
+			info.DownloadCode = strings.TrimSpace(v)
 			break
 		}
 	}
 	if v, ok := m["fileName"].(string); ok {
-		fileName = strings.TrimSpace(v)
+		info.FileName = strings.TrimSpace(v)
 	}
-	if fileName == "" {
-		fileName = "未知文件"
+	if v, ok := m["fileType"].(string); ok {
+		info.FileType = strings.TrimSpace(v)
 	}
-	return downloadCode, fileName
+	if v, ok := m["filePath"].(string); ok {
+		info.FilePath = strings.TrimSpace(v)
+	}
+	info.DentryID = readInt64Field(m, "dentryId", "dentryID")
+	info.SpaceID = readInt64Field(m, "spaceId", "spaceID")
+	info.FileSize = readInt64Field(m, "fileSize", "size")
+	if info.FileName == "" {
+		info.FileName = "未知文件"
+	}
+	return info
+}
+
+// readInt64Field pulls an int64 out of the loose content map under any of the
+// provided keys, tolerating JSON string / float64 / int64 / json.Number.
+func readInt64Field(m map[string]interface{}, keys ...string) int64 {
+	for _, key := range keys {
+		v, ok := m[key]
+		if !ok {
+			continue
+		}
+		switch t := v.(type) {
+		case string:
+			if s := strings.TrimSpace(t); s != "" {
+				if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+					return n
+				}
+			}
+		case float64:
+			return int64(t)
+		case int64:
+			return t
+		case int:
+			return int64(t)
+		case json.Number:
+			if n, err := t.Int64(); err == nil {
+				return n
+			}
+		}
+	}
+	return 0
+}
+
+// fileDownloadInfo preserves the two-value shape used by legacy callers that
+// only care about the downloadCode / fileName pair.
+func fileDownloadInfo(content interface{}) (downloadCode, fileName string) {
+	info := parseFileInbound(content)
+	return info.DownloadCode, info.FileName
+}
+
+// summarizeContent renders the callback content into a short one-line string
+// for stderr diagnostics (used when a file/other callback is being dropped
+// so the operator can tell why after the fact).
+func summarizeContent(content interface{}) string {
+	if content == nil {
+		return "<nil>"
+	}
+	b, err := json.Marshal(content)
+	if err != nil {
+		return fmt.Sprintf("<unmarshalable:%v>", err)
+	}
+	s := string(b)
+	if len(s) > 400 {
+		s = s[:400] + "…"
+	}
+	return s
 }
 
 // extractCallbackText pulls the visible text out of a structured-text callback
