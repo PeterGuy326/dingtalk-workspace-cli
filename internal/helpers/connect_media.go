@@ -190,8 +190,68 @@ func extractCallbackText(content interface{}) string {
 				return s
 			}
 		}
+		// interactiveCard: another bot @-mentioning this bot arrives as
+		// msgtype="interactiveCard" with the body nested in
+		// content.cardContent[].children[].value (elementType TEXT). The SDK
+		// leaves Text.Content blank, so without this the connector drops a
+		// legitimate bot-to-bot @ message.
+		if s := extractCardContentText(v["cardContent"]); s != "" {
+			return s
+		}
 	}
 	return ""
+}
+
+// cardContentLeaves flattens an interactiveCard cardContent tree into its
+// ordered TEXT leaf values. Shape (verified live): cardContent is an array of
+// blocks, each with a "children" array of {elementType:"TEXT", value:"..."}
+// leaves; nested blocks recurse via their own "children".
+func cardContentLeaves(v interface{}) []string {
+	arr, ok := v.([]interface{})
+	if !ok {
+		return nil
+	}
+	var leaves []string
+	var walk func(items []interface{})
+	walk = func(items []interface{}) {
+		for _, item := range items {
+			m, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if s, ok := m["value"].(string); ok && s != "" {
+				leaves = append(leaves, s)
+			}
+			if kids, ok := m["children"].([]interface{}); ok {
+				walk(kids)
+			}
+		}
+	}
+	walk(arr)
+	return leaves
+}
+
+// extractCardContentText joins all interactiveCard leaves — the raw body,
+// mention included. Used by the generic extractCallbackText fallback.
+func extractCardContentText(v interface{}) string {
+	return strings.TrimSpace(strings.Join(cardContentLeaves(v), ""))
+}
+
+// extractInteractiveCardText returns the interactiveCard body with the leading
+// @-mention removed. A bot @-ing another bot renders the mention as its own
+// leading "@name" TEXT leaf (the display name may itself contain spaces, so we
+// drop by leaf boundary, not by whitespace), followed by the real message in
+// the next leaf. Returns "" when there is nothing beyond the mention.
+func extractInteractiveCardText(content interface{}) string {
+	m, ok := content.(map[string]interface{})
+	if !ok {
+		return ""
+	}
+	leaves := cardContentLeaves(m["cardContent"])
+	for len(leaves) > 0 && strings.HasPrefix(strings.TrimSpace(leaves[0]), "@") {
+		leaves = leaves[1:]
+	}
+	return strings.TrimSpace(strings.Join(leaves, ""))
 }
 
 // downloadMessageFile resolves a chatbot media callback (picture etc.) to a
@@ -270,7 +330,7 @@ func (c *aiCardClient) downloadDentryFile(ctx context.Context, spaceID, dentryID
 		return "", fmt.Errorf("getDownloadInfo spaceId=%d dentryId=%d: %w", spaceID, dentryID, err)
 	}
 	var parsed struct {
-		ResourceURL string `json:"resourceUrl"`
+		ResourceURL string            `json:"resourceUrl"`
 		HeadersMap  map[string]string `json:"headers"`
 	}
 	if err := json.Unmarshal([]byte(raw), &parsed); err != nil || strings.TrimSpace(parsed.ResourceURL) == "" {

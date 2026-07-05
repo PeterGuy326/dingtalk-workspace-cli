@@ -981,8 +981,18 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 		// to msgType=markdown — hits the drop branch below and the bot looks
 		// dead to the sender.
 		if text == "" && picCode == "" {
-			if fallback := extractCallbackText(data.Content); fallback != "" {
-				text = fallback
+			// interactiveCard (a bot @-mentioning this bot) nests the body in
+			// content.cardContent and carries the mention as its own leading
+			// leaf; the leaf-aware extractor drops it so the agent gets the
+			// clean instruction. Other structured-text shapes use the generic
+			// extractor.
+			if strings.EqualFold(msgtype, "interactiveCard") {
+				text = extractInteractiveCardText(data.Content)
+			}
+			if text == "" {
+				if fallback := extractCallbackText(data.Content); fallback != "" {
+					text = fallback
+				}
 			}
 		}
 		if (text == "" && picCode == "" && !fileInfo.hasActionable()) || data.SessionWebhook == "" {
@@ -1181,8 +1191,14 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 			//   ② agent runs;
 			//   ③ on done: deliver the AI card with the final content;
 			//   ④ swap the chip to "🥳Done".
+			// Reactions attach to the triggering message, but DingTalk rejects a
+			// reaction on an interactiveCard message (a bot @-mentioning this bot)
+			// with a 500 system.error — reactions are only supported on human
+			// messages. Skip the chip for those turns so we don't fire a call the
+			// platform always rejects; the reply itself is unaffected.
+			canReact := !strings.EqualFold(msgtype, "interactiveCard")
 			thinking := false
-			if cardCli != nil {
+			if cardCli != nil && canReact {
 				if terr := cardCli.markThinking(context.Background(), callbackData.ConversationId, msgID); terr != nil {
 					fmt.Fprintf(os.Stderr, "[connect][card] Thinking 表态失败（不影响回复）: %v\n", terr)
 				} else {

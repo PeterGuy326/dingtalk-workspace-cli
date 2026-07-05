@@ -17,8 +17,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -704,69 +702,23 @@ func buildChatMessageSendByBotInvocation(cmd *cobra.Command, runner executor.Run
 		}
 		userIDList := splitCSVStrings(atUserIDs)
 		openIDList := splitCSVStrings(atOpenIDs)
-		// DingTalk's robot group message API renders chips only for userIds.
-		// If the caller supplied openDingTalkIds we look them up against the
-		// group's roster (get_group_members → search_contact_by_key_word) so
-		// they behave the same as userIds. Unresolvable openIds (cross-org,
-		// not a member, contact search miss) fall through to the legacy
-		// warning + forward-compat atOpenDingTalkIds path.
-		unresolvedOpenIDs := openIDList
-		if len(openIDList) > 0 && runner != nil {
-			resolved, err := resolveOpenIDsToUserIDs(cmd.Context(), runner, group, openIDList)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "[chat send-by-bot] ⚠️ openDingTalkId → userId 反查失败，chip 将无法渲染: %v\n", err)
-			} else if len(resolved) > 0 {
-				seenUser := map[string]bool{}
-				for _, id := range userIDList {
-					seenUser[id] = true
-				}
-				remaining := openIDList[:0]
-				for _, openID := range openIDList {
-					userID, ok := resolved[openID]
-					if !ok || strings.TrimSpace(userID) == "" {
-						remaining = append(remaining, openID)
-						continue
-					}
-					if !seenUser[userID] {
-						userIDList = append(userIDList, userID)
-						seenUser[userID] = true
-					}
-					// Rewrite the body token so renderAtMentions further down
-					// emits `@userId ` and DingTalk renders the chip.
-					params["markdown"] = strings.ReplaceAll(
-						params["markdown"].(string),
-						"<@"+openID+">",
-						"<@"+userID+">",
-					)
-				}
-				unresolvedOpenIDs = remaining
-			}
-		}
-		// Markdown @ needs both: (a) `@id` written into the body text so
-		// the client renders the mention chip, and (b) the userId listed in
-		// atUserIds so the mentioned user gets the highlight notification.
-		// Without (a) the API still delivers but the recipient sees a normal
-		// message with no chip; without (b) the recipient sees the chip but
-		// no @-notification. Do both — for userIds; unresolved openDingTalkIds
-		// only get (a) since the group message API silently ignores
-		// atOpenDingTalkIds.
+		// The robot group message API honors two @ dimensions directly:
+		// atUserIds (staffId) and atOpendingtalkIds (openDingTalkId — note the
+		// server's lowercase spelling, verified live: the camelCase
+		// atOpenDingTalkIds is silently ignored). openDingTalkId is the ONLY id
+		// a bot has, so forwarding it verbatim is what makes bot→bot @ work —
+		// no userId reverse-lookup needed (and a bot is not in the member
+		// roster, so a lookup could never resolve it anyway). Each dimension
+		// also needs the matching `@id` token in the body to render the chip
+		// (renderAtMentions below rewrites `<@id>` → `@id` and prepends any
+		// missing mention).
 		if len(userIDList) > 0 {
 			params["atUserIds"] = stringSliceToAny(userIDList)
 		}
-		if len(unresolvedOpenIDs) > 0 {
-			// Kept for forward-compat with any downstream that DOES resolve
-			// atOpenDingTalkIds (future SDK, gateway shim). The DingTalk
-			// robot group message API currently ignores it, so the highlight
-			// notification will not fire — tell the caller to switch flags.
-			fmt.Fprintf(os.Stderr, "[chat send-by-bot] ⚠️ 无法从群成员反查出 userId 的 openDingTalkId(%d 个)，chip 不会渲染，请改用 --at-user-ids <userId,userId>: %s\n",
-				len(unresolvedOpenIDs), strings.Join(unresolvedOpenIDs, ","))
-			params["atOpenDingTalkIds"] = stringSliceToAny(unresolvedOpenIDs)
+		if len(openIDList) > 0 {
+			params["atOpendingtalkIds"] = stringSliceToAny(openIDList)
 		}
-		// Rewrite `<@id>` placeholders in the body for BOTH lists so the
-		// markdown chip renders regardless of which flag the caller used.
-		// Before this, --at-open-dingtalk-ids left the body with raw `<@id>`
-		// placeholders and no chip at all.
-		if allIDs := append(append([]string{}, userIDList...), unresolvedOpenIDs...); len(allIDs) > 0 {
+		if allIDs := append(append([]string{}, userIDList...), openIDList...); len(allIDs) > 0 {
 			params["markdown"] = renderAtMentions(params["markdown"].(string), allIDs)
 		}
 		return params, "send_robot_group_message", nil
@@ -854,98 +806,6 @@ func stringSliceToAny(values []string) []any {
 		out = append(out, value)
 	}
 	return out
-}
-
-// resolveOpenIDsToUserIDs turns a list of openDingTalkIds into their userId
-// equivalents by (1) reading the group's roster via get_group_members and (2)
-// searching the contact directory by memberEmpName for entries whose
-// openDingTalkId matches the target. Only openIds that survive BOTH steps get
-// mapped; anything else (cross-org, non-member, contact-search miss) is
-// omitted from the returned map so the caller can warn + fall back.
-func resolveOpenIDsToUserIDs(ctx context.Context, runner executor.Runner, openConvID string, openIDs []string) (map[string]string, error) {
-	if len(openIDs) == 0 || runner == nil || strings.TrimSpace(openConvID) == "" {
-		return nil, nil
-	}
-	membersResult, err := runner.Run(ctx, executor.NewHelperInvocation(
-		"chat group members list",
-		"group-chat",
-		"get_group_members",
-		map[string]any{"openconversation_id": openConvID},
-	))
-	if err != nil {
-		return nil, err
-	}
-	content := helperResponseContent(membersResult)
-	if len(content) == 0 {
-		if !membersResult.Invocation.Implemented {
-			return nil, nil
-		}
-		return nil, apperrors.NewInternal("group-chat.get_group_members returned no content")
-	}
-	result, _ := content["result"].(map[string]any)
-	list, _ := result["list"].([]any)
-	if len(list) == 0 {
-		return nil, nil
-	}
-	// openId → memberEmpName for members present in the group.
-	openIDToName := make(map[string]string, len(list))
-	for _, entry := range list {
-		m, ok := entry.(map[string]any)
-		if !ok {
-			continue
-		}
-		openID, _ := m["openDingtalkId"].(string)
-		name, _ := m["memberEmpName"].(string)
-		if strings.TrimSpace(openID) == "" || strings.TrimSpace(name) == "" {
-			continue
-		}
-		openIDToName[openID] = name
-	}
-	if len(openIDToName) == 0 {
-		return nil, nil
-	}
-	// Resolve each requested openId via contact search. We search once per
-	// unique name and match the returned entry back to the openId to avoid
-	// name-collision false positives (two employees named "李伟" in one corp).
-	resolved := make(map[string]string, len(openIDs))
-	nameCache := map[string][]map[string]any{}
-	for _, openID := range openIDs {
-		name, ok := openIDToName[openID]
-		if !ok {
-			continue
-		}
-		hits, cached := nameCache[name]
-		if !cached {
-			searchResult, err := runner.Run(ctx, executor.NewHelperInvocation(
-				"contact user search",
-				"contact",
-				"search_contact_by_key_word",
-				map[string]any{"keyword": name},
-			))
-			if err != nil {
-				return nil, err
-			}
-			sc := helperResponseContent(searchResult)
-			if raw, ok := sc["result"].([]any); ok {
-				hits = make([]map[string]any, 0, len(raw))
-				for _, r := range raw {
-					if entry, ok := r.(map[string]any); ok {
-						hits = append(hits, entry)
-					}
-				}
-			}
-			nameCache[name] = hits
-		}
-		for _, hit := range hits {
-			if hitOpenID, _ := hit["openDingTalkId"].(string); hitOpenID == openID {
-				if userID, _ := hit["userId"].(string); strings.TrimSpace(userID) != "" {
-					resolved[openID] = userID
-				}
-				break
-			}
-		}
-	}
-	return resolved, nil
 }
 
 func getCurrentUserID(ctx context.Context, runner executor.Runner) (string, error) {

@@ -462,10 +462,11 @@ func TestChatMessageSendByBotAtUserIDsRendersChip(t *testing.T) {
 	}
 }
 
-// send-by-bot --at-open-dingtalk-ids: DingTalk robot group message API silently
-// ignores atOpenDingTalkIds, so the highlight notification will not fire — but
-// v1.0.58 must still rewrite `<@openId>` in the body so the chip visually
-// renders. Regression guard: previously the body kept the raw placeholder.
+// send-by-bot --at-open-dingtalk-ids: the openDingTalkId is forwarded verbatim
+// as atOpendingtalkIds (the server's lowercase spelling — the camelCase
+// atOpenDingTalkIds is silently ignored), and the `<@openId>` placeholder is
+// rewritten to `@openId` in the body so the chip renders. This is what makes
+// @-ing a bot (whose only id is an openDingTalkId) actually deliver.
 func TestChatMessageSendByBotAtOpenIDsRendersChip(t *testing.T) {
 	runner := &captureRunner{}
 	cmd := newChatMessageSendByBotCommand(runner)
@@ -492,9 +493,13 @@ func TestChatMessageSendByBotAtOpenIDsRendersChip(t *testing.T) {
 	if strings.Contains(got, "<@op1>") {
 		t.Fatalf("markdown should NOT contain raw placeholder <@op1>, got %q", got)
 	}
-	opens, ok := runner.last.Params["atOpenDingTalkIds"].([]any)
+	opens, ok := runner.last.Params["atOpendingtalkIds"].([]any)
 	if !ok || len(opens) != 1 || opens[0] != "op1" {
-		t.Fatalf("atOpenDingTalkIds = %#v, want [op1]", runner.last.Params["atOpenDingTalkIds"])
+		t.Fatalf("atOpendingtalkIds = %#v, want [op1]", runner.last.Params["atOpendingtalkIds"])
+	}
+	// The camelCase field must NOT be set (the server ignores it).
+	if _, exists := runner.last.Params["atOpenDingTalkIds"]; exists {
+		t.Fatalf("must not send camelCase atOpenDingTalkIds; params=%#v", runner.last.Params)
 	}
 }
 

@@ -66,10 +66,51 @@ func TestExtractCallbackText(t *testing.T) {
 		{"nil returns empty", nil, ""},
 		{"unknown shape returns empty", map[string]interface{}{"foo": "bar"}, ""},
 		{"empty text falls through", map[string]interface{}{"text": "", "content": "backup"}, "backup"},
+		// interactiveCard (bot @-mentioning this bot): the real payload shape
+		// captured live — body nested in cardContent[].children[].value.
+		{"interactiveCard cardContent", map[string]interface{}{"cardContent": []interface{}{
+			map[string]interface{}{"elementType": "RICHTEXT", "children": []interface{}{
+				map[string]interface{}{"elementType": "TEXT", "value": "@claudecode 助手"},
+				map[string]interface{}{"elementType": "TEXT", "value": " 请从 1 数到 10"},
+			}},
+		}}, "@claudecode 助手 请从 1 数到 10"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := extractCallbackText(tc.content); got != tc.want {
+				t.Fatalf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestExtractInteractiveCardText covers the bot→bot @ card: the leading
+// mention leaf (whose display name may contain spaces) is dropped by leaf
+// boundary, leaving the clean instruction.
+func TestExtractInteractiveCardText(t *testing.T) {
+	card := func(leaves ...string) interface{} {
+		kids := make([]interface{}, 0, len(leaves))
+		for _, l := range leaves {
+			kids = append(kids, map[string]interface{}{"elementType": "TEXT", "value": l})
+		}
+		return map[string]interface{}{"cardContent": []interface{}{
+			map[string]interface{}{"elementType": "RICHTEXT", "children": kids},
+		}}
+	}
+	cases := []struct {
+		name    string
+		content interface{}
+		want    string
+	}{
+		{"mention leaf dropped", card("@claudecode 助手", " 请从 1 数到 10"), "请从 1 数到 10"},
+		{"no mention", card("直接说的话"), "直接说的话"},
+		{"only mention", card("@claudecode 助手"), ""},
+		{"non-map content", "plain", ""},
+		{"nil content", nil, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := extractInteractiveCardText(tc.content); got != tc.want {
 				t.Fatalf("got %q, want %q", got, tc.want)
 			}
 		})
@@ -159,12 +200,12 @@ func TestMediaExt(t *testing.T) {
 // (c) mixed / unknown / nil shapes must degrade to hasActionable()=false.
 func TestParseFileInbound(t *testing.T) {
 	cases := []struct {
-		name          string
-		content       interface{}
-		wantCode      string
-		wantName      string
-		wantDentry    int64
-		wantSpace     int64
+		name           string
+		content        interface{}
+		wantCode       string
+		wantName       string
+		wantDentry     int64
+		wantSpace      int64
 		wantActionable bool
 	}{
 		{
