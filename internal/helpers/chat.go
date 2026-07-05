@@ -703,24 +703,31 @@ func buildChatMessageSendByBotInvocation(cmd *cobra.Command) (map[string]any, st
 			params["atAll"] = true
 		}
 		userIDList := splitCSVStrings(atUserIDs)
-		// Markdown @ needs both: (a) `@userId` written into the body text so
+		openIDList := splitCSVStrings(atOpenIDs)
+		// Markdown @ needs both: (a) `@id` written into the body text so
 		// the client renders the mention chip, and (b) the userId listed in
 		// atUserIds so the mentioned user gets the highlight notification.
 		// Without (a) the API still delivers but the recipient sees a normal
 		// message with no chip; without (b) the recipient sees the chip but
-		// no @-notification. Do both.
+		// no @-notification. Do both — for userIds; openDingTalkIds only get
+		// (a) since the group message API silently ignores atOpenDingTalkIds.
 		if len(userIDList) > 0 {
 			params["atUserIds"] = stringSliceToAny(userIDList)
-			params["markdown"] = renderAtMentions(params["markdown"].(string), userIDList)
 		}
-		if strings.TrimSpace(atOpenIDs) != "" {
-			// openDingTalkId path stays best-effort: the DingTalk robot group
-			// message API only recognises atUserIds/atMobiles, so passing
-			// atOpenDingTalkIds is a silent no-op. Keep the parameter so any
-			// downstream that DOES resolve it (future SDK, gateway shim) still
-			// gets the hint, but tell the caller to switch flags.
-			fmt.Fprintln(os.Stderr, "[chat send-by-bot] ⚠️ 钉钉机器人群发 API 不识别 atOpenDingTalkIds，@ 提醒不会触发，请改用 --at-user-ids <userId,userId>")
-			params["atOpenDingTalkIds"] = splitCSVStrings(atOpenIDs)
+		if len(openIDList) > 0 {
+			// Kept for forward-compat with any downstream that DOES resolve
+			// atOpenDingTalkIds (future SDK, gateway shim). The DingTalk
+			// robot group message API currently ignores it, so the highlight
+			// notification will not fire — tell the caller to switch flags.
+			fmt.Fprintln(os.Stderr, "[chat send-by-bot] ⚠️ 钉钉机器人群发 API 不识别 atOpenDingTalkIds，@ 提醒不会触发（chip 会渲染但不会高亮通知），请改用 --at-user-ids <userId,userId>")
+			params["atOpenDingTalkIds"] = stringSliceToAny(openIDList)
+		}
+		// Rewrite `<@id>` placeholders in the body for BOTH lists so the
+		// markdown chip renders regardless of which flag the caller used.
+		// Before this, --at-open-dingtalk-ids left the body with raw `<@id>`
+		// placeholders and no chip at all.
+		if allIDs := append(append([]string{}, userIDList...), openIDList...); len(allIDs) > 0 {
+			params["markdown"] = renderAtMentions(params["markdown"].(string), allIDs)
 		}
 		return params, "send_robot_group_message", nil
 	}

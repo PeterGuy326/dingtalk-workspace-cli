@@ -14,7 +14,6 @@
 package helpers
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -102,13 +101,15 @@ func mediaResolveAppToken(ctx context.Context) (string, error) {
 			"缺少应用凭证。chat media upload 需要 DWS_CLIENT_ID / DWS_CLIENT_SECRET 环境变量。\n" +
 				"请使用 dws auth login --client-id <APP_KEY> --client-secret <APP_SECRET> 登录。")
 	}
-	body, _ := json.Marshal(map[string]string{"appKey": appKey, "appSecret": appSecret})
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		"https://api.dingtalk.com/v1.0/oauth2/accessToken", bytes.NewReader(body))
+	// media/upload is only served by the legacy oapi endpoint and requires the
+	// legacy access_token from oapi.dingtalk.com/gettoken (NOT the v1.0
+	// accessToken). Using the v1.0 token against media/upload returns
+	// HTTP 404 InvalidAction.NotFound.
+	url := "https://oapi.dingtalk.com/gettoken?appkey=" + appKey + "&appsecret=" + appSecret
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("Content-Type", "application/json")
 	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(req)
 	if err != nil {
 		return "", apperrors.NewAuth("获取访问令牌失败: " + err.Error())
@@ -119,10 +120,15 @@ func mediaResolveAppToken(ctx context.Context) (string, error) {
 		return "", apperrors.NewAuth(fmt.Sprintf("获取访问令牌 HTTP %d: %s", resp.StatusCode, string(raw)))
 	}
 	var parsed struct {
-		AccessToken string `json:"accessToken"`
+		AccessToken string `json:"access_token"`
+		ErrCode     int    `json:"errcode"`
+		ErrMsg      string `json:"errmsg"`
 	}
-	if err := json.Unmarshal(raw, &parsed); err != nil || parsed.AccessToken == "" {
-		return "", apperrors.NewAuth("accessToken 为空: " + string(raw))
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		return "", apperrors.NewAuth("gettoken 响应解析失败: " + string(raw))
+	}
+	if parsed.ErrCode != 0 || parsed.AccessToken == "" {
+		return "", apperrors.NewAuth(fmt.Sprintf("gettoken errcode=%d errmsg=%s", parsed.ErrCode, parsed.ErrMsg))
 	}
 	return parsed.AccessToken, nil
 }
@@ -134,7 +140,6 @@ func mediaUploadFile(ctx context.Context, token, filePath, mediaType string) (st
 	go func() {
 		defer pw.Close()
 		defer writer.Close()
-		_ = writer.WriteField("type", mediaType)
 		part, err := writer.CreateFormFile("media", filepath.Base(filePath))
 		if err != nil {
 			pw.CloseWithError(err)
@@ -152,13 +157,14 @@ func mediaUploadFile(ctx context.Context, token, filePath, mediaType string) (st
 		}
 	}()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		"https://api.dingtalk.com/v1.0/robot/messageFiles/upload", pr)
+	// media/upload takes access_token + type as query params, media file as
+	// multipart form field "media"; returns { errcode, errmsg, media_id }.
+	url := "https://oapi.dingtalk.com/media/upload?access_token=" + token + "&type=" + mediaType
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, pr)
 	if err != nil {
 		return "", err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("x-acs-dingtalk-access-token", token)
 
 	resp, err := (&http.Client{Timeout: 2 * time.Minute}).Do(req)
 	if err != nil {
@@ -171,10 +177,15 @@ func mediaUploadFile(ctx context.Context, token, filePath, mediaType string) (st
 	}
 
 	var parsed struct {
-		MediaID string `json:"mediaId"`
+		MediaID string `json:"media_id"`
+		ErrCode int    `json:"errcode"`
+		ErrMsg  string `json:"errmsg"`
 	}
-	if err := json.Unmarshal(body, &parsed); err != nil || strings.TrimSpace(parsed.MediaID) == "" {
-		return "", apperrors.NewAPI("media upload 未返回 mediaId: " + string(body))
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return "", apperrors.NewAPI("media upload 响应解析失败: " + string(body))
+	}
+	if parsed.ErrCode != 0 || strings.TrimSpace(parsed.MediaID) == "" {
+		return "", apperrors.NewAPI(fmt.Sprintf("media upload errcode=%d errmsg=%s body=%s", parsed.ErrCode, parsed.ErrMsg, string(body)))
 	}
 	return strings.TrimSpace(parsed.MediaID), nil
 }

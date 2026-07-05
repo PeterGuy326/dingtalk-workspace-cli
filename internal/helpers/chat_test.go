@@ -427,6 +427,77 @@ func TestChatMessageSendByBotOmitsClawType(t *testing.T) {
 	}
 }
 
+// send-by-bot --at-user-ids: userIds go into atUserIds AND the body's
+// `<@userId>` placeholder is rewritten to the `@userId ` chip form. Regression
+// guard for 勤泽 2026-07-04 report where the body still shipped raw `<@id>`.
+func TestChatMessageSendByBotAtUserIDsRendersChip(t *testing.T) {
+	runner := &captureRunner{}
+	cmd := newChatMessageSendByBotCommand(runner)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{
+		"--group", "cid-xyz",
+		"--robot-code", "robot-001",
+		"--title", "t",
+		"--text", "<@u1> ping",
+		"--at-user-ids", "u1",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
+	}
+	got, ok := runner.last.Params["markdown"].(string)
+	if !ok {
+		t.Fatalf("markdown missing or not string; got %#v", runner.last.Params["markdown"])
+	}
+	if !strings.Contains(got, "@u1 ") {
+		t.Fatalf("markdown should contain rewritten @u1 chip, got %q", got)
+	}
+	if strings.Contains(got, "<@u1>") {
+		t.Fatalf("markdown should NOT contain raw placeholder <@u1>, got %q", got)
+	}
+	users, ok := runner.last.Params["atUserIds"].([]any)
+	if !ok || len(users) != 1 || users[0] != "u1" {
+		t.Fatalf("atUserIds = %#v, want [u1]", runner.last.Params["atUserIds"])
+	}
+}
+
+// send-by-bot --at-open-dingtalk-ids: DingTalk robot group message API silently
+// ignores atOpenDingTalkIds, so the highlight notification will not fire — but
+// v1.0.58 must still rewrite `<@openId>` in the body so the chip visually
+// renders. Regression guard: previously the body kept the raw placeholder.
+func TestChatMessageSendByBotAtOpenIDsRendersChip(t *testing.T) {
+	runner := &captureRunner{}
+	cmd := newChatMessageSendByBotCommand(runner)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{
+		"--group", "cid-xyz",
+		"--robot-code", "robot-001",
+		"--title", "t",
+		"--text", "<@op1> ping",
+		"--at-open-dingtalk-ids", "op1",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
+	}
+	got, ok := runner.last.Params["markdown"].(string)
+	if !ok {
+		t.Fatalf("markdown missing or not string; got %#v", runner.last.Params["markdown"])
+	}
+	if !strings.Contains(got, "@op1 ") {
+		t.Fatalf("markdown should contain rewritten @op1 chip, got %q", got)
+	}
+	if strings.Contains(got, "<@op1>") {
+		t.Fatalf("markdown should NOT contain raw placeholder <@op1>, got %q", got)
+	}
+	opens, ok := runner.last.Params["atOpenDingTalkIds"].([]any)
+	if !ok || len(opens) != 1 || opens[0] != "op1" {
+		t.Fatalf("atOpenDingTalkIds = %#v, want [op1]", runner.last.Params["atOpenDingTalkIds"])
+	}
+}
+
 func equalAny(a, b any) bool {
 	switch av := a.(type) {
 	case []any:
