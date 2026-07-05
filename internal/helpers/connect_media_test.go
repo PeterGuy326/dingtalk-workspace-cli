@@ -151,3 +151,127 @@ func TestMediaExt(t *testing.T) {
 		}
 	}
 }
+
+// TestParseFileInbound covers both callback shapes so the regression that
+// dropped every API-sent file (dentryId/spaceId, no downloadCode) can't
+// silently return: (a) client-sent shape carrying downloadCode + fileName,
+// (b) API-sent shape carrying dentryId + spaceId as JSON string OR number,
+// (c) mixed / unknown / nil shapes must degrade to hasActionable()=false.
+func TestParseFileInbound(t *testing.T) {
+	cases := []struct {
+		name          string
+		content       interface{}
+		wantCode      string
+		wantName      string
+		wantDentry    int64
+		wantSpace     int64
+		wantActionable bool
+	}{
+		{
+			name:           "client-sent downloadCode",
+			content:        map[string]interface{}{"downloadCode": "dc-1", "fileName": "screenshot.png"},
+			wantCode:       "dc-1",
+			wantName:       "screenshot.png",
+			wantActionable: true,
+		},
+		{
+			name:           "client-sent fileDownloadCode alias",
+			content:        map[string]interface{}{"fileDownloadCode": "dc-2", "fileName": "log.txt"},
+			wantCode:       "dc-2",
+			wantName:       "log.txt",
+			wantActionable: true,
+		},
+		{
+			name: "API-sent dentryId/spaceId as numbers",
+			content: map[string]interface{}{
+				"dentryId": float64(123456789),
+				"spaceId":  float64(987654321),
+				"fileName": "report.pdf",
+			},
+			wantName:       "report.pdf",
+			wantDentry:     123456789,
+			wantSpace:      987654321,
+			wantActionable: true,
+		},
+		{
+			name: "API-sent dentryId/spaceId as strings (real callback shape)",
+			content: map[string]interface{}{
+				"dentryId": "11111",
+				"spaceId":  "22222",
+				"fileName": "spec.docx",
+			},
+			wantName:       "spec.docx",
+			wantDentry:     11111,
+			wantSpace:      22222,
+			wantActionable: true,
+		},
+		{
+			name:           "default fileName when missing",
+			content:        map[string]interface{}{"downloadCode": "dc-3"},
+			wantCode:       "dc-3",
+			wantName:       "未知文件",
+			wantActionable: true,
+		},
+		{
+			name:           "no downloadCode + only dentry (missing space) is NOT actionable",
+			content:        map[string]interface{}{"dentryId": float64(1), "fileName": "x"},
+			wantName:       "x",
+			wantDentry:     1,
+			wantActionable: false,
+		},
+		{
+			name:           "wrong type returns empty",
+			content:        "not-a-map",
+			wantName:       "",
+			wantActionable: false,
+		},
+		{
+			name:           "nil returns empty",
+			content:        nil,
+			wantName:       "",
+			wantActionable: false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := parseFileInbound(tc.content)
+			if got.DownloadCode != tc.wantCode {
+				t.Errorf("DownloadCode = %q, want %q", got.DownloadCode, tc.wantCode)
+			}
+			if got.FileName != tc.wantName {
+				t.Errorf("FileName = %q, want %q", got.FileName, tc.wantName)
+			}
+			if got.DentryID != tc.wantDentry {
+				t.Errorf("DentryID = %d, want %d", got.DentryID, tc.wantDentry)
+			}
+			if got.SpaceID != tc.wantSpace {
+				t.Errorf("SpaceID = %d, want %d", got.SpaceID, tc.wantSpace)
+			}
+			if got.hasActionable() != tc.wantActionable {
+				t.Errorf("hasActionable() = %v, want %v", got.hasActionable(), tc.wantActionable)
+			}
+		})
+	}
+}
+
+// TestFileDownloadInfoBackCompat verifies the legacy two-value wrapper still
+// works so any other caller relying on it isn't broken by the refactor.
+func TestFileDownloadInfoBackCompat(t *testing.T) {
+	code, name := fileDownloadInfo(map[string]interface{}{
+		"downloadCode": "dc-legacy",
+		"fileName":     "legacy.doc",
+	})
+	if code != "dc-legacy" || name != "legacy.doc" {
+		t.Fatalf("legacy wrapper = %q/%q, want dc-legacy/legacy.doc", code, name)
+	}
+}
+
+func TestSummarizeContent(t *testing.T) {
+	if got := summarizeContent(nil); got != "<nil>" {
+		t.Fatalf("nil summary = %q", got)
+	}
+	got := summarizeContent(map[string]interface{}{"dentryId": "1", "fileName": "x"})
+	if !strings.Contains(got, "dentryId") || !strings.Contains(got, "fileName") {
+		t.Fatalf("summary %q missing keys", got)
+	}
+}

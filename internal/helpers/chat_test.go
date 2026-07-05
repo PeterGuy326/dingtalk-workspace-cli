@@ -504,3 +504,51 @@ func TestChatMessageSendByBotRoutesToBotProduct(t *testing.T) {
 		})
 	}
 }
+
+func TestRenderAtMentions(t *testing.T) {
+	cases := []struct {
+		name    string
+		body    string
+		userIDs []string
+		want    string
+	}{
+		{
+			name:    "empty userIDs is no-op",
+			body:    "hello",
+			userIDs: nil,
+			want:    "hello",
+		},
+		{
+			name:    "angle placeholder rewritten",
+			body:    "<@u001> 请查收",
+			userIDs: []string{"u001"},
+			want:    "@u001  请查收",
+		},
+		{
+			name:    "missing mention auto-prepended",
+			body:    "请查收",
+			userIDs: []string{"u001", "u002"},
+			want:    "@u001 @u002 请查收",
+		},
+		{
+			name:    "bare @userId already present, no prefix",
+			body:    "hi @u001 please",
+			userIDs: []string{"u001"},
+			want:    "hi @u001 please",
+		},
+		{
+			name:    "mixed: one placeholder + one missing",
+			body:    "<@u001> ping",
+			userIDs: []string{"u001", "u002"},
+			want:    "@u002 @u001  ping",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := renderAtMentions(tc.body, tc.userIDs)
+			if got != tc.want {
+				t.Fatalf("renderAtMentions(%q, %v) = %q, want %q", tc.body, tc.userIDs, got, tc.want)
+			}
+		})
+	}
+}
