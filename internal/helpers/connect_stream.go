@@ -191,6 +191,12 @@ type connectAgentOptions struct {
 	// Timeout caps each agent turn (--agent-timeout seconds /
 	// DWS_AGENT_TIMEOUT_MS milliseconds). 0 = no limit (default).
 	Timeout time.Duration
+	// Yolo enables highest-permission mode for the agent (--agent-yolo /
+	// DWS_AGENT_YOLO). Each channel maps this to its own permission flag:
+	// Claude Code / codebuddy / workbuddy get --dangerously-skip-permissions;
+	// Codex switches sandbox from read-only to workspace-write; Qoder
+	// re-enables skills and user settings. Use with caution.
+	Yolo bool
 }
 
 // isStreamBridgeChannel reports whether a channel is wired through the Go-native
@@ -837,6 +843,21 @@ func forwarderForChannel(channel, clientID string, opts connectAgentOptions) (fo
 	}
 	if (channel == "qoder" || channel == "qoderwork") && !overridden {
 		return newQoderStreamForwarder(channel, argv[0], env, timeout, opts, sessions), nil
+	}
+	// Yolo: splice per-agent permission flags for exec-based forwarders.
+	if !overridden && opts.Yolo {
+		switch channel {
+		case "claudecode", "codebuddy", "workbuddy":
+			argv = append(argv, "--dangerously-skip-permissions")
+			if len(streamArgv) > 0 {
+				streamArgv = append(streamArgv, "--dangerously-skip-permissions")
+			}
+		case "gemini":
+			argv = append(argv, "--yolo")
+			if len(streamArgv) > 0 {
+				streamArgv = append(streamArgv, "--yolo")
+			}
+		}
 	}
 	base := &execForwarder{name: channel, argv: argv, env: env, timeout: timeout,
 		workDir: opts.WorkDir, sessions: sessions,
