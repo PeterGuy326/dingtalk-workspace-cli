@@ -1293,6 +1293,10 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 				reply = out
 			}
 
+			if cardCli != nil {
+				reply = processReplyImages(context.Background(), cardCli, strings.TrimSpace(callbackData.SenderStaffId), reply)
+			}
+
 			delivered := false
 			if cardCli != nil && cardCli.hasTemplate() {
 				if cardInst == nil {
