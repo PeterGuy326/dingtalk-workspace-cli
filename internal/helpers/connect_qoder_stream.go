@@ -163,11 +163,13 @@ func (f *qoderStreamForwarder) commandArgs() []string {
 		"--output-format", "stream-json",
 		"--input-format", "stream-json",
 	}
-	if !f.yolo {
+	if f.yolo {
+		args = append(args, "--dangerously-skip-permissions")
+	} else {
 		args = append(args,
 			"--system-prompt", "",
 			"--setting-sources", "",
-			"--disable-builtin-skills",
+			"--tools", "",
 		)
 	}
 	if f.model != "" {
