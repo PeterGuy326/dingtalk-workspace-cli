@@ -17,7 +17,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 )
@@ -188,18 +187,6 @@ func NewEnvironmentLoader() EnvironmentLoader {
 // direct runtime path (dynamic server registry).
 func (l EnvironmentLoader) Load(_ context.Context) (Catalog, error) {
 	return Catalog{}, nil
-}
-
-func (l EnvironmentLoader) lookup(key string) (string, bool) {
-	if l.LookupEnv == nil {
-		return "", false
-	}
-	value, ok := l.LookupEnv(key)
-	if !ok {
-		return "", false
-	}
-	value = strings.TrimSpace(value)
-	return value, value != ""
 }
 
 // Ensure unused imports are consumed.

@@ -18,14 +18,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strconv"
 	"strings"
 
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cobracmd"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/executor"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/pipeline"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/convert"
 	"github.com/spf13/cobra"
 )
 
@@ -219,100 +216,6 @@ func applyFlagSpecs(cmd *cobra.Command, specs []FlagSpec) {
 			}
 		}
 	}
-}
-
-func collectOverrides(cmd *cobra.Command, specs []FlagSpec, guard *StdinGuard) (map[string]any, error) {
-	overrides := make(map[string]any)
-	for _, spec := range specs {
-		flagName := strings.TrimSpace(spec.FlagName)
-		if alias := strings.TrimSpace(spec.Alias); alias != "" && cobracmd.FlagChanged(cmd, alias) {
-			flagName = alias
-		}
-		flag := cmd.Flags().Lookup(flagName)
-		if flag == nil || !flag.Changed {
-			continue
-		}
-
-		switch spec.Kind {
-		case flagString:
-			value, err := cmd.Flags().GetString(flagName)
-			if err != nil {
-				return nil, apperrors.NewInternal(fmt.Sprintf("failed to read --%s", flagName))
-			}
-			resolved, resolveErr := ResolveInputSource(value, flagName, guard)
-			if resolveErr != nil {
-				return nil, resolveErr
-			}
-			overrides[spec.PropertyName] = resolved
-		case flagJSON:
-			value, err := cmd.Flags().GetString(flagName)
-			if err != nil {
-				return nil, apperrors.NewInternal(fmt.Sprintf("failed to read --%s", flagName))
-			}
-			var parsed any
-			if jsonErr := json.Unmarshal([]byte(value), &parsed); jsonErr != nil {
-				return nil, apperrors.NewValidation(fmt.Sprintf("invalid JSON for --%s: %v", flagName, jsonErr))
-			}
-			overrides[spec.PropertyName] = parsed
-		case flagInteger:
-			value, err := cmd.Flags().GetInt(flagName)
-			if err != nil {
-				return nil, apperrors.NewInternal(fmt.Sprintf("failed to read --%s", flagName))
-			}
-			overrides[spec.PropertyName] = value
-		case flagNumber:
-			value, err := cmd.Flags().GetFloat64(flagName)
-			if err != nil {
-				return nil, apperrors.NewInternal(fmt.Sprintf("failed to read --%s", flagName))
-			}
-			overrides[spec.PropertyName] = value
-		case flagBoolean:
-			value, err := cmd.Flags().GetBool(flagName)
-			if err != nil {
-				return nil, apperrors.NewInternal(fmt.Sprintf("failed to read --%s", flagName))
-			}
-			overrides[spec.PropertyName] = value
-		case flagStringArray:
-			value, err := cmd.Flags().GetStringSlice(flagName)
-			if err != nil {
-				return nil, apperrors.NewInternal(fmt.Sprintf("failed to read --%s", flagName))
-			}
-			overrides[spec.PropertyName] = convert.StringsToAny(value)
-		case flagIntegerList:
-			value, err := cmd.Flags().GetStringSlice(flagName)
-			if err != nil {
-				return nil, apperrors.NewInternal(fmt.Sprintf("failed to read --%s", flagName))
-			}
-			parsed, parseErr := convert.ParseStringList(value, strconv.Atoi)
-			if parseErr != nil {
-				return nil, apperrors.NewValidation(fmt.Sprintf("invalid values for --%s: %v", flagName, parseErr))
-			}
-			overrides[spec.PropertyName] = convert.IntsToAny(parsed)
-		case flagNumberList:
-			value, err := cmd.Flags().GetStringSlice(flagName)
-			if err != nil {
-				return nil, apperrors.NewInternal(fmt.Sprintf("failed to read --%s", flagName))
-			}
-			parsed, parseErr := convert.ParseStringList(value, func(raw string) (float64, error) {
-				return strconv.ParseFloat(raw, 64)
-			})
-			if parseErr != nil {
-				return nil, apperrors.NewValidation(fmt.Sprintf("invalid values for --%s: %v", flagName, parseErr))
-			}
-			overrides[spec.PropertyName] = convert.FloatsToAny(parsed)
-		case flagBooleanList:
-			value, err := cmd.Flags().GetStringSlice(flagName)
-			if err != nil {
-				return nil, apperrors.NewInternal(fmt.Sprintf("failed to read --%s", flagName))
-			}
-			parsed, parseErr := convert.ParseStringList(value, strconv.ParseBool)
-			if parseErr != nil {
-				return nil, apperrors.NewValidation(fmt.Sprintf("invalid values for --%s: %v", flagName, parseErr))
-			}
-			overrides[spec.PropertyName] = convert.BoolsToAny(parsed)
-		}
-	}
-	return overrides, nil
 }
 
 func nestedMap(root map[string]any, key string) (map[string]any, bool) {

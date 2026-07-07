@@ -269,7 +269,7 @@ func normalizeFilters(parsed any) any {
 		fieldID, hasFieldID := cond["fieldId"]
 		if hasFieldID {
 			// MCP 格式：{fieldId, operator, value} → {operator, operands:[fieldId, value]}
-			childOp, _ := cond["operator"]
+			childOp := cond["operator"]
 			value, hasValue := cond["value"]
 			newCond := map[string]any{
 				"operator": childOp,
@@ -516,16 +516,6 @@ func callAitableHelperTool(toolName string, args map[string]any) error {
 }
 
 // ─── view 子命令公共 helper ──────────────────────────────────────────
-
-// viewBlockApplicableViewTypes 列出每个 config 子块支持的 viewType，用于读/写
-// 子命令的前置校验与错误提示。与服务端 UpdateViewConfigInput.java 注释保持一致。
-var viewBlockApplicableViewTypes = map[string][]string{
-	"kanbanCard":   {"Kanban"},
-	"galleryCard":  {"Gallery"},
-	"ganttTimebar": {"Gantt"},
-	"aggregate":    {"Grid"},
-	"fieldWidths":  {"Grid"},
-}
 
 // getViewRaw 调用 get_views 服务端 filter 单个 viewId，返回原始视图 map 与 viewType。
 // 当响应中没有目标视图、解析失败、或服务端报错时，返回带 CLIError 的错误。
@@ -3288,12 +3278,10 @@ locked 为 true 表示视图已锁定，false 表示未锁定。`,
 		Long: `在指定 Base 下创建 dashboard。
 调用前建议先调用 dashboard config-example 了解 --config 入参结构和要求。
 返回新创建的 dashboard 详情。`,
-		Example: `  dws aitable dashboard create --base-id BASE_ID --config '{"dashboardName":"销售看板",...}'
+		Example: `  dws aitable dashboard create --base-id BASE_ID --name "销售看板"
+  dws aitable dashboard create --base-id BASE_ID --config '{"name":"销售看板",...}'
   # 先获取配置示例: dws aitable dashboard config-example`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if cmd.Flags().Changed("name") {
-				return fmt.Errorf("dashboard create --name is temporarily disabled because the backend currently ignores this shortcut and may return an unusable dashboard id; use --config with a complete dashboard config from `dws aitable dashboard config-example`")
-			}
 			var cfg map[string]any
 			if configStr, _ := cmd.Flags().GetString("config"); configStr != "" {
 				if parsed, ok := jsonStringToMap(configStr).(map[string]any); ok {
@@ -3305,7 +3293,7 @@ locked 为 true 表示视图已锁定，false 表示未锁定。`,
 				cfg = make(map[string]any)
 			}
 			if name, _ := cmd.Flags().GetString("name"); name != "" {
-				cfg["dashboardName"] = name
+				cfg["name"] = name
 			}
 			if len(cfg) == 0 {
 				return fmt.Errorf("must specify either --config or --name")
@@ -3327,14 +3315,12 @@ locked 为 true 表示视图已锁定，false 表示未锁定。`,
 		Long: `更新指定 dashboard 的配置。
 调用前建议先调用 dashboard config-example 了解 --config 入参结构和要求。
 传入需要更新的字段，未传入的字段保持原值。`,
-		Example: `  dws aitable dashboard update --base-id BASE_ID --dashboard-id DASHBOARD_ID --config '{"dashboardName":"新名称"}'
+		Example: `  dws aitable dashboard update --base-id BASE_ID --dashboard-id DASHBOARD_ID --name "新名称"
+  dws aitable dashboard update --base-id BASE_ID --dashboard-id DASHBOARD_ID --config '{"name":"新名称"}'
   # 查询 dashboardId: dws aitable base get --base-id <baseId>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateRequiredFlags(cmd, "dashboard-id"); err != nil {
 				return err
-			}
-			if cmd.Flags().Changed("name") {
-				return fmt.Errorf("dashboard update --name is temporarily disabled because backend partial rename can make the dashboard unreachable; wait for backend fix or pass a complete --config after exporting the current dashboard config")
 			}
 			var cfg map[string]any
 			if configStr, _ := cmd.Flags().GetString("config"); configStr != "" {
@@ -3347,12 +3333,7 @@ locked 为 true 表示视图已锁定，false 表示未锁定。`,
 				cfg = make(map[string]any)
 			}
 			if name, _ := cmd.Flags().GetString("name"); name != "" {
-				cfg["dashboardName"] = name
-			}
-			if len(cfg) == 1 {
-				if _, ok := cfg["dashboardName"]; ok {
-					return fmt.Errorf("dashboard update with only dashboardName is temporarily disabled because backend partial rename can make the dashboard unreachable; wait for backend fix or pass a complete --config after exporting the current dashboard config")
-				}
+				cfg["name"] = name
 			}
 			if len(cfg) == 0 {
 				return fmt.Errorf("must specify either --config or --name")

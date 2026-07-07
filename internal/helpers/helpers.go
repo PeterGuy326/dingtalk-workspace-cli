@@ -26,7 +26,6 @@ var (
 	mustGetFlag                     = cmdutil.MustGetFlag
 	flagOrFallback                  = cmdutil.FlagOrFallback
 	mustFlagOrFallback              = cmdutil.MustFlagOrFallback
-	mustFlagWithHint                = cmdutil.MustFlagWithHint
 	validateRequiredFlags           = cmdutil.ValidateRequiredFlags
 	validateRequiredFlagWithAliases = cmdutil.ValidateRequiredFlagWithAliases
 	parseISOTimeToMillis            = cmdutil.ParseISOTimeToMillis
@@ -85,7 +84,7 @@ var cmdToProduct = map[string]string{
 	"oa": "oa", "mail": "mail", "ding": "ding",
 	"devdoc":     "devdoc",
 	"attendance": "attendance",
-	"live": "live", "aiapp": "aiapp",
+	"live":       "live", "aiapp": "aiapp",
 	"minutes":    "minutes",
 	"finance":    "finance",
 	"report":     "report",
@@ -219,12 +218,6 @@ func MustGetStringFlag(cmd *cobra.Command, name string) string {
 		val, _ = cmd.InheritedFlags().GetString(name)
 	}
 	return val
-}
-
-// callMCPToolInternal 是 callMCPTool 和 callMCPToolOnServer 的共享实现。
-// explicitServerID 为空时，使用 resolveProductID() 自动确定目标 MCP Server。
-func callMCPToolInternal(explicitServerID, toolName string, args map[string]any) error {
-	return callMCPToolInternalOpts(explicitServerID, toolName, args, false)
 }
 
 // callMCPToolInternalOpts 是所有 MCP 工具调用的核心实现。
@@ -527,42 +520,6 @@ func getDWSGatewayErrorCode(errBody map[string]any) (string, bool) {
 	return "", false
 }
 
-// isTakenOverByDynamic reports whether the named product was handed over to
-// a dynamic (envelope) command. In the open-source edition there is no
-// discovery envelope, so this always returns false.
-func isTakenOverByDynamic(_ string) bool {
-	return false
-}
-
-// registerHintSubCmds adds hidden disambiguation subcommands that print a hint
-// directing the user to the canonical command path.
-//
-// When the parent product has been taken over by the dynamic (envelope)
-// command (tracked in takeoverNames), we skip hint injection: the dynamic
-// subtree may have a different shape than the hardcoded one, and attaching
-// a static hint risks masking a real dynamic subcommand.
-func registerHintSubCmds(root *cobra.Command) {
-	hints := []struct {
-		parent string
-		name   string
-		hint   string
-	}{
-		// 注：drive search 已是真命令（调用 search_files MCP tool），不再注册 hintSubCmd（会与真命令冲突）。
-		{"mail", "search", "use: dws mail message search"},
-	}
-	for _, h := range hints {
-		if isTakenOverByDynamic(h.parent) {
-			continue
-		}
-		for _, sub := range root.Commands() {
-			if sub.Name() == h.parent {
-				sub.AddCommand(hintSubCmd(h.name, h.hint))
-				break
-			}
-		}
-	}
-}
-
 // suggestForBusinessError returns a user-facing suggestion for known business
 // error patterns in a parsed JSON body, or "" if no specific suggestion applies.
 func suggestForBusinessError(body map[string]any) string {
@@ -647,158 +604,4 @@ func RegisterCamelCaseAliases(cmd *cobra.Command) {
 	for _, child := range cmd.Commands() {
 		RegisterCamelCaseAliases(child)
 	}
-}
-
-// shortcutSubCmd creates a hidden subcommand that hints the user to use the
-// correct command path. Used for common mistyped/abbreviated command names.
-func shortcutSubCmd(parent *cobra.Command, use, targetPath, hintText string) {
-	cmd := &cobra.Command{
-		Use:    use,
-		Hidden: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return fmt.Errorf("ambiguous command %q for %q\n  hint: %s",
-				use, targetPath, hintText)
-		},
-	}
-	parent.AddCommand(cmd)
-}
-
-// suggestFlagFix detects flag typos using Levenshtein distance and returns
-// a user-friendly suggestion. Returns "" if no close match is found.
-func suggestFlagFix(cmd *cobra.Command, err error) string {
-	msg := err.Error()
-	const prefix = "unknown flag: --"
-	idx := strings.Index(msg, prefix)
-	if idx < 0 {
-		return ""
-	}
-	body := strings.TrimSpace(msg[idx+len(prefix):])
-
-	// Phase 1: prefix match (flag-value concatenation), prefer longest flag name.
-	// Only trigger when the trailing part looks like a real value (digits, quoted
-	// string, path, etc.) — short alphabetic suffixes are far more likely typos
-	// (e.g. `--nodee`, `--workspaces`, `--content-path`) and should fall through
-	// to Phase 2 fuzzy match.
-	var bestFlag, bestValue string
-	cmd.Flags().VisitAll(func(f *pflag.Flag) {
-		name := f.Name
-		if strings.HasPrefix(body, name) && len(body) > len(name) {
-			if len(name) > len(bestFlag) {
-				bestFlag = name
-				bestValue = body[len(name):]
-			}
-		}
-	})
-	if bestFlag != "" && looksLikeFlagValue(bestValue) {
-		return fmt.Sprintf("Space required between flag and value: --%s %s", bestFlag, bestValue)
-	}
-
-	// Phase 2: Levenshtein fuzzy match. On distance ties prefer the non-hidden
-	// (primary) flag so suggestions name the canonical flag, not a hidden alias.
-	bestName, bestDist := "", 999
-	bestHidden := true
-	cmd.Flags().VisitAll(func(f *pflag.Flag) {
-		d := levenshtein(body, f.Name)
-		if d < bestDist || (d == bestDist && bestHidden && !f.Hidden) {
-			bestDist = d
-			bestName = f.Name
-			bestHidden = f.Hidden
-		}
-	})
-	threshold := 2
-	if len(body) <= 3 {
-		threshold = 1
-	} else if len(body) > 8 {
-		threshold = 3
-	}
-	if len(body) >= 12 {
-		threshold = 4
-	}
-	if bestDist > 0 && bestDist <= threshold && bestName != "" {
-		return fmt.Sprintf("Did you mean --%s?", primaryFlagNameForSuggestion(cmd, bestName))
-	}
-
-	return fmt.Sprintf("Run '%s --help' to see available options", cmd.CommandPath())
-}
-
-// looksLikeFlagValue heuristically distinguishes a real value (digit, symbol,
-// path, quoted string) from a typo extension to a flag name. Returns false for
-// short pure-alpha suffixes and any string starting with '-' (which look more
-// like fragments of another flag name than a value).
-func looksLikeFlagValue(v string) bool {
-	if v == "" {
-		return false
-	}
-	if v[0] == '-' {
-		return false
-	}
-	first := v[0]
-	isAlpha := (first >= 'a' && first <= 'z') || (first >= 'A' && first <= 'Z')
-	if isAlpha {
-		return false
-	}
-	return true
-}
-
-// primaryFlagNameForSuggestion returns the visible primary flag for a hidden
-// cross-product alias. Suggestions should guide Agent callers back to the
-// canonical parameter instead of advertising every compatibility alias.
-func primaryFlagNameForSuggestion(cmd *cobra.Command, flagName string) string {
-	if f := cmd.Flags().Lookup(flagName); f != nil && !f.Hidden {
-		return flagName
-	}
-	for _, group := range crossProductAliases {
-		found := false
-		for _, n := range group.names {
-			if n == flagName {
-				found = true
-				break
-			}
-		}
-		if !found {
-			continue
-		}
-		for _, n := range group.names {
-			if f := cmd.Flags().Lookup(n); f != nil && !f.Hidden {
-				return n
-			}
-		}
-		return flagName
-	}
-	return flagName
-}
-
-func levenshtein(a, b string) int {
-	la, lb := len(a), len(b)
-	if la == 0 {
-		return lb
-	}
-	if lb == 0 {
-		return la
-	}
-	dp := make([]int, lb+1)
-	for j := 0; j <= lb; j++ {
-		dp[j] = j
-	}
-	for i := 1; i <= la; i++ {
-		prev := dp[0]
-		dp[0] = i
-		for j := 1; j <= lb; j++ {
-			temp := dp[j]
-			cost := 1
-			if a[i-1] == b[j-1] {
-				cost = 0
-			}
-			mn := dp[j] + 1
-			if dp[j-1]+1 < mn {
-				mn = dp[j-1] + 1
-			}
-			if prev+cost < mn {
-				mn = prev + cost
-			}
-			dp[j] = mn
-			prev = temp
-		}
-	}
-	return dp[lb]
 }

@@ -33,21 +33,48 @@ func SetHTTPPutFile(fn func(ctx context.Context, url string, headers map[string]
 }
 
 func docVersionExists(ctx context.Context, nodeID string, version int) (bool, error) {
-	text, err := callMCPToolReturnTextOnServer(ctx, "doc", "list_doc_versions", map[string]any{
-		"nodeId":     nodeID,
-		"maxResults": 50,
-	})
-	if err != nil {
-		return false, err
-	}
-	var payload any
-	if err := json.Unmarshal([]byte(text), &payload); err != nil {
-		return false, fmt.Errorf("无法解析文档版本列表，已停止回滚以避免假成功: %w", err)
-	}
-	if docVersionPayloadContains(payload, version) {
-		return true, nil
+	// 注意: 不传 maxResults —— 服务端实际接受的上限小于 schema 声明的 1-50，
+	// 传大值会直接报错 (与悟空实现一致: 默认分页大小 + 游标翻页)。
+	cursor := ""
+	for page := 0; page < 20; page++ {
+		toolArgs := map[string]any{"nodeId": nodeID}
+		if cursor != "" {
+			toolArgs["nextCursor"] = cursor
+		}
+		text, err := callMCPToolReturnTextOnServer(ctx, "doc", "list_doc_versions", toolArgs)
+		if err != nil {
+			return false, err
+		}
+		var payload any
+		if err := json.Unmarshal([]byte(text), &payload); err != nil {
+			return false, fmt.Errorf("无法解析文档版本列表，已停止回滚以避免假成功: %w", err)
+		}
+		if docVersionPayloadContains(payload, version) {
+			return true, nil
+		}
+		cursor = docVersionNextCursor(payload)
+		if cursor == "" {
+			break
+		}
 	}
 	return false, nil
+}
+
+// docVersionNextCursor 从 list_doc_versions 响应中提取分页游标；没有下一页时返回 ""。
+func docVersionNextCursor(v any) string {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return ""
+	}
+	if hasMore, ok := m["hasMore"].(bool); ok && !hasMore {
+		return ""
+	}
+	for _, key := range []string{"nextCursor", "nextToken", "cursor"} {
+		if s, ok := m[key].(string); ok && s != "" {
+			return s
+		}
+	}
+	return ""
 }
 
 func docVersionPayloadContains(v any, target int) bool {

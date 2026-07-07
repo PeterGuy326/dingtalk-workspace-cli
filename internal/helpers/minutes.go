@@ -277,6 +277,12 @@ func newMinutesCommand() *cobra.Command {
 	minutesUpdateTitleCmd.Flags().String("id", "", "听记 taskUuid (必填)")
 	minutesUpdateTitleCmd.Flags().String("title", "", "新标题 (必填)")
 
+	// listeningNoteCmdTool 是听记指令工具在 MCP 网关上的注册名。
+	// 网关侧该工具以中文名注册（title: minutes_cmd_start），旧英文名
+	// execute_listening_note_command 会返回 "PARAM_ERROR - 未找到指定工具"。
+	// 单个工具通过 cmd 参数覆盖 create/pause/resume/end 四种指令。
+	const listeningNoteCmdTool = "执行听记指令-发起AI听记录音"
+
 	minutesRecordCmd := &cobra.Command{Use: "record", Short: "控制听记录音", RunE: groupRunE}
 
 	minutesRecordStartCmd := &cobra.Command{
@@ -289,7 +295,7 @@ func newMinutesCommand() *cobra.Command {
 			if v := mustGetFlag(cmd, "session-id"); v != "" {
 				toolArgs["sessionId"] = v
 			}
-			return callMCPTool("execute_listening_note_command", toolArgs)
+			return callMCPTool(listeningNoteCmdTool, toolArgs)
 		},
 	}
 
@@ -309,7 +315,7 @@ func newMinutesCommand() *cobra.Command {
 			if v := mustGetFlag(cmd, "session-id"); v != "" {
 				toolArgs["sessionId"] = v
 			}
-			return callMCPTool("execute_listening_note_command", toolArgs)
+			return callMCPTool(listeningNoteCmdTool, toolArgs)
 		},
 	}
 
@@ -329,7 +335,7 @@ func newMinutesCommand() *cobra.Command {
 			if v := mustGetFlag(cmd, "session-id"); v != "" {
 				toolArgs["sessionId"] = v
 			}
-			return callMCPTool("execute_listening_note_command", toolArgs)
+			return callMCPTool(listeningNoteCmdTool, toolArgs)
 		},
 	}
 
@@ -349,7 +355,7 @@ func newMinutesCommand() *cobra.Command {
 			if v := mustGetFlag(cmd, "session-id"); v != "" {
 				toolArgs["sessionId"] = v
 			}
-			return callMCPTool("execute_listening_note_command", toolArgs)
+			return callMCPTool(listeningNoteCmdTool, toolArgs)
 		},
 	}
 

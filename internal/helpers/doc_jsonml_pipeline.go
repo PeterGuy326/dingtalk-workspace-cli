@@ -6,49 +6,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers/doc"
 	jsonrepair "github.com/RealAlexandreAI/json-repair"
 	"github.com/spf13/cobra"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers/doc"
 )
-
-// dangerousUnicode lists characters stripped from JSONML output.
-// U+200D (ZWJ) is intentionally excluded — it joins emoji sequences.
-var dangerousUnicode = [...]rune{
-	0x200B, // zero-width space
-	0x200C, // zero-width non-joiner
-	0x200E, // left-to-right mark
-	0x200F, // right-to-left mark
-	0x202A, // left-to-right embedding
-	0x202B, // right-to-left embedding
-	0x202C, // pop directional formatting
-	0x202D, // left-to-right override
-	0x202E, // right-to-left override
-	0x2066, // left-to-right isolate
-	0x2067, // right-to-left isolate
-	0x2068, // first strong isolate
-	0x2069, // pop directional isolate
-	0xFEFF, // byte order mark
-	0x00AD, // soft hyphen
-}
-
-var dangerousSet = func() map[rune]bool {
-	m := make(map[rune]bool, len(dangerousUnicode))
-	for _, r := range dangerousUnicode {
-		m[r] = true
-	}
-	return m
-}()
-
-// stripDangerousUnicode removes zero-width and bidirectional control characters
-// that some backends reject as security risks.
-func stripDangerousUnicode(s string) string {
-	return strings.Map(func(r rune) rune {
-		if dangerousSet[r] {
-			return -1
-		}
-		return r
-	}, s)
-}
 
 // isInputDangerousUnicode matches the dangerous-unicode set defined by the
 // server-side RejectControlChars validator (pkg/validate/input.go).
