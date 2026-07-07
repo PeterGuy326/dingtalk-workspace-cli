@@ -1096,7 +1096,7 @@ Flags:
 
 ### 更新邮件模板
 
-> ⚠️ 已知问题：当前恒返回 1001 Invalid parameter，更新不生效（create/get/delete 正常）。遇到更新模板的需求，直接告知用户暂不支持，勿重试或变通。
+> ⚠️ 服务端限制：仅草稿模板（创建时带 `--is-draft`）可更新；非草稿模板更新会返回 1001 Invalid parameter。需要修改非草稿模板时，建议删除后用 `--is-draft` 重建。
 
 > **重要限制：** `template update` **仅对草稿模板有效**。只有通过 `template create --is-draft` 创建的草稿模板才支持更新，非草稿模板调用 update 会返回 `Invalid parameter` 错误。
 

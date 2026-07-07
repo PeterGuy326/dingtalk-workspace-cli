@@ -1593,7 +1593,7 @@ user 对象字段：
 	templateCreateCmd.Flags().String("name", "", "模板名称 (必填)")
 	templateCreateCmd.Flags().String("to", "", "模板收件人列表，逗号分隔 (可选)")
 	templateCreateCmd.Flags().String("cc", "", "模板抄送人列表，逗号分隔 (可选)")
-	templateCreateCmd.Flags().Bool("is-draft", false, "是否为草稿模板 (可选，默认 false)")
+	templateCreateCmd.Flags().Bool("is-draft", false, "是否为草稿模板 (可选，默认 false；仅草稿模板后续可 template update)")
 
 	templateListCmd := &cobra.Command{
 		Use:   "list",
@@ -1661,6 +1661,9 @@ user 对象字段：
 		Short: "更新邮件模板",
 		Long: `更新已有邮件模板的内容。仅传入需要更新的字段即可。
 
+注意: 邮箱服务端仅支持更新草稿模板 (创建时带 --is-draft)；
+非草稿模板不可修改 (服务端返回 Invalid parameter)，只能删除后重建。
+
 错误说明：
   domain.notFound  该用户的邮箱不是由钉钉邮箱托管，无法完成操作`,
 		Example: `  dws mail template update --email user@company.com --id <templateId> --subject "新标题" --content "新正文"
@@ -1691,7 +1694,11 @@ user 对象字段：
 			if v, _ := cmd.Flags().GetString("cc"); v != "" {
 				toolArgs["ccRecipients"] = parseRecipients(v)
 			}
-			return callMCPTool("update_user_message_template", toolArgs)
+			err := callMCPTool("update_user_message_template", toolArgs)
+			if cliErr, ok := err.(*CLIError); ok && strings.Contains(cliErr.Message, "Invalid parameter") {
+				cliErr.Suggestion = "邮箱服务端仅支持更新草稿模板 (创建时带 --is-draft)；非草稿模板不可修改，请先 dws mail template delete 后用 --is-draft 重建"
+			}
+			return err
 		},
 	}
 

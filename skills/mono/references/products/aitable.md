@@ -108,8 +108,6 @@
 | `chart get/create/update/delete` | 图表管理 |
 | `chart widgets-example` | 查看图表 widgets 配置模板 |
 
-> ⚠️ 危险：`dashboard update` 当前改名会导致仪表盘丢失，修复前禁用。
-
 ### export & import → 详见 [aitable-export-import.md](./aitable/aitable-export-import.md)
 
 | 命令 | 用途 |
@@ -268,7 +266,6 @@ dws aitable chart get --base-id <BASE_ID> --dashboard-id <DASHBOARD_ID> --chart-
 - `dashboard get` 返回的 `charts[].chartId` 可直接给 `chart get` 使用。
 - `dashboard share get` 可能返回 `404`（资源不存在或未开通），需按可重试错误处理，不要误判为参数拼错。
 - `chart share get` 可正常返回 `enabled/shareUrl`，用于分享状态判断。
-- ⚠️ 危险：`dashboard update` 当前改名会导致仪表盘丢失，修复前禁用。
 
 ### 导出数据（两阶段轮询）
 
