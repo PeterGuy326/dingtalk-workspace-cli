@@ -19,12 +19,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up dws-data module
-        uses: ./.github/actions/setup-dws-data
-        with:
-          repository: ${{ vars.DWS_DATA_REPOSITORY || 'PeterGuy326/dws-data' }}
-          ref: ${{ vars.DWS_DATA_REF || 'main' }}
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -53,12 +47,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up dws-data module
-        uses: ./.github/actions/setup-dws-data
-        with:
-          repository: ${{ vars.DWS_DATA_REPOSITORY || 'PeterGuy326/dws-data' }}
-          ref: ${{ vars.DWS_DATA_REF || 'main' }}
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -80,12 +68,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
-      - name: Set up dws-data module
-        uses: ./.github/actions/setup-dws-data
-        with:
-          repository: ${{ vars.DWS_DATA_REPOSITORY || 'PeterGuy326/dws-data' }}
-          ref: ${{ vars.DWS_DATA_REF || 'main' }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -146,12 +128,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up dws-data module
-        uses: ./.github/actions/setup-dws-data
-        with:
-          repository: ${{ vars.DWS_DATA_REPOSITORY || 'PeterGuy326/dws-data' }}
-          ref: ${{ vars.DWS_DATA_REF || 'main' }}
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -173,12 +149,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
-      - name: Set up dws-data module
-        uses: ./.github/actions/setup-dws-data
-        with:
-          repository: ${{ vars.DWS_DATA_REPOSITORY || 'PeterGuy326/dws-data' }}
-          ref: ${{ vars.DWS_DATA_REF || 'main' }}
 
       - name: Set up Go
         uses: actions/setup-go@v5

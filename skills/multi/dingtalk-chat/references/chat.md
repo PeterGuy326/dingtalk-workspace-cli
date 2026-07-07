@@ -336,6 +336,35 @@ Flags:
       --cursor string    分页游标（默认 "0"，翻页传 nextCursor）
 ```
 
+### data-auth (数据授权)
+
+#### 跨组织数据授权 — 授予 chat 跨组织消息拉取权限
+
+用于跨组织消息拉取等数据访问场景，不用于发送、撤回、群管理等操作。该命令调用 `chat_permission_grant`，固定使用数据授权类别：`scope=chat.data:cross-org`、`grantCategory=data`。
+
+```
+Usage:
+  dws chat data-auth cross-org [flags]
+
+Example:
+  dws chat data-auth cross-org --target-org-id 439446171 --format json
+  dws chat data-auth cross-org --target-org-id 439446171 --agentCode wukong --grant-type timed --ttl 24h --format json
+  dws chat data-auth cross-org --all --grant-type timed --ttl 24h --format json
+
+Flags:
+      --target-org-id string   目标组织 ID（与 --all 二选一）
+      --all                    授权所有目标组织
+      --agentCode string       Agent 标识，默认 wukong
+      --grant-type string      授权策略: once|session|timed|permanent (default "timed")
+      --ttl string             timed 授权有效期，如 1h/4h/24h/7d (default "24h")
+      --session-id string      session 授权的会话标识
+
+注意:
+  - --target-org-id 和 --all 必须且只能指定一个。
+  - --grant-type=session 时必须传 --session-id。
+  - --grant-type=timed 时必须传 --ttl。
+```
+
 ### message (会话消息管理)
 
 #### 拉取会话消息内容 — 拉取指定群聊或单聊的会话消息内容
@@ -398,11 +427,13 @@ Example:
   dws chat message send --group <openconversation_id> --at-open-dingtalk-ids openDingTalkId1,openDingTalkId2 "<@openDingTalkId1> <@openDingTalkId2> 请查收"
   # 发送图片
   dws chat message send --group <openconversation_id> --msg-type image --media-id <mediaId>
-  # 发送文件（音频/视频/文档等非图片文件统一走钉盘上传）
+  # 发送文件/音频/视频（audio/video 是 file 的语义别名）
   # 先 dws chat conversation-info --group <id> 获取 spaceId（取 newCSpaceIdIM）
   # 再 dws drive upload --file <文件> --space-id <spaceId> 上传
   # 再 dws drive info --file-id <fileId> --space-id <spaceId> 获取 dentryId
   dws chat message send --group <openconversation_id> --msg-type file --dentry-id <dentryId> --space-id 24557356340 --file-name "report.pdf" --file-type "pdf" --file-path "/report.pdf" --file-size 234724
+  dws chat message send --group <openconversation_id> --msg-type audio --file-path ./recording.mp3
+  dws chat message send --group <openconversation_id> --msg-type video --file-path ./demo.mp4
 Flags:
       --text string              消息内容（推荐使用，也可用位置参数）
       --group string             群聊 openconversation_id（群聊时必填）

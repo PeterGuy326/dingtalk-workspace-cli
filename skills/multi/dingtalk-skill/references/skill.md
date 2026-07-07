@@ -107,4 +107,4 @@ Args:
 ## 相关产品
 
 - `dingtalk-calendar` (`references/calendar.md`) — 日历日程管理（含参与者/会议室）
-- 视频会议直接发起/邀请入会/会中控制 — 当前开源 CLI 不支持；请在钉钉客户端操作，或改用 `dingtalk-calendar` 预约日程
+- `dingtalk-conference` (`references/conference.md`) — 视频会议（发起/预约/邀请入会/会中控制）

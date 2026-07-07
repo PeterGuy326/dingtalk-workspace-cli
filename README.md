@@ -109,6 +109,10 @@ go build -o dws ./cmd       # build to current directory
 cp dws ~/.local/bin/         # install to PATH
 ```
 
+Static endpoint data is generated from the Wukong baseline and committed in this
+repository under `internal/syncdata`, so source builds do not require a sibling
+data checkout.
+
 > Requires Go 1.25+. Use `make package` to cross-compile for all platforms (macOS / Linux / Windows x amd64 / arm64).
 
 </details>

@@ -1410,14 +1410,20 @@ func newChatCommand() *cobra.Command {
 			if userID != "" {
 				resolved, err := resolveOpenDingTalkID(cmd.Context(), userID)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "[debug] resolveOpenDingTalkID(%q) failed: %v, falling back to receiverUserId\n", userID, err)
+					if commandBoolFlag(cmd, "debug") || commandBoolFlag(cmd, "verbose") {
+						fmt.Fprintf(os.Stderr, "[debug] resolveOpenDingTalkID(%q) failed: %v, falling back to receiverUserId\n", userID, err)
+					}
 				} else {
-					fmt.Fprintf(os.Stderr, "[debug] resolved userID=%q to openDingTalkId=%q\n", userID, resolved)
+					if commandBoolFlag(cmd, "debug") || commandBoolFlag(cmd, "verbose") {
+						fmt.Fprintf(os.Stderr, "[debug] resolved userID=%q to openDingTalkId=%q\n", userID, resolved)
+					}
 					openDingTalkID = resolved
 					userID = ""
 				}
 			}
-			fmt.Fprintf(os.Stderr, "[debug] message send after normalization: groupID=%q userID=%q openDingTalkID=%q\n", groupID, userID, openDingTalkID)
+			if commandBoolFlag(cmd, "debug") || commandBoolFlag(cmd, "verbose") {
+				fmt.Fprintf(os.Stderr, "[debug] message send after normalization: groupID=%q userID=%q openDingTalkID=%q\n", groupID, userID, openDingTalkID)
+			}
 
 			mediaId, _ := cmd.Flags().GetString("media-id")
 			msgType, _ := cmd.Flags().GetString("msg-type")

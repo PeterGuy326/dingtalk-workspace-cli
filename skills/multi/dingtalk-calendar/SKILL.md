@@ -1,6 +1,6 @@
 ---
 name: dingtalk-calendar
-description: 钉钉日历与会议室。Use when 用户说 约会议/查日程/订会议室/查闲忙/加参会人/改期/取消会议/今天的日程/本周日程/共同空闲。Distinct from dingtalk-minutes(听记)、dingtalk-todo(待办)。命令前缀：dws calendar。当前开源 CLI 不暴露视频会议直接发起/入会控制命令。
+description: 钉钉日历与会议室。Use when 用户说 约会议/查日程/订会议室/查闲忙/加参会人/改期/取消会议/今天的日程/本周日程/共同空闲。Distinct from dingtalk-conference(视频会议发起/预约/邀请入会/会中控制)、dingtalk-minutes(听记)、dingtalk-todo(待办)。命令前缀：dws calendar。
 cli_version: ">=0.2.14"
 metadata:
   category: product
@@ -18,7 +18,7 @@ metadata:
 
 <!-- SAFETY_PREAMBLE_INJECT -->
 
-> ⚠️ **命令以当前 dws 二进制为准**。服务发现和动态 schema 已下线，本文档随版本内嵌发布；执行前用 `dws <cmd> --help` 或 `--dry-run` 验证 flag 与命令是否存在。
+> ⚠️ **命令可用性可能因企业服务发现配置而异**。本文档列出的命令基于 dws envelope schema 与本仓库 v1.0.30 实测，但部分命令的 cobra 子命令暴露与否还取决于你的企业 MCP gateway 是否注册了对应 tool。如果跑某条命令报 `unknown command` 或 fall back 到父级 help，说明当前账号企业未开通该能力。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
 
 
 > 命令参考：[calendar.md](references/calendar.md)；剧本：[03-meeting.md](references/03-meeting.md)。
@@ -45,7 +45,7 @@ metadata:
 
 ## 跨产品协作
 
-- 视频会议直接发起 / 入会链接 / 邀请入会 / 会中控制 → 当前开源 CLI 不支持，询问是否改为预约日程；直接会议操作建议在钉钉客户端完成
+- 视频会议发起 / 入会链接 / 邀请入会 / 会中控制 → 切到 `dingtalk-conference`
 - 会后摘要 / 待办 → 切到 `dingtalk-minutes`
 - 参会人按人名 → 先用 `dingtalk-aisearch` 解析
 

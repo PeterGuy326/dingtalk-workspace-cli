@@ -58,7 +58,7 @@ func printCacheCompatNotice(cmd *cobra.Command, command string) error {
 		Status:      "deprecated",
 		Command:     "dws cache " + command,
 		Message:     "服务发现已下线，当前版本使用编译期静态端点目录；dws cache 仅保留为兼容入口，不会刷新端点。",
-		Replacement: "如遇 endpoint_not_resolved，请先执行 dws upgrade 获取包含最新 dws-data/syncdata 端点的版本；仍失败时检查 dws-data/syncdata.StaticServers() 是否覆盖目标 product/server。",
+		Replacement: "如遇 endpoint_not_resolved，请先执行 dws upgrade 获取包含最新 internal/syncdata 端点的版本；仍失败时检查 internal/syncdata.StaticServers() 是否覆盖目标 product/server。",
 	}
 	format, _ := cmd.Root().PersistentFlags().GetString("format")
 	switch strings.ToLower(strings.TrimSpace(format)) {

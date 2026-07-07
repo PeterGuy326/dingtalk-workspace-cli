@@ -35,7 +35,7 @@ func SetHTTPPutFile(fn func(ctx context.Context, url string, headers map[string]
 func docVersionExists(ctx context.Context, nodeID string, version int) (bool, error) {
 	text, err := callMCPToolReturnTextOnServer(ctx, "doc", "list_doc_versions", map[string]any{
 		"nodeId":     nodeID,
-		"maxResults": 100,
+		"maxResults": 50,
 	})
 	if err != nil {
 		return false, err

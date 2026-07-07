@@ -26,7 +26,7 @@
 
 1. **移除服务发现** — 切到静态端点模式，`dws schema` 返回 `"note":"static endpoint mode"`  
 2. **移除 conference 后端产品** — 从 endpoints/routing/synclist 去除真实 MCP 注册；旧 CLI 路径保留 unavailable 兼容提示
-3. **sync-oss 基线对齐** — `register_products.go` / `dws-data/syncdata/endpoints.go` / `dws-data/syncdata/routing.go` 都已用 sync-oss 从悟空同步  
+3. **sync-oss 基线对齐** — `register_products.go` / `internal/syncdata/endpoints.go` / `internal/syncdata/routing.go` 都已用 sync-oss 从悟空同步
 4. **skills 同步** — mono + multi skills 从 wukong 同步到开源 `skills/`，`.qoder/skills/` 仅作为 Agent 安装目标
 5. **发版** — 已打包给勤泽/重鱼/郑御白测试  
 6. **`--ai-tag` flag** — `chat message send` 和 `reply` 命令新增 flag，默认 `true`；实际 `clawType` 走 `edition.ClawType()`，开源默认 `openClaw`，悟空版可保持 `wukong`
@@ -54,15 +54,16 @@ M  internal/cli/loader.go                degraded hint 去服务发现化
 
 | 同步内容 | 源（wukong） | 目标（open-source） |
 |----------|-------------|---------------------|
-| 端点列表 | `wukong.StaticServers()` | `dws-data/syncdata/endpoints.go` |
+| 端点列表 | `wukong.StaticServers()` | `internal/syncdata/endpoints.go` |
 | 产品注册 | `wukong/products/register.go` → `RegisterProducts()` | `internal/helpers/register_products.go` → `init()` |
-| MCP 路由表 | `products.CmdToProduct()` | `dws-data/syncdata/routing.go` |
+| MCP 路由表 | `products.CmdToProduct()` | `internal/syncdata/routing.go` |
 
 **开源运行时：**
-- `pkg/edition/default.go` 通过 Go module 引入 `github.com/DingTalk-Real-AI/dws-data/syncdata`。
+- `pkg/edition/default.go` 直接引入本仓库 `internal/syncdata`。
 - `openStaticServers()` 只做类型转换，不维护手写 endpoint。
 - `internal/helpers/register_products.go` 是生成文件，注册开源可见产品。
 - 主干旧开源指令（尤其 `dev connect`）属于开源 overlay，不能被悟空同步覆盖或删除。
+- 交付态必须是单仓库可编译：`dws-wukong` 是同步源，`internal/syncdata` 是提交到开源仓库的同步产物，不再依赖兄弟目录或独立 `dws-data` workspace。
 
 **同步入口：** `/Users/huyz/Documents/data/dingding/dws/dws-wukong/cmd/sync-oss/main.go`
 
@@ -78,8 +79,8 @@ M  internal/cli/loader.go                degraded hint 去服务发现化
 
 老主干架构里，`EnvironmentLoader.Load()` 负责从 market/portal discovery 拉 envelope、缓存 catalog，并支撑 `dws schema`。`feat/remove-discovery` 切到静态端点后，这些职责必须由静态生成物和 overlay 承接：
 
-1. **endpoint/catalog**：由 `dws-data/syncdata.StaticServers()` 提供，缺失时会触发 `endpoint_not_resolved`。
-2. **routing**：由 `dws-data/syncdata.CmdToProduct()` 提供，不能漏主干旧命令的 product 映射。
+1. **endpoint/catalog**：由 `internal/syncdata.StaticServers()` 提供，缺失时会触发 `endpoint_not_resolved`。
+2. **routing**：由 `internal/syncdata.CmdToProduct()` 提供，不能漏主干旧命令的 product 映射。
 3. **schema/help**：服务发现和动态 schema 下线后，不能再靠远程 schema 推断命令；`--help` 与 skill 必须以最终 open CLI 命令树为准生成或校验。
 4. **不可用能力**：不优先删命令，先给 AI-friendly 提示，说明能力已下线/未注册，并给替代命令或处理建议。
 
@@ -129,11 +130,10 @@ M  internal/cli/loader.go                degraded hint 去服务发现化
 | 同步计划 | `/Users/huyz/.qoder/plans/deep-dale-swallow.md` |
 | 开源 repo | `/Users/huyz/Documents/data/dingding/dws/dingtalk-workspace-cli` |
 | 悟空 repo | `/Users/huyz/Documents/data/dingding/dws/dws-wukong` |
-| dws-data 模块 | `/Users/huyz/Documents/data/dingding/dws/dws-data/` |
-| 开源端点数据 | `dws-data/syncdata/endpoints.go` |
+| 开源端点数据 | `dingtalk-workspace-cli/internal/syncdata/endpoints.go` |
 | 开源端点引入 | `dingtalk-workspace-cli/pkg/edition/default.go` |
 | 开源注册 | `dingtalk-workspace-cli/internal/helpers/register_products.go` |
-| 开源路由数据 | `dws-data/syncdata/routing.go` |
+| 开源路由数据 | `dingtalk-workspace-cli/internal/syncdata/routing.go` |
 | 开源 chat | `dingtalk-workspace-cli/internal/helpers/chat.go` |
 | 悟空端点 | `dws-wukong/wukong/endpoints.go` |
 | 悟空注册 | `dws-wukong/wukong/products/register.go` |
