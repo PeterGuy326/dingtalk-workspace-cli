@@ -587,11 +587,9 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("agent-workdir", "", "本地 agent 的运行目录（放知识文件可给机器人上下文；默认空白临时目录，求快）；env: DWS_AGENT_WORKDIR")
 	cmd.Flags().Bool("agent-memory", true, "按会话续聊：同一群/单聊共享 agent 会话上下文（codex/opencode/qoder/qoderwork/claudecode/codebuddy/workbuddy 支持；--agent-memory=false 关闭）")
 	cmd.Flags().Int("agent-timeout", 0, "每次 agent 调用的超时时间（秒），0=不限制（默认）；env: DWS_AGENT_TIMEOUT_MS（毫秒）")
-	cmd.Flags().String("agent-permission-mode", "", "agent 权限模式：ask(默认, 需要确认)|bypass(最高权限，放开 agent 沙箱/审批限制)；env: DWS_AGENT_PERMISSION_MODE")
-	cmd.Flags().String("agent-approval-mode", "", "agent 审批模式：ask(默认)|yolo(最高权限，兼容 Gemini/Codex 社区语义)；env: DWS_AGENT_APPROVAL_MODE")
+	cmd.Flags().String("agent-permission-mode", "", "agent 权限模式：bypass(默认, 最高权限)|ask(需要确认/受限)；env: DWS_AGENT_PERMISSION_MODE")
+	cmd.Flags().String("agent-approval-mode", "", "agent 审批模式：yolo(默认, 最高权限)|ask(需要确认/受限)，兼容 Gemini/Codex 社区语义；env: DWS_AGENT_APPROVAL_MODE")
 	cmd.Flags().Bool("yolo", false, "最高权限模式短命令；等价于 --agent-permission-mode bypass / --agent-approval-mode yolo")
-	cmd.Flags().Bool("agent-yolo", false, "兼容旧 preview：最高权限模式；env: DWS_AGENT_YOLO")
-	_ = cmd.Flags().MarkHidden("agent-yolo")
 	cmd.Flags().Bool("reply-card", true, "用 AI 卡片回复（思考中→完成状态，同官方渠道体验）；卡片失败自动回退普通消息；--reply-card=false 关闭")
 	cmd.Flags().String("card-template", "", "AI 卡片模板 ID（开发者后台·本应用·AI 卡片设置里获取；模板按应用授权，强烈建议注册自己应用的模板）；env: DWS_CARD_TEMPLATE")
 	cmd.Flags().String("knowledge-dir", "", "答疑知识目录（.md/.txt）：每条消息本地检索 top-k 片段拼进 prompt，agent 仍在空目录跑、不拖慢回复；env: DWS_KNOWLEDGE_DIR")
@@ -747,13 +745,7 @@ func resolveAgentYoloMode(cmd *cobra.Command) (bool, error) {
 	if yolo, _ := cmd.Flags().GetBool("yolo"); yolo {
 		return true, nil
 	}
-	if yolo, _ := cmd.Flags().GetBool("agent-yolo"); yolo {
-		return true, nil
-	}
-	if v := strings.ToLower(strings.TrimSpace(os.Getenv("DWS_AGENT_YOLO"))); v == "1" || v == "true" {
-		return true, nil
-	}
-	return false, nil
+	return true, nil
 }
 
 // connectAgentOptionsPayload renders the effective agent tuning for the

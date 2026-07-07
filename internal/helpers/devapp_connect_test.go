@@ -28,7 +28,7 @@ func clearChannelEnv(t *testing.T) {
 		"HERMES_AGENT", "HERMES", "QODER_CLI", "QODERCLI_INTEGRATION_MODE",
 		"DWS_CONNECT_CMD", "DWS_AGENT_CMD",
 		"WORKBUDDY_CONFIG_DIR", "WORKBUDDY_APP_NAME", "CLAUDECODE",
-		"DWS_AGENT_PERMISSION_MODE", "DWS_AGENT_APPROVAL_MODE", "DWS_AGENT_YOLO",
+		"DWS_AGENT_PERMISSION_MODE", "DWS_AGENT_APPROVAL_MODE",
 	} {
 		t.Setenv(k, "")
 	}
@@ -179,15 +179,13 @@ func TestResolveAgentYoloMode(t *testing.T) {
 		want    bool
 		wantErr bool
 	}{
-		{"default ask", nil, nil, false, false},
+		{"default yolo", nil, nil, true, false},
 		{"permission bypass", map[string]string{"agent-permission-mode": "bypass"}, nil, true, false},
 		{"permission ask", map[string]string{"agent-permission-mode": "ask", "yolo": "true"}, nil, false, false},
 		{"approval yolo", map[string]string{"agent-approval-mode": "yolo"}, nil, true, false},
 		{"short yolo", map[string]string{"yolo": "true"}, nil, true, false},
-		{"legacy agent-yolo", map[string]string{"agent-yolo": "true"}, nil, true, false},
 		{"env permission bypass", nil, map[string]string{"DWS_AGENT_PERMISSION_MODE": "bypass"}, true, false},
 		{"env approval yolo", nil, map[string]string{"DWS_AGENT_APPROVAL_MODE": "yolo"}, true, false},
-		{"env legacy yolo", nil, map[string]string{"DWS_AGENT_YOLO": "1"}, true, false},
 		{"invalid permission mode", map[string]string{"agent-permission-mode": "full"}, nil, false, true},
 		{"invalid approval mode", map[string]string{"agent-approval-mode": "bypass"}, nil, false, true},
 	}
