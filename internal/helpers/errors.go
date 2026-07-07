@@ -272,7 +272,7 @@ func WrapErrorWithOperation(err error, operation string) error {
 			return &CLIError{
 				Code:       CodeMCPServerError,
 				Message:    msg,
-				Suggestion: "MCP skill may not be enabled in this environment. Use --debug for raw response",
+				Suggestion: "后端工具未注册或已下线；这不是参数格式问题。请升级到包含该工具注册的后端/静态端点版本，或改用当前可用替代命令。",
 				Operation:  operation,
 				Cause:      err,
 			}
@@ -379,6 +379,8 @@ func suggestForBusinessErrorText(text string) string {
 		return "请确认邮箱地址正确，查看可用邮箱: dws mail mailbox list"
 	case strings.Contains(text, "频率超限") || strings.Contains(text, "rate limit"):
 		return "API rate limit exceeded, wait a moment and retry"
+	case strings.Contains(text, "未找到指定工具") || strings.Contains(text, "MCP不存在"):
+		return "后端工具未注册或已下线；这不是参数格式问题。请升级到包含该工具注册的后端/静态端点版本，或改用当前可用替代命令。"
 	case strings.Contains(text, "参数错误") || strings.Contains(text, "param error"):
 		return "Check input parameters. Use --help for available flags"
 	default:

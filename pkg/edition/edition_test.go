@@ -55,14 +55,14 @@ func TestOpenStaticServersIncludesCoreProducts(t *testing.T) {
 	}
 }
 
-func TestOpenVisibleProductsIncludesCompatibilityOnlyCommands(t *testing.T) {
+func TestOpenVisibleProductsExcludesCompatibilityOnlyCommands(t *testing.T) {
 	visible := openVisibleProducts()
 	byID := make(map[string]bool, len(visible))
 	for _, id := range visible {
 		byID[id] = true
 	}
-	if !byID["conference"] {
-		t.Fatal("openVisibleProducts() must include conference compatibility command")
+	if byID["conference"] {
+		t.Fatal("conference must remain hidden compatibility-only and not appear in VisibleProducts")
 	}
 
 	for _, server := range openStaticServers() {

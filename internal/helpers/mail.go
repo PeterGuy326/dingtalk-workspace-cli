@@ -18,6 +18,76 @@ import (
 // dws mail — 邮箱
 // ──────────────────────────────────────────────────────────
 
+var mailRuleAllowedOperations = map[string]map[string]bool{
+	"from": {
+		"include": true, "exclude": true, "oneof": true, "noneof": true,
+	},
+	"to": {
+		"include": true, "exclude": true, "oneof": true, "noneof": true,
+	},
+	"subject": {
+		"include": true, "exclude": true,
+	},
+	"attachment": {
+		"exist": true,
+	},
+	"x-aliyun-size": {
+		"greater": true, "less": true,
+	},
+}
+
+func parseMailRuleConditions(raw string) ([]any, error) {
+	var conditions []any
+	if err := json.Unmarshal([]byte(raw), &conditions); err != nil {
+		return nil, fmt.Errorf("--conditions JSON 格式错误: %w", err)
+	}
+	if err := validateMailRuleConditions(conditions); err != nil {
+		return nil, err
+	}
+	return conditions, nil
+}
+
+func validateMailRuleConditions(conditions []any) error {
+	for i, raw := range conditions {
+		condition, ok := raw.(map[string]any)
+		if !ok {
+			return fmt.Errorf("--conditions[%d] 必须是对象", i)
+		}
+		object, _ := condition["object"].(string)
+		object = strings.TrimSpace(object)
+		allowed, ok := mailRuleAllowedOperations[object]
+		if !ok {
+			return fmt.Errorf("--conditions[%d].object 不支持 %q；支持: from/to/subject/attachment/x-aliyun-size", i, object)
+		}
+		orItems, ok := condition["or"].([]any)
+		if !ok {
+			return fmt.Errorf("--conditions[%d].or 必须是数组", i)
+		}
+		for j, orRaw := range orItems {
+			orItem, ok := orRaw.(map[string]any)
+			if !ok {
+				return fmt.Errorf("--conditions[%d].or[%d] 必须是对象", i, j)
+			}
+			andItems, ok := orItem["and"].([]any)
+			if !ok {
+				return fmt.Errorf("--conditions[%d].or[%d].and 必须是数组", i, j)
+			}
+			for k, exprRaw := range andItems {
+				expr, ok := exprRaw.(map[string]any)
+				if !ok {
+					return fmt.Errorf("--conditions[%d].or[%d].and[%d] 必须是对象", i, j, k)
+				}
+				op, _ := expr["operation"].(string)
+				op = strings.TrimSpace(op)
+				if !allowed[op] {
+					return fmt.Errorf("--conditions[%d].or[%d].and[%d].operation=%q 与 object=%q 不匹配；请按 --help 中 object 与 operation 合法组合填写", i, j, k, op, object)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func newMailCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "mail",
@@ -1950,9 +2020,9 @@ object 与 operation 合法组合：
 				"enabled": mustGetFlag(cmd, "enabled") == "true",
 			}
 			if v, _ := cmd.Flags().GetString("conditions"); v != "" {
-				var conditions []any
-				if err := json.Unmarshal([]byte(v), &conditions); err != nil {
-					return fmt.Errorf("--conditions JSON 格式错误: %w", err)
+				conditions, err := parseMailRuleConditions(v)
+				if err != nil {
+					return err
 				}
 				toolArgs["conditions"] = conditions
 			}
@@ -1993,9 +2063,9 @@ object 与 operation 合法组合：
 				"enabled": mustGetFlag(cmd, "enabled") == "true",
 			}
 			if v, _ := cmd.Flags().GetString("conditions"); v != "" {
-				var conditions []any
-				if err := json.Unmarshal([]byte(v), &conditions); err != nil {
-					return fmt.Errorf("--conditions JSON 格式错误: %w", err)
+				conditions, err := parseMailRuleConditions(v)
+				if err != nil {
+					return err
 				}
 				toolArgs["conditions"] = conditions
 			}

@@ -30,8 +30,9 @@ func newConferenceCommand() *cobra.Command {
 	}
 
 	root := &cobra.Command{
-		Use:   "conference",
-		Short: "视频会议（已下线，保留兼容提示）",
+		Use:    "conference",
+		Short:  "视频会议",
+		Hidden: true,
 		Long: `视频会议产品已从当前开源 CLI 下线。
 
 该命令路径仅作为旧版本兼容入口保留，不再调用后端工具。

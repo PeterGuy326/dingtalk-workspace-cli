@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func TestRootHelpKeepsOpenCompatibilityCommandsVisible(t *testing.T) {
+func TestRootHelpHidesCompatibilityOnlyCommands(t *testing.T) {
 	cmd := NewRootCommand()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
@@ -31,8 +31,10 @@ func TestRootHelpKeepsOpenCompatibilityCommandsVisible(t *testing.T) {
 		t.Fatalf("root help: %v\n%s", err, out.String())
 	}
 	help := out.String()
+	if strings.Contains(help, "● conference") {
+		t.Fatalf("root help should hide conference compatibility command:\n%s", help)
+	}
 	for _, want := range []string{
-		"● conference",
 		"● dev",
 		"• upgrade",
 	} {
@@ -61,6 +63,40 @@ func TestRootKeepsMainBranchChatCompatibilityCommands(t *testing.T) {
 	mustFindCommand(t, root, "contact", "get")
 	mustFindCommand(t, root, "contact", "search")
 	mustFindCommand(t, root, "contact", "user", "list")
+	mustFindCommand(t, root, "conference", "meeting", "reserve")
+}
+
+func TestRootKeepsSVIPChatCompatibilityFlags(t *testing.T) {
+	root := NewRootCommand()
+
+	listBySender := mustFindCommand(t, root, "chat", "message", "list-by-sender")
+	if listBySender.Flags().Lookup("sender") == nil {
+		t.Fatal("chat message list-by-sender missing hidden --sender alias")
+	}
+
+	searchAdvanced := mustFindCommand(t, root, "chat", "message", "search-advanced")
+	for _, flag := range []string{"sender", "senders", "sender-ids"} {
+		if searchAdvanced.Flags().Lookup(flag) == nil {
+			t.Fatalf("chat message search-advanced missing --%s", flag)
+		}
+	}
+}
+
+func TestCacheRefreshCompatibilityStub(t *testing.T) {
+	cmd := NewRootCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"cache", "refresh", "--format", "json"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("cache refresh compatibility stub: %v\n%s", err, out.String())
+	}
+	got := out.String()
+	for _, want := range []string{`"status":"deprecated"`, `"command":"dws cache refresh"`, "服务发现已下线"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("cache refresh output missing %q:\n%s", want, got)
+		}
+	}
 }
 
 func mustFindCommand(t *testing.T, root *cobra.Command, path ...string) *cobra.Command {

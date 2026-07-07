@@ -352,6 +352,7 @@ func NewRootCommandWithEngine(rootCtx context.Context, engine *pipeline.Engine) 
 		newProfileCommand(),
 		newAPICommand(flags),
 		newSkillCommand(),
+		newCacheCommand(),
 		newCatalogCommand(loader),
 		newConfigCommand(),
 		newDoctorCommand(),

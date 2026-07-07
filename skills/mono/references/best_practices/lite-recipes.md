@@ -38,7 +38,7 @@
 
 详见 [calendar.md](../products/calendar.md) 中「查询用户闲忙状态」。
 
-### start-conference
+### direct-video-meeting
 
 当前开源 CLI 不暴露视频会议直接发起、邀请入会或共享屏幕命令。用户只说"发起会议/开个会"且未给具体时间时，先说明当前 CLI 不能直接发起视频会议，并询问是否改为预约日程；用户给出具体起止时间后走 03-meeting.md 的 `schedule-meeting`。
 

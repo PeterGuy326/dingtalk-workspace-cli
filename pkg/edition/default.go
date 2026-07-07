@@ -60,20 +60,14 @@ func openStaticServers() []ServerInfo {
 
 func openVisibleProducts() []string {
 	servers := openStaticServers()
-	out := make([]string, 0, len(servers)+1)
-	seen := make(map[string]bool, len(servers)+1)
+	out := make([]string, 0, len(servers))
+	seen := make(map[string]bool, len(servers))
 	for _, server := range servers {
 		if server.ID == "" || seen[server.ID] {
 			continue
 		}
 		seen[server.ID] = true
 		out = append(out, server.ID)
-	}
-	// Compatibility-only command paths. These are intentionally not present in
-	// StaticServers: they preserve old help/command routing while returning an
-	// explicit unavailable message instead of trying to call an MCP endpoint.
-	if !seen["conference"] {
-		out = append(out, "conference")
 	}
 	return out
 }

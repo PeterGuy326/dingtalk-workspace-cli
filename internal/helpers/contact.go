@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -13,10 +14,25 @@ import (
 // ──────────────────────────────────────────────────────────
 
 func parseCSVValues(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	if strings.HasPrefix(raw, "[") && strings.HasSuffix(raw, "]") {
+		var values []string
+		if err := json.Unmarshal([]byte(raw), &values); err == nil {
+			return cleanStringValues(values)
+		}
+		raw = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(raw, "["), "]"))
+	}
 	parts := strings.Split(raw, ",")
+	return cleanStringValues(parts)
+}
+
+func cleanStringValues(parts []string) []string {
 	values := make([]string, 0, len(parts))
 	for _, p := range parts {
-		v := strings.TrimSpace(p)
+		v := strings.Trim(strings.TrimSpace(p), `"'`)
 		if v != "" {
 			values = append(values, v)
 		}
@@ -74,13 +90,12 @@ func contactParseInt64WithAliases(cmd *cobra.Command, primary string, aliases ..
 func newContactCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "contact",
-		Short: "通讯录 / 用户 / 部门 / 角色 / 人员关系",
-		Long: `查询钉钉通讯录：用户搜索、手机号查找、部门搜索、子部门 / 成员列表、角色查询、人员关系；用户花名册档案信息（学历、家庭、银行卡、合同等）与离职员工信息。
+		Short: "通讯录 / 用户 / 部门 / 人员关系",
+		Long: `查询钉钉通讯录：用户搜索、手机号查找、部门搜索、子部门 / 成员列表、人员关系；用户花名册档案信息（学历、家庭、银行卡、合同等）与离职员工信息。
 
 通讯录功能：
   - contact user get-self/search/search-mobile/get: 通讯录用户查询
   - contact dept search/get-info/list-children/list-members: 部门查询
-  - contact label list/get/list-members: 角色查询（已下线，保留兼容提示）
   - contact relation list-my-followings: 特别关注人查询
 
 基础人事功能（HR 花名册）：
@@ -199,8 +214,9 @@ func newContactCommand() *cobra.Command {
 	// ── label 角色 ──────────────────────────────────────────────────
 
 	contactLabelCmd := &cobra.Command{
-		Use:   "label",
-		Short: "角色查询（已下线）",
+		Use:    "label",
+		Short:  "角色查询",
+		Hidden: true,
 		Long: `角色查询后端工具已下线，保留该命令仅用于兼容旧指令。
 
 请改用 aisearch person 按职责维度找人，例如：
@@ -212,9 +228,10 @@ func newContactCommand() *cobra.Command {
 	}
 
 	contactLabelGetCmd := &cobra.Command{
-		Use:   "get",
-		Short: "根据角色名称查询角色（已下线）",
-		Long:  `contact label 后端工具已下线。请改用 aisearch person --dimension duty 按职责维度找人。`,
+		Use:    "get",
+		Short:  "根据角色名称查询角色",
+		Hidden: true,
+		Long:   `contact label 后端工具已下线。请改用 aisearch person --dimension duty 按职责维度找人。`,
 		Example: `  dws contact label get --names "管理员"
   dws contact label get --names "管理员,财务"`,
 		RunE: contactLabelUnavailable,
@@ -222,7 +239,8 @@ func newContactCommand() *cobra.Command {
 
 	contactLabelListMembersCmd := &cobra.Command{
 		Use:     "list-members",
-		Short:   "查询角色下的成员（已下线）",
+		Short:   "查询角色下的成员",
+		Hidden:  true,
 		Long:    `contact label 后端工具已下线。请改用 aisearch person --dimension duty 按职责维度找人。`,
 		Example: `  dws contact label list-members --id 12345  # 查询 labelId: dws contact label get --names "角色名"`,
 		RunE:    contactLabelUnavailable,
@@ -244,7 +262,8 @@ func newContactCommand() *cobra.Command {
 
 	contactLabelListAllCmd := &cobra.Command{
 		Use:     "list",
-		Short:   "获取企业所有角色列表（已下线）",
+		Short:   "获取企业所有角色列表",
+		Hidden:  true,
 		Long:    `contact label 后端工具已下线。请改用 aisearch person --dimension duty 按职责维度找人。`,
 		Example: `  dws contact label list`,
 		RunE:    contactLabelUnavailable,

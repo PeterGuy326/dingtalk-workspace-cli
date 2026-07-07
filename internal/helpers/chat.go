@@ -22,6 +22,9 @@ func resolveMessageForward(cmd *cobra.Command, defaultForward bool) (bool, error
 	forwardStr, _ := cmd.Flags().GetString("forward")
 	forward := forwardStr != "false"
 	if !cmd.Flags().Changed("direction") {
+		if !cmd.Flags().Changed("forward") {
+			return defaultForward, nil
+		}
 		return forward, nil
 	}
 
@@ -42,6 +45,37 @@ func resolveMessageForward(cmd *cobra.Command, defaultForward bool) (bool, error
 	default:
 		return false, fmt.Errorf("--direction must be newer or older")
 	}
+}
+
+func chatIntFlagOrFallback(cmd *cobra.Command, primary string, aliases ...string) int {
+	for _, alias := range aliases {
+		if f := cmd.Flags().Lookup(alias); f != nil && f.Changed {
+			v, _ := cmd.Flags().GetInt(alias)
+			return v
+		}
+	}
+	v, _ := cmd.Flags().GetInt(primary)
+	return v
+}
+
+func runChatSearchCommon(cmd *cobra.Command, _ []string) error {
+	if err := validateRequiredFlags(cmd, "nicks"); err != nil {
+		return err
+	}
+	nicks := parseCSVValues(mustGetFlag(cmd, "nicks"))
+	limit := chatIntFlagOrFallback(cmd, "limit", "size")
+	cursor, _ := cmd.Flags().GetString("cursor")
+	matchMode, _ := cmd.Flags().GetString("match-mode")
+	toolArgs := map[string]any{
+		"nicks":     nicks,
+		"matchMode": matchMode,
+		"limit":     limit,
+		"cursor":    cursor,
+	}
+	if v, _ := cmd.Flags().GetBool("exclude-muted"); v {
+		toolArgs["excludeMuted"] = true
+	}
+	return callMCPTool("search_common_groups", toolArgs)
 }
 
 // sanitizeTitleFromText derives a safe title from message text.
@@ -1088,7 +1122,7 @@ func newChatCommand() *cobra.Command {
 			if keyword == "" {
 				return fmt.Errorf("flag --query is required\n  hint: dws chat search --query \"test\"")
 			}
-			limit, _ := cmd.Flags().GetInt("limit")
+			limit := chatIntFlagOrFallback(cmd, "limit", "size")
 			cursor, _ := cmd.Flags().GetString("cursor")
 			toolArgs := map[string]any{
 				"keyword": keyword,
@@ -1202,7 +1236,7 @@ func newChatCommand() *cobra.Command {
 	chatMessageListCmd := &cobra.Command{
 		Use:   "list",
 		Short: "拉取会话消息内容",
-		Long:  `拉取指定群聊或单聊的会话消息内容。--group 指定群聊，--user 指定单聊用户（userId），--open-dingtalk-id 指定单聊用户（openDingTalkId），三者互斥。推荐使用 --direction newer/older 控制时间方向：newer 表示从给定时间往现在拉，older 表示从给定时间往以前拉。--forward 为旧兼容参数，true 等价 newer，false 等价 older。hasMore=true 时用结果中的边界 createTime 作为下次 --time 翻页。如果返回的会话消息中包含openConvThreadId字段，说明是话题消息，可以调用dws chat message list-topic-replies拉取话题回复消息列表，openConvThreadId作为topic-id参数。`,
+		Long:  `拉取指定群聊或单聊的会话消息内容。--group 指定群聊，--user 指定单聊用户（userId），--open-dingtalk-id 指定单聊用户（openDingTalkId），三者互斥。推荐使用 --direction newer/older 控制时间方向：newer 表示从给定时间往现在拉，older 表示从给定时间往以前拉。hasMore=true 时用结果中的边界 createTime 作为下次 --time 翻页。如果返回的会话消息中包含 openConvThreadId 字段，说明是话题消息，可以调用 dws chat message list-topic-replies 拉取话题回复消息列表，openConvThreadId 作为 topic-id 参数。`,
 		Example: `  dws chat message list --group <openconversation_id> --time "2025-03-01 00:00:00"
   dws chat message list --user <userId> --time "2025-03-01 00:00:00" --limit 50
   dws chat message list --open-dingtalk-id <openDingTalkId> --time "2025-03-01 00:00:00" --limit 50
@@ -1247,7 +1281,7 @@ func newChatCommand() *cobra.Command {
 					"time":                timeVal,
 					"forward":             forward,
 				}
-				if v, err := cmd.Flags().GetInt("limit"); err == nil && v > 0 {
+				if v := chatIntFlagOrFallback(cmd, "limit", "size"); v > 0 {
 					toolArgs["limit"] = v
 				}
 				return callMCPTool("list_conversation_message_v2", toolArgs)
@@ -1261,7 +1295,7 @@ func newChatCommand() *cobra.Command {
 			} else {
 				toolArgs["openDingTalkId"] = openDingTalkID
 			}
-			if v, err := cmd.Flags().GetInt("limit"); err == nil && v > 0 {
+			if v := chatIntFlagOrFallback(cmd, "limit", "size"); v > 0 {
 				toolArgs["limit"] = v
 			}
 			return callMCPTool("list_individual_chat_message", toolArgs)
@@ -1269,16 +1303,14 @@ func newChatCommand() *cobra.Command {
 	}
 
 	chatMessageListDirectCmd := &cobra.Command{
-		Use:   "list-direct",
-		Short: "拉取单聊会话消息（旧路径兼容）",
-		Long:  `按对方 userId 或 openDingTalkId 拉取单聊会话消息。该命令保留旧主干路径，等价于 dws chat message list --user/--open-dingtalk-id。`,
+		Use:    "list-direct",
+		Short:  "拉取单聊会话消息",
+		Hidden: true,
+		Long:   `按对方 userId 或 openDingTalkId 拉取单聊会话消息。`,
 		Example: `  dws chat message list-direct --user <对方userId> --time "2026-04-01 00:00:00" --forward true --limit 50
   dws chat message list-direct --open-dingtalk-id <openDingTalkId> --time "2026-04-01 00:00:00" --forward false --limit 20
   # 查询 userId / openDingTalkId: dws contact user search --query "姓名"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateRequiredFlags(cmd, "time"); err != nil {
-				return err
-			}
 			userID, _ := cmd.Flags().GetString("user")
 			openDingTalkID, _ := cmd.Flags().GetString("open-dingtalk-id")
 			if userID != "" && openDingTalkID != "" {
@@ -1291,12 +1323,18 @@ func newChatCommand() *cobra.Command {
 				openDingTalkID = userID
 				userID = ""
 			}
-			forward, err := resolveMessageForward(cmd, true)
+			timeVal, _ := cmd.Flags().GetString("time")
+			defaultForward := true
+			if strings.TrimSpace(timeVal) == "" {
+				timeVal = time.Now().Format("2006-01-02 15:04:05")
+				defaultForward = false
+			}
+			forward, err := resolveMessageForward(cmd, defaultForward)
 			if err != nil {
 				return err
 			}
 			toolArgs := map[string]any{
-				"time":    mustGetFlag(cmd, "time"),
+				"time":    timeVal,
 				"forward": forward,
 			}
 			if userID != "" {
@@ -1502,7 +1540,7 @@ func newChatCommand() *cobra.Command {
 				}
 				// 用户身份发消息要求 @ 占位符为 <@openDingTalkId>；模型若写成裸 @id 自动补全，已有 <@id> 不变
 				text = normalizeAtPlaceholders(text, atOpenIds, true)
-				// 群聊统一走新接口（--at-open-dingtalk-ids 传入 openDingTalkId，与旧接口 atUserIds 不兼容，不做降级）
+				// 群聊统一走 openDingTalkId @ 人接口。
 				contentJSON, _ := marshalJSONRaw(map[string]string{"title": title, "text": text})
 				newParams := map[string]any{
 					"openConversationId": groupID,
@@ -1768,7 +1806,7 @@ func newChatCommand() *cobra.Command {
 			if err := validateRequiredFlags(cmd, "start", "end"); err != nil {
 				return err
 			}
-			limit, _ := cmd.Flags().GetInt("limit")
+			limit := chatIntFlagOrFallback(cmd, "limit", "size")
 			cursor, _ := cmd.Flags().GetString("cursor")
 			toolArgs := map[string]any{
 				"startTime": mustGetFlag(cmd, "start"),
@@ -1791,10 +1829,10 @@ func newChatCommand() *cobra.Command {
   # 查询 userId: dws contact user search --query "姓名"
   # 查询 openDingTalkId: dws contact user search --query "姓名"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateRequiredFlags(cmd, "start", "end"); err != nil {
+			if err := validateRequiredFlags(cmd, "start"); err != nil {
 				return err
 			}
-			senderUserID, _ := cmd.Flags().GetString("sender-user-id")
+			senderUserID := flagOrFallback(cmd, "sender-user-id", "sender")
 			senderOpenDingTalkID, _ := cmd.Flags().GetString("sender-open-dingtalk-id")
 			if senderUserID != "" && senderOpenDingTalkID != "" {
 				return fmt.Errorf("--sender-user-id and --sender-open-dingtalk-id are mutually exclusive, specify exactly one")
@@ -1806,14 +1844,18 @@ func newChatCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			endMs, err := parseISOTimeToMillis("end", mustGetFlag(cmd, "end"))
+			endRaw, _ := cmd.Flags().GetString("end")
+			if strings.TrimSpace(endRaw) == "" {
+				endRaw = time.Now().Format(time.RFC3339)
+			}
+			endMs, err := parseISOTimeToMillis("end", endRaw)
 			if err != nil {
 				return err
 			}
 			if err := validateTimeRange(startMs, endMs); err != nil {
 				return err
 			}
-			limit, _ := cmd.Flags().GetInt("limit")
+			limit := chatIntFlagOrFallback(cmd, "limit", "size")
 			cursor, _ := cmd.Flags().GetString("cursor")
 			toolArgs := map[string]any{
 				"startTime": startMs,
@@ -1854,7 +1896,7 @@ func newChatCommand() *cobra.Command {
 			if err := validateTimeRange(startMs, endMs); err != nil {
 				return err
 			}
-			limit, _ := cmd.Flags().GetInt("limit")
+			limit := chatIntFlagOrFallback(cmd, "limit", "size")
 			cursor, _ := cmd.Flags().GetString("cursor")
 			toolArgs := map[string]any{
 				"startTime": startMs,
@@ -1953,7 +1995,7 @@ func newChatCommand() *cobra.Command {
 			if err := validateTimeRange(startMs, endMs); err != nil {
 				return err
 			}
-			limit, _ := cmd.Flags().GetInt("limit")
+			limit := chatIntFlagOrFallback(cmd, "limit", "size")
 			cursor, _ := cmd.Flags().GetString("cursor")
 			toolArgs := map[string]any{
 				"keyword":   flagOrFallback(cmd, "query", "keyword"),
@@ -2000,7 +2042,7 @@ func newChatCommand() *cobra.Command {
 			}
 
 			// sender-ids -> senderOpenDingTakIds / senderUserIds（注意：MCP 入参字段名缺少字母 l）
-			if v, _ := cmd.Flags().GetString("sender-ids"); v != "" {
+			if v := flagOrFallback(cmd, "sender-ids", "senders", "sender"); v != "" {
 				ids := parseCSVValues(v)
 				if len(ids) > 0 {
 					appendChatIDArgs(toolArgs, ids, "senderUserIds", "senderOpenDingTakIds")
@@ -2020,11 +2062,13 @@ func newChatCommand() *cobra.Command {
 				}
 			}
 
-			// conversation-ids (主) / groups (兼容别名) -> openConversationIds
+			// conversation-ids / groups / group -> openConversationIds
 			convIds := ""
 			if v, _ := cmd.Flags().GetString("conversation-ids"); v != "" {
 				convIds = v
 			} else if v, _ := cmd.Flags().GetString("groups"); v != "" {
+				convIds = v
+			} else if v, _ := cmd.Flags().GetString("group"); v != "" {
 				convIds = v
 			}
 			if convIds != "" {
@@ -2063,7 +2107,7 @@ func newChatCommand() *cobra.Command {
 			}
 
 			// limit
-			if v, _ := cmd.Flags().GetInt("limit"); v > 0 {
+			if v := chatIntFlagOrFallback(cmd, "limit", "size"); v > 0 {
 				toolArgs["limit"] = v
 			}
 
@@ -2151,31 +2195,14 @@ func newChatCommand() *cobra.Command {
 		Example: `  dws chat search-common --nicks "风雷,山乔" --limit 20 --cursor 0
   dws chat search-common --nicks "天鸡,乐函" --match-mode OR --limit 20 --cursor 0
   dws chat search-common --nicks "风雷,山乔,天鸡" --limit 10 --cursor <nextCursor>`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateRequiredFlags(cmd, "nicks"); err != nil {
-				return err
-			}
-			nicksStr := mustGetFlag(cmd, "nicks")
-			var nicks []string
-			for _, n := range strings.Split(nicksStr, ",") {
-				if s := strings.TrimSpace(n); s != "" {
-					nicks = append(nicks, s)
-				}
-			}
-			limit, _ := cmd.Flags().GetInt("limit")
-			cursor, _ := cmd.Flags().GetString("cursor")
-			matchMode, _ := cmd.Flags().GetString("match-mode")
-			toolArgs := map[string]any{
-				"nicks":     nicks,
-				"matchMode": matchMode,
-				"limit":     limit,
-				"cursor":    cursor,
-			}
-			if v, _ := cmd.Flags().GetBool("exclude-muted"); v {
-				toolArgs["excludeMuted"] = true
-			}
-			return callMCPTool("search_common_groups", toolArgs)
-		},
+		RunE: runChatSearchCommon,
+	}
+
+	chatMessageSearchCommonCmd := &cobra.Command{
+		Use:    "search-common",
+		Short:  "搜索共同群",
+		Hidden: true,
+		RunE:   runChatSearchCommon,
 	}
 
 	// ── bot 子命令 ────────────────────────────────────────────
@@ -2227,6 +2254,8 @@ func newChatCommand() *cobra.Command {
 	chatSearchCmd.Flags().String("keyword", "", "--query 的别名")
 	_ = chatSearchCmd.Flags().MarkHidden("keyword")
 	chatSearchCmd.Flags().Int("limit", 20, "每页返回数量（默认 20）")
+	chatSearchCmd.Flags().Int("size", 0, "--limit 的旧版别名")
+	_ = chatSearchCmd.Flags().MarkHidden("size")
 	chatSearchCmd.Flags().String("cursor", "0", "分页游标（默认 \"0\"，翻页传 nextCursor）")
 	chatSearchCmd.Flags().Bool("exclude-muted", false, "是否排除已设置免打扰的群聊（默认 false）")
 
@@ -2264,14 +2293,20 @@ func newChatCommand() *cobra.Command {
 	chatMessageListCmd.Flags().String("open-dingtalk-id", "", "单聊用户 openDingTalkId（单聊时与 --user 二选一，适用于无法获取 userId 的场景）")
 	chatMessageListCmd.Flags().String("time", "", "开始时间，格式: yyyy-MM-dd HH:mm:ss (必填)")
 	chatMessageListCmd.Flags().String("direction", "", "时间方向: newer=从给定时间往现在拉，older=从给定时间往以前拉（推荐）")
-	chatMessageListCmd.Flags().String("forward", "true", "旧兼容参数: true 等价 --direction newer，false 等价 --direction older")
+	chatMessageListCmd.Flags().String("forward", "true", "true 等价 --direction newer，false 等价 --direction older")
+	_ = chatMessageListCmd.Flags().MarkHidden("forward")
 	chatMessageListCmd.Flags().Int("limit", 0, "返回数量，不传则不限制")
+	chatMessageListCmd.Flags().Int("size", 0, "--limit 的旧版别名")
+	_ = chatMessageListCmd.Flags().MarkHidden("size")
 	chatMessageListDirectCmd.Flags().String("user", "", "对方 userId（同组织内同事，与 --open-dingtalk-id 二选一）")
 	chatMessageListDirectCmd.Flags().String("open-dingtalk-id", "", "对方 openDingTalkId（非同组织普通好友场景，与 --user 二选一）")
 	chatMessageListDirectCmd.Flags().String("time", "", "开始时间，格式 yyyy-MM-dd HH:mm:ss (必填)")
 	chatMessageListDirectCmd.Flags().String("direction", "", "时间方向: newer=从给定时间往现在拉，older=从给定时间往以前拉")
-	chatMessageListDirectCmd.Flags().String("forward", "true", "旧兼容参数: true 等价 --direction newer，false 等价 --direction older")
+	chatMessageListDirectCmd.Flags().String("forward", "true", "true 等价 --direction newer，false 等价 --direction older")
+	_ = chatMessageListDirectCmd.Flags().MarkHidden("forward")
 	chatMessageListDirectCmd.Flags().Int("limit", 50, "每页返回数量（默认 50）")
+	chatMessageListDirectCmd.Flags().Int("size", 0, "--limit 的旧版别名")
+	_ = chatMessageListDirectCmd.Flags().MarkHidden("size")
 
 	chatMessageSendCmd.Flags().String("group", "", "群聊 openconversation_id（群聊时必填）")
 	chatMessageSendCmd.Flags().String("user", "", "单聊接收人 userId（单聊时与 --open-dingtalk-id 二选一）")
@@ -2292,12 +2327,17 @@ func newChatCommand() *cobra.Command {
 	chatMessageSendCmd.Flags().String("at-open-dingtalk-ids", "", "@指定成员的 openDingTalkId 列表，逗号分隔（仅群聊时生效，可选）,设置--at-open-dingtalk-ids openDingTalkId1,openDingTalkId2时，消息内容中一定要包含对应格式的占位符<@openDingTalkId1> <@openDingTalkId2>")
 	chatMessageSendCmd.Flags().String("media-id", "", "图片 mediaId（通过 dt_media_upload 上传后用 extract_media_id.py 提取，仅 msgType=image）")
 	chatMessageSendCmd.Flags().String("msg-type", "", "富媒体消息类型: image/file（纯文本/Markdown 无需指定，直接传内容即可）")
-	chatMessageSendCmd.Flags().Int64("dentry-id", 0, "旧链路兼容：文件 dentryId（与 --space-id 成对传入时跳过自动上传）")
-	chatMessageSendCmd.Flags().Int64("space-id", 0, "旧链路兼容：空间 ID（与 --dentry-id 成对传入时跳过自动上传）")
-	chatMessageSendCmd.Flags().String("file-name", "", "旧链路兼容：文件名")
-	chatMessageSendCmd.Flags().String("file-type", "", "旧链路兼容：文件类型/扩展名")
-	chatMessageSendCmd.Flags().String("file-path", "", "本地文件路径（msgType=file 时可直接上传发送；旧链路中作为 content.filePath）")
-	chatMessageSendCmd.Flags().Int64("file-size", 0, "旧链路兼容：文件大小，单位字节")
+	chatMessageSendCmd.Flags().Int64("dentry-id", 0, "文件 dentryId（与 --space-id 成对传入时跳过自动上传）")
+	chatMessageSendCmd.Flags().Int64("space-id", 0, "空间 ID（与 --dentry-id 成对传入时跳过自动上传）")
+	chatMessageSendCmd.Flags().String("file-name", "", "文件名")
+	chatMessageSendCmd.Flags().String("file-type", "", "文件类型/扩展名")
+	chatMessageSendCmd.Flags().String("file-path", "", "本地文件路径（msgType=file 时可直接上传发送）")
+	chatMessageSendCmd.Flags().Int64("file-size", 0, "文件大小，单位字节")
+	_ = chatMessageSendCmd.Flags().MarkHidden("dentry-id")
+	_ = chatMessageSendCmd.Flags().MarkHidden("space-id")
+	_ = chatMessageSendCmd.Flags().MarkHidden("file-name")
+	_ = chatMessageSendCmd.Flags().MarkHidden("file-type")
+	_ = chatMessageSendCmd.Flags().MarkHidden("file-size")
 	chatMessageSendCmd.Flags().Bool("ai-tag", true, "消息是否带 AI 发送角标（默认 true）")
 	chatMessageSendCmd.Flags().String("uuid", "", "幂等 UUID，相同 uuid 在 24h 内不会重复发送（可选）")
 
@@ -2343,23 +2383,31 @@ func newChatCommand() *cobra.Command {
 	chatMessageListTopicRepliesCmd.Flags().String("time", "", "开始时间，格式: yyyy-MM-dd HH:mm:ss（可选）")
 	chatMessageListTopicRepliesCmd.Flags().Int("limit", 50, "返回数量（默认 50）")
 	chatMessageListTopicRepliesCmd.Flags().String("direction", "", "时间方向: newer=从给定时间往现在拉，older=从给定时间往以前拉（推荐，默认 older）")
-	chatMessageListTopicRepliesCmd.Flags().String("forward", "false", "旧兼容参数: true 等价 --direction newer，false 等价 --direction older（默认 false）")
+	chatMessageListTopicRepliesCmd.Flags().String("forward", "false", "true 等价 --direction newer，false 等价 --direction older（默认 false）")
+	_ = chatMessageListTopicRepliesCmd.Flags().MarkHidden("forward")
 
 	chatMessageListAllCmd.Flags().String("start", "", "起始时间，格式: yyyy-MM-dd HH:mm:ss (必填)")
 	_ = chatMessageListAllCmd.MarkFlagRequired("start")
 	chatMessageListAllCmd.Flags().String("end", "", "结束时间，格式: yyyy-MM-dd HH:mm:ss (必填)")
 	_ = chatMessageListAllCmd.MarkFlagRequired("end")
 	chatMessageListAllCmd.Flags().Int("limit", 50, "每页返回数量 (必填，默认 50)")
+	chatMessageListAllCmd.Flags().Int("size", 0, "--limit 的旧版别名")
+	_ = chatMessageListAllCmd.Flags().MarkHidden("size")
 	chatMessageListAllCmd.Flags().String("cursor", "0", "分页游标（首页传 \"0\"，后续从响应中获取）")
 
 	// list-by-sender flags
 	chatMessageListBySenderCmd.Flags().String("sender-user-id", "", "发送者 userId（与 --sender-open-dingtalk-id 二选一）")
+	chatMessageListBySenderCmd.Flags().String("sender", "", "--sender-user-id 的旧版别名")
+	_ = chatMessageListBySenderCmd.Flags().MarkHidden("sender")
 	chatMessageListBySenderCmd.Flags().String("sender-open-dingtalk-id", "", "发送者 openDingTalkId（与 --sender-user-id 二选一，适用于无法获取 userId 的场景）")
+	chatMessageListBySenderCmd.Flags().String("user", "", "")
+	_ = chatMessageListBySenderCmd.Flags().MarkHidden("user")
 	chatMessageListBySenderCmd.Flags().String("start", "", "开始时间，ISO-8601 格式 (必填)")
 	_ = chatMessageListBySenderCmd.MarkFlagRequired("start")
 	chatMessageListBySenderCmd.Flags().String("end", "", "结束时间，ISO-8601 格式 (必填)")
-	_ = chatMessageListBySenderCmd.MarkFlagRequired("end")
 	chatMessageListBySenderCmd.Flags().Int("limit", 50, "每页返回数量（默认 50）")
+	chatMessageListBySenderCmd.Flags().Int("size", 0, "--limit 的旧版别名")
+	_ = chatMessageListBySenderCmd.Flags().MarkHidden("size")
 	chatMessageListBySenderCmd.Flags().String("cursor", "0", "分页游标（默认 \"0\"，翻页传 nextCursor）")
 
 	// list-mentions flags
@@ -2369,6 +2417,8 @@ func newChatCommand() *cobra.Command {
 	chatMessageListMentionsCmd.Flags().String("end", "", "结束时间，ISO-8601 格式 (必填)")
 	_ = chatMessageListMentionsCmd.MarkFlagRequired("end")
 	chatMessageListMentionsCmd.Flags().Int("limit", 50, "每页返回数量（默认 50）")
+	chatMessageListMentionsCmd.Flags().Int("size", 0, "--limit 的旧版别名")
+	_ = chatMessageListMentionsCmd.Flags().MarkHidden("size")
 	chatMessageListMentionsCmd.Flags().String("cursor", "0", "分页游标（默认 \"0\"，翻页传 nextCursor）")
 
 	// list-focused flags
@@ -2393,6 +2443,8 @@ func newChatCommand() *cobra.Command {
 	chatMessageSearchCmd.Flags().String("end", "", "结束时间，ISO-8601 格式 (必填)")
 	_ = chatMessageSearchCmd.MarkFlagRequired("end")
 	chatMessageSearchCmd.Flags().Int("limit", 100, "每页返回数量（默认 100）")
+	chatMessageSearchCmd.Flags().Int("size", 0, "--limit 的旧版别名")
+	_ = chatMessageSearchCmd.Flags().MarkHidden("size")
 	chatMessageSearchCmd.Flags().String("cursor", "0", "分页游标（默认 \"0\"，翻页传 nextCursor）")
 
 	// read-status flags (主 flag 为 --conversation-id，因为支持群聊和单聊)
@@ -2417,8 +2469,20 @@ func newChatCommand() *cobra.Command {
 	_ = chatSearchCommonCmd.MarkFlagRequired("nicks")
 	chatSearchCommonCmd.Flags().String("match-mode", "AND", "匹配模式：AND=所有人都在群里，OR=任一人在群里（默认 AND）")
 	chatSearchCommonCmd.Flags().Int("limit", 20, "每页返回数量（默认 20）")
+	chatSearchCommonCmd.Flags().Int("size", 0, "--limit 的旧版别名")
+	_ = chatSearchCommonCmd.Flags().MarkHidden("size")
 	chatSearchCommonCmd.Flags().String("cursor", "0", "分页游标（默认 \"0\"，翻页传 nextCursor）")
 	chatSearchCommonCmd.Flags().Bool("exclude-muted", false, "是否排除已设置免打扰的群聊（默认 false）")
+	chatMessageSearchCommonCmd.Flags().String("nicks", "", "要搜索的昵称列表，逗号分隔 (必填)")
+	_ = chatMessageSearchCommonCmd.MarkFlagRequired("nicks")
+	chatMessageSearchCommonCmd.Flags().String("match-mode", "AND", "匹配模式：AND=所有人都在群里，OR=任一人在群里（默认 AND）")
+	chatMessageSearchCommonCmd.Flags().Int("limit", 20, "每页返回数量（默认 20）")
+	chatMessageSearchCommonCmd.Flags().Int("size", 0, "")
+	_ = chatMessageSearchCommonCmd.Flags().MarkHidden("size")
+	chatMessageSearchCommonCmd.Flags().String("cursor", "0", "分页游标（默认 \"0\"，翻页传 nextCursor）")
+	chatMessageSearchCommonCmd.Flags().Bool("exclude-muted", false, "是否排除已设置免打扰的群聊（默认 false）")
+	chatMessageSearchCommonCmd.Flags().String("group", "", "")
+	_ = chatMessageSearchCommonCmd.Flags().MarkHidden("group")
 
 	// search-advanced flags
 	chatMessageSearchAdvancedCmd.Flags().String("query", "", "搜索关键词（可选）")
@@ -2429,15 +2493,23 @@ func newChatCommand() *cobra.Command {
 	chatMessageSearchAdvancedCmd.Flags().String("userId", "", "--user 的别名")
 	_ = chatMessageSearchAdvancedCmd.Flags().MarkHidden("userId")
 	chatMessageSearchAdvancedCmd.Flags().String("sender-ids", "", "发送者 openDingTalkId 列表，逗号分隔（可选）")
+	chatMessageSearchAdvancedCmd.Flags().String("senders", "", "--sender-ids 的旧版别名")
+	_ = chatMessageSearchAdvancedCmd.Flags().MarkHidden("senders")
+	chatMessageSearchAdvancedCmd.Flags().String("sender", "", "--sender-ids 的旧版别名")
+	_ = chatMessageSearchAdvancedCmd.Flags().MarkHidden("sender")
 	chatMessageSearchAdvancedCmd.Flags().Bool("at-me", false, "只搜索 @我 的消息（可选，默认 false）")
 	chatMessageSearchAdvancedCmd.Flags().String("at-ids", "", "@指定人的 openDingTalkId 列表，逗号分隔（可选）")
 	chatMessageSearchAdvancedCmd.Flags().String("conversation-ids", "", "会话 openConversationId 列表，逗号分隔（可选，群聊或单聊均可，不传则搜索所有会话）")
 	chatMessageSearchAdvancedCmd.Flags().String("groups", "", "--conversation-ids 的别名")
 	_ = chatMessageSearchAdvancedCmd.Flags().MarkHidden("groups")
+	chatMessageSearchAdvancedCmd.Flags().String("group", "", "")
+	_ = chatMessageSearchAdvancedCmd.Flags().MarkHidden("group")
 	chatMessageSearchAdvancedCmd.Flags().String("start", "", "开始时间，ISO-8601 格式（可选）")
 	chatMessageSearchAdvancedCmd.Flags().String("end", "", "结束时间，ISO-8601 格式（可选）")
 	chatMessageSearchAdvancedCmd.Flags().String("cursor", "0", "分页游标（默认 \"0\"）")
 	chatMessageSearchAdvancedCmd.Flags().Int("limit", 100, "每页返回数量（默认 100）")
+	chatMessageSearchAdvancedCmd.Flags().Int("size", 0, "--limit 的旧版别名")
+	_ = chatMessageSearchAdvancedCmd.Flags().MarkHidden("size")
 
 	// query-send-status flags
 	chatMessageQuerySendStatusCmd.Flags().String("open-task-id", "", "消息发送任务 ID (必填)")
@@ -4553,7 +4625,7 @@ status 可选值:
 	chatGroupCmd.AddCommand(chatGroupBotsCmd, chatGroupDismissCmd, chatGroupSetHistoryCmd, chatGroupListMyGroupsCmd, chatGroupUpdateNickCmd, chatGroupUpdateAliasCmd, chatGroupListAllCmd, chatGroupListJoinValidationsCmd, chatGroupAuditJoinValidationCmd)
 	chatGroupMembersCmd.AddCommand(chatGroupMembersRemoveBotCmd, chatGroupMembersListByIdsCmd)
 	chatBotCmd.AddCommand(chatBotFindCmd)
-	chatMessageCmd.AddCommand(chatMessageListDirectCmd, chatMessageCombineForwardCmd, chatMessageForwardTopicCmd, chatMessageSetPinCmd, chatMessageUnsetPinCmd, chatMessageListPinCmd, chatMessageSetTopMsgCmd, chatMessageUnsetTopMsgCmd)
+	chatMessageCmd.AddCommand(chatMessageListDirectCmd, chatMessageSearchCommonCmd, chatMessageCombineForwardCmd, chatMessageForwardTopicCmd, chatMessageSetPinCmd, chatMessageUnsetPinCmd, chatMessageListPinCmd, chatMessageSetTopMsgCmd, chatMessageUnsetTopMsgCmd)
 
 	root.AddCommand(chatChmodCmd, chatDataAuthCmd, chatGroupCmd, chatSearchCmd, chatSearchCommonCmd, chatMessageCmd, chatFileCmd, newChatMediaGroup(), chatBotCmd, chatMessageListTopConversationsCmd, chatConversationInfoCmd, chatCategoryCmd, chatGroupRoleCmd, chatMuteCmd, chatSetTopCmd, chatGroupMuteCmd, chatGroupMuteMemberCmd, chatHideCmd, chatMuteAtAllCmd, chatMuteRedEnvelopeCmd, chatMarkUnreadCmd, chatClearRedPointCmd, chatClearAllRedPointCmd, chatListAllConversationsCmd, chatClearMessagesCmd, chatMarkReadCmd)
 

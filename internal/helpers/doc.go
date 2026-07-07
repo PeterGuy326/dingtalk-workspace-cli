@@ -32,6 +32,63 @@ func SetHTTPPutFile(fn func(ctx context.Context, url string, headers map[string]
 	httpPutFile = fn
 }
 
+func docVersionExists(ctx context.Context, nodeID string, version int) (bool, error) {
+	text, err := callMCPToolReturnTextOnServer(ctx, "doc", "list_doc_versions", map[string]any{
+		"nodeId":     nodeID,
+		"maxResults": 100,
+	})
+	if err != nil {
+		return false, err
+	}
+	var payload any
+	if err := json.Unmarshal([]byte(text), &payload); err != nil {
+		return false, fmt.Errorf("无法解析文档版本列表，已停止回滚以避免假成功: %w", err)
+	}
+	if docVersionPayloadContains(payload, version) {
+		return true, nil
+	}
+	return false, nil
+}
+
+func docVersionPayloadContains(v any, target int) bool {
+	switch val := v.(type) {
+	case map[string]any:
+		for key, item := range val {
+			normalized := strings.ToLower(strings.ReplaceAll(key, "_", ""))
+			if normalized == "version" || normalized == "versionnumber" || normalized == "versionno" || normalized == "docversion" || normalized == "revision" {
+				if docVersionNumberMatches(item, target) {
+					return true
+				}
+			}
+			if docVersionPayloadContains(item, target) {
+				return true
+			}
+		}
+	case []any:
+		for _, item := range val {
+			if docVersionPayloadContains(item, target) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func docVersionNumberMatches(v any, target int) bool {
+	switch val := v.(type) {
+	case float64:
+		return int(val) == target && val == float64(target)
+	case string:
+		n, err := strconv.Atoi(strings.TrimSpace(val))
+		return err == nil && n == target
+	case json.Number:
+		n, err := val.Int64()
+		return err == nil && n == int64(target)
+	default:
+		return false
+	}
+}
+
 func runDocUpload(cmd *cobra.Command, _ []string) error {
 	if workspace := flagOrFallback(cmd, "workspace", "workspace-id"); workspace != "" {
 		deps.Out.PrintWarning("⚠️  'dws doc upload --workspace' is deprecated, use 'dws drive upload --workspace <workspaceId>' instead.")
@@ -2405,6 +2462,13 @@ CLI 内部自动完成全部流程：
 				return fmt.Errorf("flag --version is required")
 			}
 			version, _ := cmd.Flags().GetInt("version")
+			exists, err := docVersionExists(cmd.Context(), nodeID, version)
+			if err != nil {
+				return err
+			}
+			if !exists {
+				return fmt.Errorf("文档版本 %d 不存在，已停止回滚；请先执行 dws doc version list --node %s --format json 获取可回滚版本", version, nodeID)
+			}
 			if !confirmDelete("文档版本回滚", nodeID) {
 				return nil
 			}
