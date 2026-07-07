@@ -1,8 +1,8 @@
 # wukong-local visible command tree
 
 - binary: `/tmp/dws-wukong-local`
-- generated_at: `2026-07-07T06:03:59Z`
-- command_count: `974`
+- generated_at: `2026-07-07T06:11:35Z`
+- command_count: `973`
 - help_errors: `0`
 
 ```text
@@ -36,7 +36,6 @@ dws
   todo  # 待办任务管理
   wiki  # 知识库 / 空间管理 / 节点管理 / 成员管理
   yida  # 宜搭（应用 / 表单 / 流程审批）
-  dws  # <service> [command] [flags]
   api  # 调用钉钉 OpenAPI (Raw HTTP)
   auth  # 认证管理
   completion  # 生成 Shell 自动补全脚本

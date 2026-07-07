@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-07-07T06:03:59Z",
+    "generated_at": "2026-07-07T06:11:35Z",
     "note": "Visible command tree exported by recursively parsing `dws <path> --help`. Hidden compatibility commands are intentionally excluded from help and verified separately.",
     "label": "wukong-local",
     "binary": "/tmp/dws-wukong-local",
@@ -19,7 +19,7 @@
       "argv": [],
       "depth": 0,
       "description": "",
-      "child_count": 42
+      "child_count": 41
     },
     {
       "path": "agoal",
@@ -281,15 +281,6 @@
       "depth": 1,
       "description": "宜搭（应用 / 表单 / 流程审批）",
       "child_count": 7
-    },
-    {
-      "path": "dws",
-      "argv": [
-        "dws"
-      ],
-      "depth": 1,
-      "description": "<service> [command] [flags]",
-      "child_count": 0
     },
     {
       "path": "api",

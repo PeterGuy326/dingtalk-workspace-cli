@@ -1,8 +1,8 @@
 # open-delivery visible command tree
 
 - binary: `/tmp/dws-open-delivery-tree-bin/dws`
-- generated_at: `2026-07-07T06:03:59Z`
-- command_count: `780`
+- generated_at: `2026-07-07T06:11:35Z`
+- command_count: `779`
 - help_errors: `0`
 
 ```text
@@ -26,7 +26,6 @@ dws
   sheet  # 钉钉表格管理
   todo  # 待办任务管理
   wiki  # 知识库 / 空间管理 / 节点管理 / 成员管理
-  dws  # <service> [command] [flags]
   api  # 调用钉钉 OpenAPI (Raw HTTP)
   auth  # 认证管理
   completion  # 生成 Shell 自动补全脚本

@@ -1,14 +1,14 @@
 # Command Tree Comparison
 
-- generated_at: `2026-07-07T06:03:59Z`
+- generated_at: `2026-07-07T06:11:35Z`
 - scope: visible `--help` command tree only; hidden compatibility commands are excluded by design.
 - open_delivery_commit: `1b823514`
 - wukong_local_head: `f48ae79d` with local compatibility bridge changes; `origin/develop` (`2a7c70ff`) currently fails to compile against the remove-discovery core because it still references removed `pkg/cmdutil` overlay APIs.
 
 | tree | visible commands | help errors |
 | --- | ---: | ---: |
-| open-delivery | 780 | 0 |
-| wukong-local | 974 | 0 |
+| open-delivery | 779 | 0 |
+| wukong-local | 973 | 0 |
 
 ## Top-Level Difference
 

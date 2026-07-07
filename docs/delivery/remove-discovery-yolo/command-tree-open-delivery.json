@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-07-07T06:03:59Z",
+    "generated_at": "2026-07-07T06:11:35Z",
     "note": "Visible command tree exported by recursively parsing `dws <path> --help`. Hidden compatibility commands are intentionally excluded from help and verified separately.",
     "label": "open-delivery",
     "binary": "/tmp/dws-open-delivery-tree-bin/dws",
@@ -19,7 +19,7 @@
       "argv": [],
       "depth": 0,
       "description": "",
-      "child_count": 34
+      "child_count": 33
     },
     {
       "path": "aisearch",
@@ -191,15 +191,6 @@
       "depth": 1,
       "description": "知识库 / 空间管理 / 节点管理 / 成员管理",
       "child_count": 3
-    },
-    {
-      "path": "dws",
-      "argv": [
-        "dws"
-      ],
-      "depth": 1,
-      "description": "<service> [command] [flags]",
-      "child_count": 0
     },
     {
       "path": "api",
