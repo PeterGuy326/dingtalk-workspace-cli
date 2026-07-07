@@ -7,6 +7,9 @@
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/PeterGuy326/dingtalk-workspace-cli/feat-remove-discovery-latest/scripts/install-feat-remove-discovery.sh | sh
 #
+# With environment overrides, put them on the sh side of the pipe:
+#   curl -fsSL https://raw.githubusercontent.com/PeterGuy326/dingtalk-workspace-cli/feat-remove-discovery-latest/scripts/install-feat-remove-discovery.sh | DWS_NO_SKILLS=1 sh
+#
 # Optional environment variables:
 #   DWS_REPO            owner/repo that hosts the release assets (default: PeterGuy326/dingtalk-workspace-cli)
 #   DWS_VERSION         release tag to install (default: feat-remove-discovery-latest)
