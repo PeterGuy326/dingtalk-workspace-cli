@@ -36,9 +36,10 @@ func injectStaticServers() {
 	var servers []edition.ServerInfo
 
 	if fn := hooks.StaticServers; fn != nil {
-		servers = fn()
-	} else if fn := hooks.SupplementServers; fn != nil {
-		servers = fn()
+		servers = append(servers, fn()...)
+	}
+	if fn := hooks.SupplementServers; fn != nil {
+		servers = append(servers, fn()...)
 	}
 
 	if len(servers) == 0 {

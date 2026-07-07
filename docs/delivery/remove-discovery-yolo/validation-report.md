@@ -49,7 +49,7 @@ Release assets uploaded:
 | Release curl install into temp HOME/bin | Pass |
 | `dws version` shows static endpoint mode | Pass |
 | Root `--help` hides retired `cache` and `conference` | Pass |
-| `dws cache refresh` compatibility stub | Pass |
+| `dws cache refresh` compatibility stub | Pass, hidden; points to `dws upgrade` + `dws-data/syncdata` endpoint check |
 | `dws conference` unavailable guidance | Pass |
 | `dws dev connect --help` exposes `--yolo`, `--agent-permission-mode`, `--agent-approval-mode` | Pass |
 | `dws dev connect --help` does not expose `--agent-yolo` | Pass |
@@ -64,6 +64,8 @@ Release assets uploaded:
 | Recursive visible `dws <path> --help` scan for open delivery | Pass, 779 commands, 0 help errors |
 | `dws skill search --help` aligns with Wukong `--source`; old `--scopes` remains hidden/deprecated | Pass |
 | Chat old file/forward flags remain registered but hidden from help | Pass |
+| `StaticServers` and `SupplementServers` endpoint injection merge semantics | Pass |
+| GitHub CI/release/multi-profile workflows prepare `../dws-data` for the local go.mod replace | Pass |
 
 ## Skill Setup Verification
 
@@ -134,5 +136,7 @@ doctor, upgrade
 Notes:
 
 - The open delivery help surface intentionally excludes retired/internal products from `--help`; old compatibility paths are hidden and verified separately.
+- The `dws cache` command tree is retained only as a hidden/deprecated compatibility entry. Because discovery cache refresh is gone, endpoint miss guidance is now: upgrade first, then verify `dws-data/syncdata.StaticServers()` coverage.
+- CI keeps the existing local `replace github.com/DingTalk-Real-AI/dws-data => ../dws-data` contract and prepares that sibling directory through `.github/actions/setup-dws-data`. Defaults point at `PeterGuy326/dws-data`; official repos can set `DWS_DATA_REPOSITORY` / `DWS_DATA_REF`.
 - `dws-wukong origin/develop` at `2a7c70ff` currently does not compile directly against the remove-discovery core because it still references removed `pkg/cmdutil` overlay APIs: `IsEnvelopeSourced` and `MergeHardcodedLeaves`.
 - The wukong command tree snapshot was generated from the local wukong workspace at `f48ae79d` with the local compatibility bridge changes present in that workspace.

@@ -1,0 +1,32 @@
+name: Set up dws-data
+description: Check out dws-data next to this repository so the local go.mod replace can resolve.
+
+inputs:
+  repository:
+    description: dws-data repository in owner/name form.
+    required: false
+    default: PeterGuy326/dws-data
+  ref:
+    description: dws-data ref to check out.
+    required: false
+    default: main
+
+runs:
+  using: composite
+  steps:
+    - name: Check out dws-data
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.repository }}
+        ref: ${{ inputs.ref }}
+        path: dws-data
+
+    - name: Link dws-data for local replace
+      shell: bash
+      run: |
+        set -euo pipefail
+        target="$GITHUB_WORKSPACE/../dws-data"
+        rm -rf "$target"
+        ln -s "$GITHUB_WORKSPACE/dws-data" "$target"
+        test -f "$target/go.mod"
+        echo "dws-data: ${{ inputs.repository }} @ ${{ inputs.ref }}" >> "$GITHUB_STEP_SUMMARY"
