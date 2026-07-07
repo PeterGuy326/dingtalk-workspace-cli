@@ -64,6 +64,7 @@ Release assets uploaded:
 | Recursive visible `dws <path> --help` scan for open delivery | Pass, 779 commands, 0 help errors |
 | `dws skill search --help` aligns with Wukong `--source`; old `--scopes` remains hidden/deprecated | Pass |
 | Chat old file/forward flags remain registered but hidden from help | Pass |
+| PR #562 chat sync: `chat data-auth cross-org` and `message send --msg-type audio/video` | Pass |
 | `StaticServers` and `SupplementServers` endpoint injection merge semantics | Pass |
 | GitHub CI/release/multi-profile workflows prepare `../dws-data` for the local go.mod replace | Pass |
 
@@ -136,6 +137,7 @@ doctor, upgrade
 Notes:
 
 - The open delivery help surface intentionally excludes retired/internal products from `--help`; old compatibility paths are hidden and verified separately.
+- PR #562 review result: current delivery branch already contained `chat data-auth cross-org` as a superset (`--target-org-id` or `--all`). The missing part was `audio`/`video` aliases for `chat message send`; this delivery now accepts both and normalizes them to backend `msgType=file`.
 - The `dws cache` command tree is retained only as a hidden/deprecated compatibility entry. Because discovery cache refresh is gone, endpoint miss guidance is now: upgrade first, then verify `dws-data/syncdata.StaticServers()` coverage.
 - CI keeps the existing local `replace github.com/DingTalk-Real-AI/dws-data => ../dws-data` contract and prepares that sibling directory through `.github/actions/setup-dws-data`. Defaults point at `PeterGuy326/dws-data`; official repos can set `DWS_DATA_REPOSITORY` / `DWS_DATA_REF`.
 - `dws-wukong origin/develop` at `2a7c70ff` currently does not compile directly against the remove-discovery core because it still references removed `pkg/cmdutil` overlay APIs: `IsEnvelopeSourced` and `MergeHardcodedLeaves`.

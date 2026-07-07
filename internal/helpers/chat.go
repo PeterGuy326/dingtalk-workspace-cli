@@ -1366,15 +1366,17 @@ func newChatCommand() *cobra.Command {
 
 富媒体消息（通过 --msg-type 指定类型）：
   image — 发送图片：--msg-type image --media-id（通过 dt_media_upload 上传获得）
-  file  — 发送文件：传本地 --file-path，CLI 会上传后发送`,
+  file/audio/video — 发送文件、音频、视频：传本地 --file-path，CLI 会上传后按 file 消息发送`,
 		Example: `  dws chat message send --group <openconversation_id> "hello"
   dws chat message send --user <userId> "请查收"
   dws chat message send --open-dingtalk-id <openDingTalkId> "请查收"
   dws chat message send --group <openconversation_id> --title "周报提醒" "请大家本周五前提交周报"
   # 发送图片
   dws chat message send --group <openconversation_id> --msg-type image --media-id <mediaId>
-  # 发送本地文件（CLI 内部完成会话文件上传并发送）
+  # 发送本地文件/音频/视频（audio/video 是 file 的语义别名）
   dws chat message send --group <openconversation_id> --msg-type file --file-path ./report.pdf
+  dws chat message send --group <openconversation_id> --msg-type audio --file-path ./recording.mp3
+  dws chat message send --group <openconversation_id> --msg-type video --file-path ./demo.mp4
 # 查询群 ID: dws chat search --query "群名"
 # 查询用户 ID: dws contact user search --query "姓名"`,
 		Args: cobra.MaximumNArgs(1),
@@ -1432,13 +1434,15 @@ func newChatCommand() *cobra.Command {
 			}
 			if msgType != "" {
 				var contentJSON string
+				serviceMsgType := msgType
 				switch msgType {
 				case "image":
 					if mediaId == "" {
 						return fmt.Errorf("--media-id is required for msgType=image")
 					}
 					contentJSON = fmt.Sprintf(`{"mediaId":"%s"}`, mediaId)
-				case "file":
+				case "file", "audio", "video":
+					serviceMsgType = "file"
 					filePath, _ := cmd.Flags().GetString("file-path")
 					dentryId, _ := cmd.Flags().GetInt64("dentry-id")
 					spaceId, _ := cmd.Flags().GetInt64("space-id")
@@ -1493,11 +1497,11 @@ func newChatCommand() *cobra.Command {
 							dentryId, spaceId, fileName, fileType, filePath, fileSize)
 					}
 				default:
-					return fmt.Errorf("unsupported --msg-type: %s (supported: image, file)", msgType)
+					return fmt.Errorf("unsupported --msg-type: %s (supported: image, file, audio, video)", msgType)
 				}
 
 				params := map[string]any{
-					"msgType":  msgType,
+					"msgType":  serviceMsgType,
 					"content":  contentJSON,
 					"clawType": clawType,
 				}
@@ -2326,7 +2330,7 @@ func newChatCommand() *cobra.Command {
 	chatMessageSendCmd.Flags().Bool("at-all", false, "@所有人（仅群聊时生效，可选）,设置时，消息内容中一定要包含对应的占位符<@all>")
 	chatMessageSendCmd.Flags().String("at-open-dingtalk-ids", "", "@指定成员的 openDingTalkId 列表，逗号分隔（仅群聊时生效，可选）,设置--at-open-dingtalk-ids openDingTalkId1,openDingTalkId2时，消息内容中一定要包含对应格式的占位符<@openDingTalkId1> <@openDingTalkId2>")
 	chatMessageSendCmd.Flags().String("media-id", "", "图片 mediaId（通过 dt_media_upload 上传后用 extract_media_id.py 提取，仅 msgType=image）")
-	chatMessageSendCmd.Flags().String("msg-type", "", "富媒体消息类型: image/file（纯文本/Markdown 无需指定，直接传内容即可）")
+	chatMessageSendCmd.Flags().String("msg-type", "", "富媒体消息类型: image/file/audio/video（audio/video 是 file 别名；纯文本/Markdown 无需指定，直接传内容即可）")
 	chatMessageSendCmd.Flags().Int64("dentry-id", 0, "文件 dentryId（与 --space-id 成对传入时跳过自动上传）")
 	chatMessageSendCmd.Flags().Int64("space-id", 0, "空间 ID（与 --dentry-id 成对传入时跳过自动上传）")
 	chatMessageSendCmd.Flags().String("file-name", "", "文件名")
