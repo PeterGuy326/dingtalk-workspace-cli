@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -192,6 +193,10 @@ func isNumericUserID(value string) bool {
 	return true
 }
 
+// dingTalkMediaIDPattern 匹配钉钉媒体 ID（上传接口返回），固定以 @ 开头，
+// 后跟 base64 风格字符（如 @lADPfake、@lQDPM4DCjE1Mk_nNBInNBImw...）。
+var dingTalkMediaIDPattern = regexp.MustCompile(`^@[A-Za-z0-9_\-+/=.]{4,}$`)
+
 func isOpenDingTalkID(value string) bool {
 	value = strings.TrimSpace(value)
 	return len(value) > 0 && (value[0] == 'D' || value[0] == 'd')
@@ -306,6 +311,79 @@ func resolveOpenDingTalkIDs(ctx context.Context, values []string) ([]string, err
 		resolved[index] = openDingTalkID
 	}
 	return resolved, nil
+}
+
+// groupOwnerOpenDingTalkID 分页拉取群成员，返回群主（memberRoleType==1）的 openDingtalkId。
+// 找不到群主或群主字段为空时返回 ""（由调用方决定是否放行）。
+func groupOwnerOpenDingTalkID(ctx context.Context, openConversationID string) (string, error) {
+	cursor := "0"
+	for page := 0; page < 50; page++ { // 防御性上限，避免异常分页导致死循环
+		raw, err := callMCPToolReturnText(ctx, "get_group_members", map[string]any{
+			"openconversation_id": openConversationID,
+			"cursor":              cursor,
+		})
+		if err != nil {
+			return "", err
+		}
+		var body struct {
+			Result struct {
+				HasMore    bool   `json:"hasMore"`
+				NextCursor string `json:"nextCursor"`
+				Cursor     string `json:"cursor"`
+				List       []struct {
+					MemberRoleType int    `json:"memberRoleType"`
+					OpenDingtalkID string `json:"openDingtalkId"`
+				} `json:"list"`
+			} `json:"result"`
+		}
+		if err := json.Unmarshal([]byte(raw), &body); err != nil {
+			return "", err
+		}
+		for _, m := range body.Result.List {
+			if m.MemberRoleType == 1 {
+				return m.OpenDingtalkID, nil
+			}
+		}
+		next := body.Result.NextCursor
+		if next == "" {
+			next = body.Result.Cursor
+		}
+		if !body.Result.HasMore || next == "" || next == cursor {
+			break
+		}
+		cursor = next
+	}
+	return "", nil
+}
+
+// guardGroupOwnerRemoval 拦截把群主移出群的操作：一个群只有一个群主，移出群主会产生
+// 无群主的“孤儿群”。防护为尽力而为：群主信息查询失败或 userId→openDingTalkId 解析
+// 失败时不阻塞正常移除路径（由服务端兜底）。
+func guardGroupOwnerRemoval(ctx context.Context, openConversationID string, removeValues []string) error {
+	ownerOpenID, err := groupOwnerOpenDingTalkID(ctx, openConversationID)
+	if err != nil || ownerOpenID == "" {
+		return nil
+	}
+	ownerErr := fmt.Errorf(
+		"refusing to remove the group owner: 被移除列表包含群主，移出群主将导致群无群主（孤儿群）\n  hint: 先执行 dws chat group transfer-owner --group %s --user <newOwnerUserId> 转让群主后再移除",
+		openConversationID,
+	)
+	userIDs, openDingTalkIDs := splitChatIDValues(removeValues)
+	for _, id := range openDingTalkIDs {
+		if id == ownerOpenID {
+			return ownerErr
+		}
+	}
+	if len(userIDs) > 0 {
+		if resolved, resolveErr := resolveOpenDingTalkIDs(ctx, userIDs); resolveErr == nil {
+			for _, id := range resolved {
+				if id == ownerOpenID {
+					return ownerErr
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func lookupOpenDingTalkIDsByUserID(ctx context.Context, userIDs []string) (map[string]string, error) {
@@ -1222,9 +1300,15 @@ func newChatCommand() *cobra.Command {
 			if err := validateRequiredFlags(cmd, "id", "users"); err != nil {
 				return err
 			}
+			groupID := mustGetFlag(cmd, "id")
+			removeValues := parseCSVValues(mustGetFlag(cmd, "users"))
+			// 群主防护：移出群主会产生无群主的孤儿群，先在客户端拦截。
+			if err := guardGroupOwnerRemoval(cmd.Context(), groupID, removeValues); err != nil {
+				return err
+			}
 			return callMCPTool("remove_group_member", map[string]any{
-				"openConversationId": mustGetFlag(cmd, "id"),
-				"userIdList":         parseCSVValues(mustGetFlag(cmd, "users")),
+				"openConversationId": groupID,
+				"userIdList":         removeValues,
 			})
 		},
 	}
@@ -3307,9 +3391,15 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 			if err := validateRequiredFlags(cmd, "group", "icon-media-id"); err != nil {
 				return err
 			}
+			iconMediaID := strings.TrimSpace(mustGetFlag(cmd, "icon-media-id"))
+			// 客户端预校验：钉钉媒体 ID 由上传接口（如 dt_media_upload）返回，
+			// 固定以 @ 开头（形如 @lADP.../@lQDP...）。明显非法的值本地直接报错。
+			if !dingTalkMediaIDPattern.MatchString(iconMediaID) {
+				return fmt.Errorf("invalid --icon-media-id %q: 钉钉媒体 ID 应以 @ 开头（如 @lADP...）\n  hint: 先通过媒体上传命令（dt_media_upload）上传图片，使用返回的 mediaId", iconMediaID)
+			}
 			return callMCPToolOnServer("im", "update_group_icon", map[string]any{
 				"openConversationId": mustGetFlag(cmd, "group"),
-				"iconMediaId":        mustGetFlag(cmd, "icon-media-id"),
+				"iconMediaId":        iconMediaID,
 			})
 		},
 	}
@@ -3545,6 +3635,15 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 				return fmt.Errorf("flag --users or --user is required")
 			}
 			userIDs, openDingTalkIDs := splitChatIDValues(parseCSVValues(usersRaw))
+			// 服务端 set_group_member_mute_list 的 uids（staffId）入参存在缺陷：
+			// 即使传了 uids 仍返回 "uids is required"，而 openDingTalkIds 路径正常。
+			// 与 message send 一致：先把 userId 解析为 openDingTalkId；解析失败再降级透传 uids。
+			if len(userIDs) > 0 {
+				if resolved, err := resolveOpenDingTalkIDs(cmd.Context(), userIDs); err == nil {
+					openDingTalkIDs = append(openDingTalkIDs, resolved...)
+					userIDs = nil
+				}
+			}
 			off, _ := cmd.Flags().GetBool("off")
 			toolArgs := map[string]any{
 				"openConversationId": groupID,
