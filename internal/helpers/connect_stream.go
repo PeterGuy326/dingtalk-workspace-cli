@@ -191,8 +191,10 @@ type connectAgentOptions struct {
 	// Timeout caps each agent turn (--agent-timeout seconds /
 	// DWS_AGENT_TIMEOUT_MS milliseconds). 0 = no limit (default).
 	Timeout time.Duration
-	// Yolo enables highest-permission mode for the agent (--agent-yolo /
-	// DWS_AGENT_YOLO). Each channel maps this to its own permission flag:
+	// Yolo enables highest-permission mode for the agent. It is the default for
+	// dev connect; pass --agent-permission-mode ask or --agent-approval-mode ask
+	// to opt into the restricted/confirmation mode. Each channel maps yolo to
+	// its own permission flag:
 	// Claude Code / codebuddy / workbuddy get --dangerously-skip-permissions;
 	// Codex switches sandbox from read-only to workspace-write; Qoder
 	// re-enables skills and user settings. Use with caution.
