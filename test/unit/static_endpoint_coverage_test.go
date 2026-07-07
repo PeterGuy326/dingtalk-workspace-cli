@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/DingTalk-Real-AI/dws-data/syncdata"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/syncdata"
 )
 
 var explicitServerCallPattern = regexp.MustCompile(`(?:callMCPToolReturnTextOnServer|callMCPToolOnServer|CallMCPToolOnServer)\(\s*"([^"]+)"`)

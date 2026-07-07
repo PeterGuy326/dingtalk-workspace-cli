@@ -13,7 +13,7 @@
 
 package edition
 
-import "github.com/DingTalk-Real-AI/dws-data/syncdata"
+import "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/syncdata"
 
 // DefaultOSSClawType is the wire value for request header claw-type in
 // the open-source build. It is intentionally hard-wired — the open-source

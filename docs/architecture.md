@@ -5,7 +5,7 @@
 ## High-Level Flow
 
 1. `cmd` is the CLI entrypoint, invoking `internal/app` to build the root Cobra command tree.
-2. `internal/app` wires static utility commands (`auth`, `audit`, `schema`, `completion`) and dynamically loads product commands via `internal/plugin`.
+2. `internal/app` wires static utility commands (`auth`, `audit`, `schema`, `completion`), product helper commands, and plugin commands.
 3. `internal/helpers` contains the main command handlers for all product surfaces (`dev`, `chat`, `calendar`, `contact`, `aitable`, etc.).
 4. `internal/executor` and `internal/transport` execute MCP JSON-RPC calls; `internal/output` formats responses.
 5. `internal/auth` manages login state, PAT tokens, and agent-code detection.
@@ -35,7 +35,7 @@
 - `pkg/config`: configuration constants and paths
 - `pkg/edition`: edition detection (oss vs enterprise)
 - `pkg/mcptypes`: MCP protocol type definitions
+- `internal/syncdata`: generated static endpoint and command-routing data synced from the Wukong baseline
 - `skills/`: bundled agent skills (mono/ and multi/ layouts)
 - `test/`: CLI, integration, contract, unit, and skill E2E tests
 - `scripts/`: install scripts, policy checks, and CI helpers
-- `envelope/`: pre-built discovery payloads for offline use

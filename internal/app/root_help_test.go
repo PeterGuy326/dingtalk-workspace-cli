@@ -18,6 +18,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
 )
 
@@ -95,6 +96,49 @@ func TestCacheRefreshCompatibilityStub(t *testing.T) {
 	for _, want := range []string{`"status":"deprecated"`, `"command":"dws cache refresh"`, "服务发现已下线"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("cache refresh output missing %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestInjectStaticServersMergesStaticAndSupplementServers(t *testing.T) {
+	previous := edition.Get()
+	defer edition.Override(previous)
+	defer SetDynamicServers(nil)
+
+	edition.Override(&edition.Hooks{
+		Name: "test",
+		StaticServers: func() []edition.ServerInfo {
+			return []edition.ServerInfo{{
+				ID:       "static-test",
+				Name:     "Static Test",
+				Endpoint: "https://static.example/server/static-test",
+				Prefixes: []string{"static-alias"},
+			}}
+		},
+		SupplementServers: func() []edition.ServerInfo {
+			return []edition.ServerInfo{{
+				ID:       "supplement-test",
+				Name:     "Supplement Test",
+				Endpoint: "https://supplement.example/server/supplement-test",
+				Prefixes: []string{"supplement-alias"},
+			}}
+		},
+	})
+
+	injectStaticServers()
+
+	for _, tc := range []struct {
+		productID string
+		endpoint  string
+	}{
+		{"static-test", "https://static.example/server/static-test"},
+		{"static-alias", "https://static.example/server/static-test"},
+		{"supplement-test", "https://supplement.example/server/supplement-test"},
+		{"supplement-alias", "https://supplement.example/server/supplement-test"},
+	} {
+		got, ok := directRuntimeEndpoint(tc.productID, "")
+		if !ok || got != tc.endpoint {
+			t.Fatalf("directRuntimeEndpoint(%q) = %q, %v; want %q, true", tc.productID, got, ok, tc.endpoint)
 		}
 	}
 }

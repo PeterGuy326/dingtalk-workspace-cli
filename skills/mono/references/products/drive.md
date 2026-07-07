@@ -48,6 +48,7 @@ Flags:
 ### 获取钉盘空间列表
 
 > **Deprecated**：推荐改用 `dws wiki space list --type orgSpace` / `--type mySpace`（见 [wiki.md](./wiki.md)）。本命令仍可用，仅作兼容保留。
+> 适用场景：复制/移动文件到「我的文件」或团队空间根目录时，先取 `rootFolderId`；或者枚举用户可访问的团队空间。
 
 ```
 Usage:
@@ -273,6 +274,7 @@ Global Flags:
       --yes   跳过二次确认 (危险操作，建议先与用户确认)
 ```
 
+> 由当前二进制静态注册（路由到 doc 服务的 `delete_document` tool）；如果当前版本未暴露，调用前可用 `dws drive delete --help` 验证。
 注意：`--node` 使用的是 `drive list` 返回结果中的 `fileId` 字段（即 `dentryUuid`），**不是** `dentryId` 字段。
 删除是软删除（进回收站），但仍需用户明确确认；不要在自动化脚本里默认带 `--yes`。
 

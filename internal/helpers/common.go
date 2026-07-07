@@ -61,6 +61,10 @@ func resolveStringFlag(cmd *cobra.Command, flagName string, guard *cli.StdinGuar
 }
 
 func commandDryRun(cmd *cobra.Command) bool {
+	return commandBoolFlag(cmd, "dry-run")
+}
+
+func commandBoolFlag(cmd *cobra.Command, name string) bool {
 	if cmd == nil {
 		return false
 	}
@@ -73,11 +77,11 @@ func commandDryRun(cmd *cobra.Command) bool {
 		if flags == nil {
 			continue
 		}
-		flag := flags.Lookup("dry-run")
+		flag := flags.Lookup(name)
 		if flag == nil {
 			continue
 		}
-		value, err := flags.GetBool("dry-run")
+		value, err := flags.GetBool(name)
 		if err == nil {
 			return value
 		}

@@ -414,7 +414,7 @@ func (r *runtimeRunner) handleCatalogMiss(ctx context.Context, invocation execut
 	}
 	hint := "当前命令已注册，但静态端点目录中缺少对应 product/server endpoint。这通常是服务发现下线后的同步产物缺口，不是参数错误；请不要通过反复调整 flag 重试。"
 	actions := []string{
-		"确认 dws-data/syncdata.StaticServers() 是否包含该 product/server",
+		"确认 internal/syncdata.StaticServers() 是否包含该 product/server",
 		"运行 sync-oss 重新生成静态端点与路由",
 		"若该能力已下线，请在 skill 与 --help 中标记 unavailable 并提供替代命令",
 	}

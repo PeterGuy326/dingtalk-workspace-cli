@@ -109,6 +109,10 @@ go build -o dws ./cmd       # build to current directory
 cp dws ~/.local/bin/         # install to PATH
 ```
 
+Static endpoint data is generated from the Wukong baseline and committed in this
+repository under `internal/syncdata`, so source builds do not require a sibling
+data checkout.
+
 > Requires Go 1.25+. Use `make package` to cross-compile for all platforms (macOS / Linux / Windows x amd64 / arm64).
 
 </details>
@@ -300,21 +304,18 @@ dws contact user search --query "engineering" --dry-run
 dws contact user get-self --jq '.result[0].orgEmployeeModel | {name: .orgUserName, dept: .depts[0].deptName, userId}'
 ```
 
-### Schema Discovery
+### Command Help and Schema
 
-Agents don't need pre-built knowledge of every command. Use `dws schema` to dynamically discover capabilities:
+Product commands are compiled into the binary in static endpoint mode. Use `--help` and the bundled Agent Skills as the source of truth; `dws schema` is retained for helper-only schemas such as `dev.*`.
 
 ```bash
-# Step 1: Discover all available products
-dws schema --jq '.products[] | {id, tool_count: (.tools | length)}'
+# Inspect the current compiled command surface
+dws aitable record query --help
 
-# Step 2: Inspect target tool's parameter schema
-dws schema aitable.query_records --jq '.tool.parameters'
+# Helper-only schema introspection
+dws schema "dev app create"
 
-# Optional: inspect DingTalk authorization metadata for PAT planning
-dws schema aitable.query_records --jq '.tool.auth'
-
-# Step 3: Construct the correct call
+# Construct the call
 dws aitable record query --base-id BASE_ID --table-id TABLE_ID --limit 10
 ```
 
@@ -479,7 +480,7 @@ dws aitable record query --base-id BASE_ID --tabel-id TABLE_ID       # --tabel-i
 ```bash
 # Built-in jq expressions
 dws aitable record query --base-id BASE_ID --table-id TABLE_ID --jq '.invocation.params'
-dws schema --jq '.products[] | {id, tools: (.tools | length)}'
+dws schema "dev app create" --jq '.tool.required'
 
 # Return only specific fields
 dws aitable record query --base-id BASE_ID --table-id TABLE_ID --fields invocation,response
@@ -488,14 +489,12 @@ dws aitable record query --base-id BASE_ID --table-id TABLE_ID --fields invocati
 </details>
 
 <details>
-<summary><strong>Schema Introspection</strong> — query parameter schemas before making calls</summary>
+<summary><strong>Schema Introspection</strong> — helper-only schemas in static endpoint mode</summary>
 
 ```bash
-dws schema                                              # list all products and tools
-dws schema aitable.query_records                        # view parameter schema
-dws schema aitable.query_records --jq '.tool.required'   # view required fields
-dws schema aitable.query_records --jq '.tool.auth'       # view authorization metadata
-dws schema --jq '.products[].id'                        # extract all product IDs
+dws schema                                              # static endpoint mode note
+dws schema "dev app create"                             # view helper-only schema
+dws schema "dev app create" --jq '.tool.required'        # view required fields
 ```
 
 </details>
@@ -626,7 +625,7 @@ See [`docs/robot-quickstart.md`](./docs/robot-quickstart.md) for the full 4-step
 
 - [Command Index](./docs/command-index.md) — every runtime command with description and when-to-use guidance
 - [Reference](./docs/reference.md) — environment variables, exit codes, output formats, shell completion
-- [Architecture](./docs/architecture.md) — discovery-driven pipeline, IR, transport layer
+- [Architecture](./docs/architecture.md) — static endpoint pipeline, command surface, transport layer
 - [Open Platform App Command Routing](./docs/dev-yulan-command-routing.md) — yulan dev app command design, MCP overlay, permission flow, and Agent routing
 - [Changelog](./CHANGELOG.md) — release history and migration notes
 

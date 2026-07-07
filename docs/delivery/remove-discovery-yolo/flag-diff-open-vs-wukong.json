@@ -1,0 +1,918 @@
+{
+  "generated_at": "2026-07-07T06:32:25Z",
+  "scope": "Visible leaf commands only; compares local Flags section from `dws <path> --help`, excluding Global Flags, hidden flags, and Cobra automatic --help.",
+  "open_leaf_commands": 631,
+  "wukong_leaf_commands": 781,
+  "common_leaf_commands": 626,
+  "open_help_errors": [],
+  "wukong_help_errors": [],
+  "open_more_flags": {
+    "chat message reply": [
+      "ai-tag"
+    ],
+    "chat message send": [
+      "ai-tag"
+    ],
+    "pat chmod": [
+      "domain",
+      "domains",
+      "product",
+      "products",
+      "recommend"
+    ]
+  },
+  "wukong_more_flags": {
+    "chat message list": [
+      "forward"
+    ],
+    "chat message list-topic-replies": [
+      "forward"
+    ],
+    "chat message send": [
+      "dentry-id",
+      "file-name",
+      "file-size",
+      "file-type",
+      "space-id"
+    ],
+    "skill install": [
+      "force",
+      "skill-id"
+    ]
+  },
+  "changed_flag_types": {},
+  "open_only_command_flags": {
+    "chat media upload": [
+      "file",
+      "type"
+    ],
+    "doctor": [
+      "json",
+      "perf",
+      "timeout"
+    ],
+    "pat browser-policy": [
+      "agentCode",
+      "enabled"
+    ],
+    "skill get": [
+      "skill-id"
+    ],
+    "upgrade": [
+      "all",
+      "check",
+      "force",
+      "list",
+      "rollback",
+      "skip-skills",
+      "version"
+    ]
+  },
+  "wukong_only_command_flags": {
+    "agoal contract detail": [
+      "contract-id",
+      "request-id"
+    ],
+    "agoal contract fields": [
+      "request-id"
+    ],
+    "agoal contract list": [
+      "request-id",
+      "scope-id",
+      "scope-type"
+    ],
+    "agoal contract update": [
+      "audit-config",
+      "contract-id",
+      "dimensions",
+      "objective-template",
+      "request-id"
+    ],
+    "agoal report list-statistics": [
+      "keyword",
+      "request-id"
+    ],
+    "agoal report submit-detail": [
+      "keyword",
+      "page",
+      "page-size",
+      "query-date",
+      "request-id",
+      "submit-state",
+      "template-id"
+    ],
+    "agoal scorecard detail": [
+      "dept-id",
+      "request-id",
+      "selected-time"
+    ],
+    "agoal scorecard entity-detail": [
+      "entity-id",
+      "request-id",
+      "sc-id"
+    ],
+    "agoal scorecard update": [
+      "content",
+      "dept-id",
+      "id",
+      "request-id",
+      "selected-time",
+      "tracking-period-type"
+    ],
+    "agoal strategy detail": [
+      "profile-id",
+      "request-id"
+    ],
+    "agoal strategy list": [
+      "request-id",
+      "scope-id",
+      "scope-type"
+    ],
+    "agoal strategy update": [
+      "content",
+      "profile-id",
+      "request-id"
+    ],
+    "agoal user objectives": [
+      "period-ids",
+      "request-id",
+      "rule-id",
+      "user-id"
+    ],
+    "agoal user rules": [
+      "request-id",
+      "user-id"
+    ],
+    "aiapp create": [
+      "attachments",
+      "prompt",
+      "skills"
+    ],
+    "aiapp modify": [
+      "prompt",
+      "skills",
+      "thread-id"
+    ],
+    "aiapp query": [
+      "task-id"
+    ],
+    "aidesign edit": [
+      "image-url",
+      "prompt"
+    ],
+    "aidesign generate": [
+      "height",
+      "prompt",
+      "width"
+    ],
+    "aidesign generate-with-image": [
+      "height",
+      "image-url",
+      "prompt",
+      "width"
+    ],
+    "aidesign generate-with-template": [
+      "image-url",
+      "name",
+      "template"
+    ],
+    "aidesign isolate": [
+      "image-url"
+    ],
+    "aidesign upscale": [
+      "image-url"
+    ],
+    "blackboard create": [
+      "content",
+      "push-top",
+      "send-ding",
+      "send-todo",
+      "title"
+    ],
+    "blackboard list": [
+      "end",
+      "start",
+      "unread"
+    ],
+    "conference meeting reserve": [
+      "end",
+      "start",
+      "title"
+    ],
+    "conference member invite": [
+      "conference-id",
+      "nicks",
+      "open-dingtalk-ids"
+    ],
+    "contact label get": [
+      "names"
+    ],
+    "contact label list": [],
+    "contact label list-members": [
+      "id"
+    ],
+    "credit annual": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit bidding": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit branch": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit cert-info": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit change": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit equity invest": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit equity shareholder": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit info": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit ip copyright": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit ip icp": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit ip patent": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit ip trademark": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit kp": [
+      "cert"
+    ],
+    "credit license": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit member": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit risk assist": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit risk consum": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit risk court": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit risk dishonest": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit risk execute": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit risk finalcase": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit risk litigation": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit risk owetax": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit risk penalty": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit risk pledge": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit risk taxviolation": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit risk verdict": [
+      "cert",
+      "page",
+      "size"
+    ],
+    "credit search": [
+      "name",
+      "page",
+      "size"
+    ],
+    "docparse convert": [
+      "file"
+    ],
+    "finance account list": [
+      "account-no",
+      "page-index",
+      "page-size",
+      "query"
+    ],
+    "finance bank create": [
+      "amount",
+      "balance",
+      "in-out-flag",
+      "my-account",
+      "my-account-id",
+      "my-bank",
+      "my-name",
+      "other-account",
+      "other-bank",
+      "other-branch",
+      "other-name",
+      "remark",
+      "skip-check-repeat",
+      "trade-no",
+      "trade-time",
+      "usage"
+    ],
+    "finance bank list": [
+      "account-id",
+      "page-no",
+      "page-size",
+      "trade-end",
+      "trade-start"
+    ],
+    "finance bank query": [
+      "detail-id"
+    ],
+    "finance category search": [
+      "page-index",
+      "page-size",
+      "query",
+      "type"
+    ],
+    "finance company save": [
+      "name",
+      "tax-no"
+    ],
+    "finance company search": [
+      "name"
+    ],
+    "finance company update": [
+      "code",
+      "name",
+      "tax-no"
+    ],
+    "finance customer get": [
+      "corp-id",
+      "name"
+    ],
+    "finance customer list": [
+      "page-index",
+      "page-size",
+      "query"
+    ],
+    "finance customer save": [
+      "customer-name",
+      "purchaser-name",
+      "tax-no"
+    ],
+    "finance digital-invoice account": [
+      "company-code"
+    ],
+    "finance digital-invoice batch-draw": [
+      "company-code",
+      "items"
+    ],
+    "finance digital-invoice batch-draw-query": [
+      "batch-no",
+      "company-code"
+    ],
+    "finance digital-invoice batch-draw-query-saas": [
+      "batch-no",
+      "company-code"
+    ],
+    "finance digital-invoice batch-draw-saas": [
+      "batch-no",
+      "company-code",
+      "orders"
+    ],
+    "finance digital-invoice do-login": [
+      "company-code",
+      "login-account",
+      "login-id",
+      "login-pwd",
+      "serial-no",
+      "taxpayer-user",
+      "taxpayer-user-id",
+      "taxpayer-user-phone"
+    ],
+    "finance digital-invoice do-login-status": [
+      "company-code"
+    ],
+    "finance digital-invoice face-qr": [
+      "company-code",
+      "id-auth-type"
+    ],
+    "finance digital-invoice face-status": [
+      "company-code"
+    ],
+    "finance digital-invoice file": [
+      "drew-date",
+      "invoice-no",
+      "serial-no"
+    ],
+    "finance digital-invoice get-table": [
+      "data",
+      "type"
+    ],
+    "finance digital-invoice goods-code": [
+      "company-code",
+      "good-name"
+    ],
+    "finance digital-invoice import-goods": [
+      "company-code",
+      "items"
+    ],
+    "finance digital-invoice issue": [
+      "company-code",
+      "customer-code",
+      "details",
+      "invoice-type-code",
+      "serial-no",
+      "total-exclude-tax",
+      "total-include-tax",
+      "total-tax-amount"
+    ],
+    "finance digital-invoice login-page": [
+      "company-code",
+      "company-name",
+      "tax-no"
+    ],
+    "finance digital-invoice search-goods": [
+      "company-code",
+      "goods-name"
+    ],
+    "finance digital-invoice send-email": [
+      "company-code",
+      "items"
+    ],
+    "finance digital-invoice send-email-saas": [
+      "company-code",
+      "items"
+    ],
+    "finance digital-invoice skill-version": [],
+    "finance digital-invoice sms-code": [
+      "company-code",
+      "phone",
+      "serial-no",
+      "sms-code"
+    ],
+    "finance digital-invoice title": [
+      "company-code",
+      "name"
+    ],
+    "finance gather execute": [
+      "instances"
+    ],
+    "finance gather execute-general": [
+      "data-list"
+    ],
+    "finance gather query-rule": [
+      "process-code",
+      "process-name"
+    ],
+    "finance gather save-rule": [
+      "process-code",
+      "rules",
+      "table-field-id"
+    ],
+    "finance gather try-execute": [
+      "business-id",
+      "instance-id",
+      "process-code"
+    ],
+    "finance invoice add-record": [
+      "business-id",
+      "invoice-pdf-url"
+    ],
+    "finance invoice issue": [
+      "invoice-type",
+      "products",
+      "purchaser",
+      "taxnum"
+    ],
+    "finance invoice issue-result": [
+      "order-id"
+    ],
+    "finance invoice list": [
+      "company-code",
+      "end-time",
+      "finance-type",
+      "invoice-type",
+      "invoice-types",
+      "page-no",
+      "page-size",
+      "query",
+      "start-time",
+      "verify-status"
+    ],
+    "finance invoice list-application": [
+      "end-time",
+      "page-no",
+      "page-size",
+      "start-time"
+    ],
+    "finance invoice recommend-category": [
+      "items"
+    ],
+    "finance invoice upload": [
+      "name",
+      "type",
+      "url"
+    ],
+    "finance journal daily": [
+      "date"
+    ],
+    "finance journal detail-url": [],
+    "finance payment account-list": [
+      "page-no",
+      "page-size",
+      "query"
+    ],
+    "finance payment account-url": [],
+    "finance payment cashier-url": [
+      "instance-id",
+      "instance-ids"
+    ],
+    "finance payment create": [
+      "amount",
+      "payee-account-name",
+      "payee-account-no",
+      "payee-account-type",
+      "payee-bank-name",
+      "payee-branch-name",
+      "remark"
+    ],
+    "finance payment list": [
+      "page-no",
+      "page-size",
+      "payee-account-no"
+    ],
+    "finance payment payer-list": [],
+    "finance process form-data": [
+      "business-id"
+    ],
+    "finance process list": [
+      "end-time",
+      "form-name",
+      "order-by",
+      "page-no",
+      "page-size",
+      "start-time",
+      "status"
+    ],
+    "finance receipt create": [
+      "amount",
+      "category-code",
+      "invoices",
+      "supplier-code",
+      "tax"
+    ],
+    "finance receipt create-collection": [
+      "account-code",
+      "amount",
+      "customer-code",
+      "detail-id",
+      "record-time",
+      "title"
+    ],
+    "finance supplier search": [
+      "page-index",
+      "page-size",
+      "query"
+    ],
+    "finance voucher entries": [
+      "instance-id"
+    ],
+    "finance voucher generate": [
+      "biz-id"
+    ],
+    "law case": [
+      "keywords",
+      "level",
+      "page",
+      "query",
+      "size"
+    ],
+    "law consult": [
+      "deep-think",
+      "online-search",
+      "query"
+    ],
+    "law deliadvice": [
+      "model",
+      "query"
+    ],
+    "law delicasesearch": [
+      "page-no",
+      "page-size",
+      "query",
+      "sort-field",
+      "sort-order"
+    ],
+    "law delisearch": [
+      "page-no",
+      "page-size",
+      "query",
+      "sort-field",
+      "sort-order"
+    ],
+    "law search": [
+      "keywords",
+      "page",
+      "query",
+      "size",
+      "type"
+    ],
+    "skill publish": [
+      "changelog",
+      "display-description",
+      "display-name",
+      "name",
+      "version"
+    ],
+    "yida app create": [
+      "colour",
+      "default-language",
+      "description",
+      "icon",
+      "icon-url",
+      "name",
+      "open-exclusive",
+      "open-exclusive-unit",
+      "open-physic-column"
+    ],
+    "yida app list": [
+      "filter",
+      "keyword",
+      "language",
+      "page",
+      "size"
+    ],
+    "yida app list-forms": [
+      "app",
+      "form-types",
+      "language",
+      "page",
+      "size"
+    ],
+    "yida app update-permission": [
+      "admin-type",
+      "app",
+      "language",
+      "managers"
+    ],
+    "yida automation create": [
+      "app",
+      "desc",
+      "form",
+      "language",
+      "name",
+      "type"
+    ],
+    "yida automation update": [
+      "app",
+      "json",
+      "language",
+      "process-code",
+      "view-json"
+    ],
+    "yida data create": [
+      "app",
+      "form",
+      "form-data",
+      "instance-id",
+      "language",
+      "use-alias"
+    ],
+    "yida data detail": [
+      "app",
+      "form",
+      "instance-id",
+      "need-inst-value"
+    ],
+    "yida data export-query": [
+      "app",
+      "language",
+      "sequence"
+    ],
+    "yida data export-start": [
+      "app",
+      "fields",
+      "filter",
+      "form",
+      "language",
+      "sort",
+      "view"
+    ],
+    "yida data search": [
+      "app",
+      "create-from",
+      "create-to",
+      "form",
+      "language",
+      "modified-from",
+      "modified-to",
+      "originator-id",
+      "page",
+      "search-field",
+      "size",
+      "use-alias"
+    ],
+    "yida data update": [
+      "app",
+      "form",
+      "form-data",
+      "instance-id",
+      "language",
+      "use-alias"
+    ],
+    "yida design form create": [
+      "app",
+      "description",
+      "form-type",
+      "title"
+    ],
+    "yida design form get-info": [
+      "app",
+      "form"
+    ],
+    "yida design form get-schema": [
+      "app",
+      "form",
+      "language"
+    ],
+    "yida design form preview": [
+      "app",
+      "content",
+      "form",
+      "form-type",
+      "gmt-modified",
+      "system-type"
+    ],
+    "yida design form update-schema": [
+      "app",
+      "content",
+      "form",
+      "form-type",
+      "gmt-modified",
+      "system-type"
+    ],
+    "yida design form update-title": [
+      "app",
+      "form",
+      "language",
+      "title",
+      "title-en"
+    ],
+    "yida design process create-draft": [
+      "app",
+      "form",
+      "process-id"
+    ],
+    "yida design process get": [
+      "app",
+      "process-code",
+      "process-id"
+    ],
+    "yida design process publish": [
+      "app",
+      "process-code",
+      "process-id"
+    ],
+    "yida design process update": [
+      "app",
+      "content",
+      "logic",
+      "online",
+      "process-code",
+      "process-id",
+      "view-content"
+    ],
+    "yida design process versions list": [
+      "alias-keyword",
+      "app",
+      "order-by-create-time",
+      "order-by-modify-time",
+      "page",
+      "process-code",
+      "process-id",
+      "size",
+      "status"
+    ],
+    "yida form components": [
+      "app",
+      "form",
+      "language",
+      "version"
+    ],
+    "yida process execute": [
+      "app",
+      "digital-sign-url",
+      "form",
+      "form-data",
+      "instance-id",
+      "no-execute-expressions",
+      "remark",
+      "result",
+      "task"
+    ],
+    "yida process records": [
+      "app",
+      "instance-id",
+      "language"
+    ],
+    "yida process redirect": [
+      "app",
+      "by-manager",
+      "form",
+      "instance-id",
+      "remark",
+      "task",
+      "to-user"
+    ],
+    "yida process running-tasks": [
+      "app",
+      "instance-id",
+      "language"
+    ],
+    "yida process start": [
+      "app",
+      "business-id",
+      "dept-id",
+      "form",
+      "form-data",
+      "instance-id",
+      "language",
+      "process-code",
+      "process-data",
+      "use-alias"
+    ],
+    "yida task list": [
+      "apps",
+      "create-from",
+      "create-to",
+      "instance-create-from",
+      "instance-create-to",
+      "keyword",
+      "page",
+      "process-codes",
+      "size",
+      "status",
+      "task-finish-from",
+      "task-finish-to"
+    ]
+  }
+}

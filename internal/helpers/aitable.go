@@ -3291,6 +3291,9 @@ locked 为 true 表示视图已锁定，false 表示未锁定。`,
 		Example: `  dws aitable dashboard create --base-id BASE_ID --config '{"dashboardName":"销售看板",...}'
   # 先获取配置示例: dws aitable dashboard config-example`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flags().Changed("name") {
+				return fmt.Errorf("dashboard create --name is temporarily disabled because the backend currently ignores this shortcut and may return an unusable dashboard id; use --config with a complete dashboard config from `dws aitable dashboard config-example`")
+			}
 			var cfg map[string]any
 			if configStr, _ := cmd.Flags().GetString("config"); configStr != "" {
 				if parsed, ok := jsonStringToMap(configStr).(map[string]any); ok {
@@ -3330,6 +3333,9 @@ locked 为 true 表示视图已锁定，false 表示未锁定。`,
 			if err := validateRequiredFlags(cmd, "dashboard-id"); err != nil {
 				return err
 			}
+			if cmd.Flags().Changed("name") {
+				return fmt.Errorf("dashboard update --name is temporarily disabled because backend partial rename can make the dashboard unreachable; wait for backend fix or pass a complete --config after exporting the current dashboard config")
+			}
 			var cfg map[string]any
 			if configStr, _ := cmd.Flags().GetString("config"); configStr != "" {
 				if parsed, ok := jsonStringToMap(configStr).(map[string]any); ok {
@@ -3342,6 +3348,11 @@ locked 为 true 表示视图已锁定，false 表示未锁定。`,
 			}
 			if name, _ := cmd.Flags().GetString("name"); name != "" {
 				cfg["dashboardName"] = name
+			}
+			if len(cfg) == 1 {
+				if _, ok := cfg["dashboardName"]; ok {
+					return fmt.Errorf("dashboard update with only dashboardName is temporarily disabled because backend partial rename can make the dashboard unreachable; wait for backend fix or pass a complete --config after exporting the current dashboard config")
+				}
 			}
 			if len(cfg) == 0 {
 				return fmt.Errorf("must specify either --config or --name")
