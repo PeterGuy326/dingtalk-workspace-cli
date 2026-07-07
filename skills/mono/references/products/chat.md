@@ -47,6 +47,7 @@ Flags:
       --id string      群 ID / openconversation_id (必填)
       --users string   要移除的用户 userId 列表，逗号分隔 (必填)
 ```
+> 移除对象是群主时 CLI 会拦截并报错，提示先用 `chat group transfer-owner` 转让群主（防止产生无主群）；查不到群主时放行。
 
 #### 将机器人添加到群中 — 将自定义机器人添加到当前用户有管理权限的群聊中，如果没有权限则会报错
 ```
@@ -147,6 +148,7 @@ Flags:
       --group string          群聊 openConversationId (必填)
       --icon-media-id string  群头像 mediaId (必填)
 ```
+> `--icon-media-id` 有本地格式校验：必须是 `@` 开头的媒体 ID（如 `dt_media_upload` 的返回值），非法格式会在本地直接报错。
 
 #### 更新群设置 — 更新指定群聊的设置项
 
@@ -1874,7 +1876,7 @@ Flags:
   - 群聊：`dws chat search --query "群名"`
   - 单聊：`dws chat conversation-info --user <userId>` 或 `dws chat conversation-info --open-dingtalk-id <openDingTalkId>`（人员信息可通过 `dws aisearch person --keyword "姓名" --dimension name` 获取）
 - `chat group-mute` 全员禁言/取消全员禁言，需传 --group（openConversationId），默认禁言，传 --off 取消
-- `chat group-mute-member` 指定群成员禁言，需传 --group、--user/--users（userId，逗号分隔）、--mute-time（毫秒，仅禁言时必填，支持 300000/3600000/86400000/604800000/2592000000），传 --off 解除禁言
+- `chat group-mute-member` 指定群成员禁言，需传 --group、--user/--users（userId，逗号分隔）、--mute-time（毫秒，仅禁言时必填，支持 300000/3600000/86400000/604800000/2592000000），传 --off 解除禁言；CLI 会自动把 userId 解析成 openDingTalkId 再调用，直接传 userId 即可；禁言群主会被服务端拒绝
 - `chat group set-admin` 设置/取消群管理员，需传 --group（openConversationId）、--user/--users（userId，逗号分隔），默认设为管理员，传 --off 取消
 
 ## 自动化脚本
