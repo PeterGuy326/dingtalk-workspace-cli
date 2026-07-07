@@ -1,0 +1,8382 @@
+{
+  "meta": {
+    "generated_at": "2026-07-07T06:03:59Z",
+    "note": "Visible command tree exported by recursively parsing `dws <path> --help`. Hidden compatibility commands are intentionally excluded from help and verified separately.",
+    "label": "open-delivery",
+    "binary": "/tmp/dws-open-delivery-tree-bin/dws",
+    "version": {
+      "architecture": "MCP Static Endpoint Mode",
+      "build": "2026-07-07T05:56:46Z",
+      "commit": "1b823514",
+      "edition": "open",
+      "go": "1.24+",
+      "version": "v1.0.50-delivery-remove-discovery-yolo"
+    }
+  },
+  "commands": [
+    {
+      "path": "dws",
+      "argv": [],
+      "depth": 0,
+      "description": "",
+      "child_count": 34
+    },
+    {
+      "path": "aisearch",
+      "argv": [
+        "aisearch"
+      ],
+      "depth": 1,
+      "description": "AI 搜问",
+      "child_count": 3
+    },
+    {
+      "path": "aitable",
+      "argv": [
+        "aitable"
+      ],
+      "depth": 1,
+      "description": "AI 表格操作",
+      "child_count": 19
+    },
+    {
+      "path": "attendance",
+      "argv": [
+        "attendance"
+      ],
+      "depth": 1,
+      "description": "考勤打卡 / 排班 / 统计",
+      "child_count": 17
+    },
+    {
+      "path": "calendar",
+      "argv": [
+        "calendar"
+      ],
+      "depth": 1,
+      "description": "日历日程 / 会议室 / 闲忙",
+      "child_count": 7
+    },
+    {
+      "path": "chat",
+      "argv": [
+        "chat"
+      ],
+      "depth": 1,
+      "description": "群聊 / 消息 / 机器人",
+      "child_count": 26
+    },
+    {
+      "path": "contact",
+      "argv": [
+        "contact"
+      ],
+      "depth": 1,
+      "description": "通讯录 / 用户 / 部门 / 人员关系",
+      "child_count": 3
+    },
+    {
+      "path": "devdoc",
+      "argv": [
+        "devdoc"
+      ],
+      "depth": 1,
+      "description": "开放平台文档搜索",
+      "child_count": 1
+    },
+    {
+      "path": "ding",
+      "argv": [
+        "ding"
+      ],
+      "depth": 1,
+      "description": "DING 消息 / 发送 / 撤回",
+      "child_count": 1
+    },
+    {
+      "path": "doc",
+      "argv": [
+        "doc"
+      ],
+      "depth": 1,
+      "description": "钉钉文档管理",
+      "child_count": 11
+    },
+    {
+      "path": "drive",
+      "argv": [
+        "drive"
+      ],
+      "depth": 1,
+      "description": "钉盘文件管理",
+      "child_count": 17
+    },
+    {
+      "path": "live",
+      "argv": [
+        "live"
+      ],
+      "depth": 1,
+      "description": "直播列表 / 信息",
+      "child_count": 1
+    },
+    {
+      "path": "mail",
+      "argv": [
+        "mail"
+      ],
+      "depth": 1,
+      "description": "邮箱 / 邮件收发",
+      "child_count": 12
+    },
+    {
+      "path": "minutes",
+      "argv": [
+        "minutes"
+      ],
+      "depth": 1,
+      "description": "AI 听记 / 会议纪要",
+      "child_count": 11
+    },
+    {
+      "path": "oa",
+      "argv": [
+        "oa"
+      ],
+      "depth": 1,
+      "description": "OA 审批 / 同意 / 拒绝 / 撤销",
+      "child_count": 1
+    },
+    {
+      "path": "pat",
+      "argv": [
+        "pat"
+      ],
+      "depth": 1,
+      "description": "行为授权管理",
+      "child_count": 2
+    },
+    {
+      "path": "report",
+      "argv": [
+        "report"
+      ],
+      "depth": 1,
+      "description": "钉钉日志（OA 周报应用 / 日志模版填报）",
+      "child_count": 10
+    },
+    {
+      "path": "sheet",
+      "argv": [
+        "sheet"
+      ],
+      "depth": 1,
+      "description": "钉钉表格管理",
+      "child_count": 37
+    },
+    {
+      "path": "todo",
+      "argv": [
+        "todo"
+      ],
+      "depth": 1,
+      "description": "待办任务管理",
+      "child_count": 2
+    },
+    {
+      "path": "wiki",
+      "argv": [
+        "wiki"
+      ],
+      "depth": 1,
+      "description": "知识库 / 空间管理 / 节点管理 / 成员管理",
+      "child_count": 3
+    },
+    {
+      "path": "dws",
+      "argv": [
+        "dws"
+      ],
+      "depth": 1,
+      "description": "<service> [command] [flags]",
+      "child_count": 0
+    },
+    {
+      "path": "api",
+      "argv": [
+        "api"
+      ],
+      "depth": 1,
+      "description": "调用钉钉 OpenAPI (Raw HTTP)",
+      "child_count": 0
+    },
+    {
+      "path": "auth",
+      "argv": [
+        "auth"
+      ],
+      "depth": 1,
+      "description": "认证管理",
+      "child_count": 6
+    },
+    {
+      "path": "completion",
+      "argv": [
+        "completion"
+      ],
+      "depth": 1,
+      "description": "生成 Shell 自动补全脚本",
+      "child_count": 0
+    },
+    {
+      "path": "config",
+      "argv": [
+        "config"
+      ],
+      "depth": 1,
+      "description": "配置管理",
+      "child_count": 1
+    },
+    {
+      "path": "dev",
+      "argv": [
+        "dev"
+      ],
+      "depth": 1,
+      "description": "开放平台开发者能力",
+      "child_count": 3
+    },
+    {
+      "path": "doctor",
+      "argv": [
+        "doctor"
+      ],
+      "depth": 1,
+      "description": "环境健康检查",
+      "child_count": 0
+    },
+    {
+      "path": "help",
+      "argv": [
+        "help"
+      ],
+      "depth": 1,
+      "description": "查看任意命令的帮助信息",
+      "child_count": 0
+    },
+    {
+      "path": "plugin",
+      "argv": [
+        "plugin"
+      ],
+      "depth": 1,
+      "description": "插件管理",
+      "child_count": 11
+    },
+    {
+      "path": "profile",
+      "argv": [
+        "profile"
+      ],
+      "depth": 1,
+      "description": "组织 profile 管理",
+      "child_count": 3
+    },
+    {
+      "path": "recovery",
+      "argv": [
+        "recovery"
+      ],
+      "depth": 1,
+      "description": "错误恢复辅助命令",
+      "child_count": 3
+    },
+    {
+      "path": "schema",
+      "argv": [
+        "schema"
+      ],
+      "depth": 1,
+      "description": "查看有限的本地 Schema（静态端点模式）",
+      "child_count": 0
+    },
+    {
+      "path": "skill",
+      "argv": [
+        "skill"
+      ],
+      "depth": 1,
+      "description": "技能管理",
+      "child_count": 4
+    },
+    {
+      "path": "upgrade",
+      "argv": [
+        "upgrade"
+      ],
+      "depth": 1,
+      "description": "升级 DWS CLI 到最新版本",
+      "child_count": 0
+    },
+    {
+      "path": "version",
+      "argv": [
+        "version"
+      ],
+      "depth": 1,
+      "description": "显示版本信息",
+      "child_count": 0
+    },
+    {
+      "path": "aisearch behavior",
+      "argv": [
+        "aisearch",
+        "behavior"
+      ],
+      "depth": 2,
+      "description": "搜索明确的发送/创建/接收等行为记录",
+      "child_count": 0
+    },
+    {
+      "path": "aisearch enterprise",
+      "argv": [
+        "aisearch",
+        "enterprise"
+      ],
+      "depth": 2,
+      "description": "搜索企业内部知识内容和相关消息",
+      "child_count": 0
+    },
+    {
+      "path": "aisearch person",
+      "argv": [
+        "aisearch",
+        "person"
+      ],
+      "depth": 2,
+      "description": "搜索企业人员",
+      "child_count": 0
+    },
+    {
+      "path": "aitable advperm",
+      "argv": [
+        "aitable",
+        "advperm"
+      ],
+      "depth": 2,
+      "description": "高级权限管理（开关 / 角色查看与删除）",
+      "child_count": 7
+    },
+    {
+      "path": "aitable attachment",
+      "argv": [
+        "aitable",
+        "attachment"
+      ],
+      "depth": 2,
+      "description": "附件管理",
+      "child_count": 1
+    },
+    {
+      "path": "aitable base",
+      "argv": [
+        "aitable",
+        "base"
+      ],
+      "depth": 2,
+      "description": "Base 管理",
+      "child_count": 8
+    },
+    {
+      "path": "aitable chart",
+      "argv": [
+        "aitable",
+        "chart"
+      ],
+      "depth": 2,
+      "description": "图表管理",
+      "child_count": 6
+    },
+    {
+      "path": "aitable create",
+      "argv": [
+        "aitable",
+        "create"
+      ],
+      "depth": 2,
+      "description": "创建 AI 表格（dws aitable base create 的别名）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable dashboard",
+      "argv": [
+        "aitable",
+        "dashboard"
+      ],
+      "depth": 2,
+      "description": "仪表盘管理",
+      "child_count": 7
+    },
+    {
+      "path": "aitable export",
+      "argv": [
+        "aitable",
+        "export"
+      ],
+      "depth": 2,
+      "description": "数据导出",
+      "child_count": 1
+    },
+    {
+      "path": "aitable field",
+      "argv": [
+        "aitable",
+        "field"
+      ],
+      "depth": 2,
+      "description": "字段管理",
+      "child_count": 6
+    },
+    {
+      "path": "aitable form",
+      "argv": [
+        "aitable",
+        "form"
+      ],
+      "depth": 2,
+      "description": "表单管理",
+      "child_count": 8
+    },
+    {
+      "path": "aitable import",
+      "argv": [
+        "aitable",
+        "import"
+      ],
+      "depth": 2,
+      "description": "数据导入",
+      "child_count": 2
+    },
+    {
+      "path": "aitable info",
+      "argv": [
+        "aitable",
+        "info"
+      ],
+      "depth": 2,
+      "description": "获取 AI 表格信息（dws aitable base get 的别名）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable list",
+      "argv": [
+        "aitable",
+        "list"
+      ],
+      "depth": 2,
+      "description": "获取 AI 表格列表（dws aitable base list 的别名）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record",
+      "argv": [
+        "aitable",
+        "record"
+      ],
+      "depth": 2,
+      "description": "记录管理",
+      "child_count": 13
+    },
+    {
+      "path": "aitable search",
+      "argv": [
+        "aitable",
+        "search"
+      ],
+      "depth": 2,
+      "description": "AI 表格搜索（dws aitable base search 的别名）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable section",
+      "argv": [
+        "aitable",
+        "section"
+      ],
+      "depth": 2,
+      "description": "文件夹与节点管理",
+      "child_count": 7
+    },
+    {
+      "path": "aitable table",
+      "argv": [
+        "aitable",
+        "table"
+      ],
+      "depth": 2,
+      "description": "数据表管理",
+      "child_count": 5
+    },
+    {
+      "path": "aitable template",
+      "argv": [
+        "aitable",
+        "template"
+      ],
+      "depth": 2,
+      "description": "模板搜索",
+      "child_count": 1
+    },
+    {
+      "path": "aitable view",
+      "argv": [
+        "aitable",
+        "view"
+      ],
+      "depth": 2,
+      "description": "视图管理",
+      "child_count": 7
+    },
+    {
+      "path": "aitable workflow",
+      "argv": [
+        "aitable",
+        "workflow"
+      ],
+      "depth": 2,
+      "description": "自动化工作流管理（启停 / 查看 / 列表）",
+      "child_count": 4
+    },
+    {
+      "path": "attendance adjustment",
+      "argv": [
+        "attendance",
+        "adjustment"
+      ],
+      "depth": 2,
+      "description": "补卡规则",
+      "child_count": 2
+    },
+    {
+      "path": "attendance approve",
+      "argv": [
+        "attendance",
+        "approve"
+      ],
+      "depth": 2,
+      "description": "审批单查询",
+      "child_count": 2
+    },
+    {
+      "path": "attendance boss-check",
+      "argv": [
+        "attendance",
+        "boss-check"
+      ],
+      "depth": 2,
+      "description": "BOSS 改签打卡记录",
+      "child_count": 0
+    },
+    {
+      "path": "attendance check",
+      "argv": [
+        "attendance",
+        "check"
+      ],
+      "depth": 2,
+      "description": "打卡查询",
+      "child_count": 2
+    },
+    {
+      "path": "attendance checkin",
+      "argv": [
+        "attendance",
+        "checkin"
+      ],
+      "depth": 2,
+      "description": "签到管理",
+      "child_count": 1
+    },
+    {
+      "path": "attendance class",
+      "argv": [
+        "attendance",
+        "class"
+      ],
+      "depth": 2,
+      "description": "班次规则",
+      "child_count": 4
+    },
+    {
+      "path": "attendance globalsetting",
+      "argv": [
+        "attendance",
+        "globalsetting"
+      ],
+      "depth": 2,
+      "description": "全局规则设置（仅管理员）",
+      "child_count": 2
+    },
+    {
+      "path": "attendance group",
+      "argv": [
+        "attendance",
+        "group"
+      ],
+      "depth": 2,
+      "description": "考勤组",
+      "child_count": 6
+    },
+    {
+      "path": "attendance overtime",
+      "argv": [
+        "attendance",
+        "overtime"
+      ],
+      "depth": 2,
+      "description": "加班规则",
+      "child_count": 2
+    },
+    {
+      "path": "attendance record",
+      "argv": [
+        "attendance",
+        "record"
+      ],
+      "depth": 2,
+      "description": "考勤记录",
+      "child_count": 1
+    },
+    {
+      "path": "attendance report",
+      "argv": [
+        "attendance",
+        "report"
+      ],
+      "depth": 2,
+      "description": "查询考勤报表和结果",
+      "child_count": 3
+    },
+    {
+      "path": "attendance rules",
+      "argv": [
+        "attendance",
+        "rules"
+      ],
+      "depth": 2,
+      "description": "查询考勤组与考勤规则",
+      "child_count": 0
+    },
+    {
+      "path": "attendance schedule",
+      "argv": [
+        "attendance",
+        "schedule"
+      ],
+      "depth": 2,
+      "description": "排班管理",
+      "child_count": 2
+    },
+    {
+      "path": "attendance selfsetting",
+      "argv": [
+        "attendance",
+        "selfsetting"
+      ],
+      "depth": 2,
+      "description": "个人规则设置",
+      "child_count": 2
+    },
+    {
+      "path": "attendance shift",
+      "argv": [
+        "attendance",
+        "shift"
+      ],
+      "depth": 2,
+      "description": "班次查询",
+      "child_count": 1
+    },
+    {
+      "path": "attendance summary",
+      "argv": [
+        "attendance",
+        "summary"
+      ],
+      "depth": 2,
+      "description": "查询某个人的考勤统计摘要",
+      "child_count": 0
+    },
+    {
+      "path": "attendance vacation",
+      "argv": [
+        "attendance",
+        "vacation"
+      ],
+      "depth": 2,
+      "description": "假期管理",
+      "child_count": 5
+    },
+    {
+      "path": "calendar acl",
+      "argv": [
+        "calendar",
+        "acl"
+      ],
+      "depth": 2,
+      "description": "管理我的日历访问权限（共享给他人）",
+      "child_count": 3
+    },
+    {
+      "path": "calendar attachment",
+      "argv": [
+        "calendar",
+        "attachment"
+      ],
+      "depth": 2,
+      "description": "日程附件管理",
+      "child_count": 1
+    },
+    {
+      "path": "calendar attendee",
+      "argv": [
+        "calendar",
+        "attendee"
+      ],
+      "depth": 2,
+      "description": "日程参会人管理",
+      "child_count": 3
+    },
+    {
+      "path": "calendar book",
+      "argv": [
+        "calendar",
+        "book"
+      ],
+      "depth": 2,
+      "description": "日历本管理（我能看哪些日历）",
+      "child_count": 4
+    },
+    {
+      "path": "calendar busy",
+      "argv": [
+        "calendar",
+        "busy"
+      ],
+      "depth": 2,
+      "description": "闲忙查询",
+      "child_count": 1
+    },
+    {
+      "path": "calendar event",
+      "argv": [
+        "calendar",
+        "event"
+      ],
+      "depth": 2,
+      "description": "日程管理",
+      "child_count": 8
+    },
+    {
+      "path": "calendar room",
+      "argv": [
+        "calendar",
+        "room"
+      ],
+      "depth": 2,
+      "description": "会议室管理",
+      "child_count": 4
+    },
+    {
+      "path": "chat bot",
+      "argv": [
+        "chat",
+        "bot"
+      ],
+      "depth": 2,
+      "description": "机器人管理",
+      "child_count": 2
+    },
+    {
+      "path": "chat category",
+      "argv": [
+        "chat",
+        "category"
+      ],
+      "depth": 2,
+      "description": "会话分组管理",
+      "child_count": 7
+    },
+    {
+      "path": "chat chmod",
+      "argv": [
+        "chat",
+        "chmod"
+      ],
+      "depth": 2,
+      "description": "授予 chat 高风险操作权限",
+      "child_count": 0
+    },
+    {
+      "path": "chat clear-all-red-point",
+      "argv": [
+        "chat",
+        "clear-all-red-point"
+      ],
+      "depth": 2,
+      "description": "清除所有会话红点（全部已读）",
+      "child_count": 0
+    },
+    {
+      "path": "chat clear-messages",
+      "argv": [
+        "chat",
+        "clear-messages"
+      ],
+      "depth": 2,
+      "description": "清空当前用户指定会话的聊天记录",
+      "child_count": 0
+    },
+    {
+      "path": "chat clear-red-point",
+      "argv": [
+        "chat",
+        "clear-red-point"
+      ],
+      "depth": 2,
+      "description": "清除会话红点",
+      "child_count": 0
+    },
+    {
+      "path": "chat conversation-info",
+      "argv": [
+        "chat",
+        "conversation-info"
+      ],
+      "depth": 2,
+      "description": "获取会话基础信息",
+      "child_count": 0
+    },
+    {
+      "path": "chat data-auth",
+      "argv": [
+        "chat",
+        "data-auth"
+      ],
+      "depth": 2,
+      "description": "授予 chat 数据读取权限",
+      "child_count": 1
+    },
+    {
+      "path": "chat file",
+      "argv": [
+        "chat",
+        "file"
+      ],
+      "depth": 2,
+      "description": "会话文件上传",
+      "child_count": 1
+    },
+    {
+      "path": "chat group",
+      "argv": [
+        "chat",
+        "group"
+      ],
+      "depth": 2,
+      "description": "群组管理",
+      "child_count": 19
+    },
+    {
+      "path": "chat group-mute",
+      "argv": [
+        "chat",
+        "group-mute"
+      ],
+      "depth": 2,
+      "description": "全员禁言 / 取消全员禁言",
+      "child_count": 0
+    },
+    {
+      "path": "chat group-mute-member",
+      "argv": [
+        "chat",
+        "group-mute-member"
+      ],
+      "depth": 2,
+      "description": "指定群成员禁言 / 取消禁言",
+      "child_count": 0
+    },
+    {
+      "path": "chat group-role",
+      "argv": [
+        "chat",
+        "group-role"
+      ],
+      "depth": 2,
+      "description": "群身份管理",
+      "child_count": 7
+    },
+    {
+      "path": "chat hide",
+      "argv": [
+        "chat",
+        "hide"
+      ],
+      "depth": 2,
+      "description": "会话列表中隐藏会话",
+      "child_count": 0
+    },
+    {
+      "path": "chat list-all-conversations",
+      "argv": [
+        "chat",
+        "list-all-conversations"
+      ],
+      "depth": 2,
+      "description": "分页获取当前用户的全部会话列表",
+      "child_count": 0
+    },
+    {
+      "path": "chat list-top-conversations",
+      "argv": [
+        "chat",
+        "list-top-conversations"
+      ],
+      "depth": 2,
+      "description": "拉取置顶会话列表",
+      "child_count": 0
+    },
+    {
+      "path": "chat mark-read",
+      "argv": [
+        "chat",
+        "mark-read"
+      ],
+      "depth": 2,
+      "description": "标记消息已读",
+      "child_count": 0
+    },
+    {
+      "path": "chat mark-unread",
+      "argv": [
+        "chat",
+        "mark-unread"
+      ],
+      "depth": 2,
+      "description": "标记会话为未读",
+      "child_count": 0
+    },
+    {
+      "path": "chat media",
+      "argv": [
+        "chat",
+        "media"
+      ],
+      "depth": 2,
+      "description": "媒体文件管理",
+      "child_count": 1
+    },
+    {
+      "path": "chat message",
+      "argv": [
+        "chat",
+        "message"
+      ],
+      "depth": 2,
+      "description": "会话消息管理",
+      "child_count": 34
+    },
+    {
+      "path": "chat mute",
+      "argv": [
+        "chat",
+        "mute"
+      ],
+      "depth": 2,
+      "description": "会话消息免打扰",
+      "child_count": 0
+    },
+    {
+      "path": "chat mute-at-all",
+      "argv": [
+        "chat",
+        "mute-at-all"
+      ],
+      "depth": 2,
+      "description": "关闭/开启 @所有人消息提醒",
+      "child_count": 0
+    },
+    {
+      "path": "chat mute-red-envelope",
+      "argv": [
+        "chat",
+        "mute-red-envelope"
+      ],
+      "depth": 2,
+      "description": "关闭/开启红包消息提醒",
+      "child_count": 0
+    },
+    {
+      "path": "chat search",
+      "argv": [
+        "chat",
+        "search"
+      ],
+      "depth": 2,
+      "description": "根据关键词搜索群聊",
+      "child_count": 0
+    },
+    {
+      "path": "chat search-common",
+      "argv": [
+        "chat",
+        "search-common"
+      ],
+      "depth": 2,
+      "description": "搜索共同群（查询指定人共同所在的群聊）",
+      "child_count": 0
+    },
+    {
+      "path": "chat set-top",
+      "argv": [
+        "chat",
+        "set-top"
+      ],
+      "depth": 2,
+      "description": "会话置顶 / 取消置顶（支持单聊/群聊）",
+      "child_count": 0
+    },
+    {
+      "path": "contact dept",
+      "argv": [
+        "contact",
+        "dept"
+      ],
+      "depth": 2,
+      "description": "部门查询",
+      "child_count": 4
+    },
+    {
+      "path": "contact relation",
+      "argv": [
+        "contact",
+        "relation"
+      ],
+      "depth": 2,
+      "description": "人员关系查询",
+      "child_count": 1
+    },
+    {
+      "path": "contact user",
+      "argv": [
+        "contact",
+        "user"
+      ],
+      "depth": 2,
+      "description": "人员查询",
+      "child_count": 6
+    },
+    {
+      "path": "devdoc article",
+      "argv": [
+        "devdoc",
+        "article"
+      ],
+      "depth": 2,
+      "description": "文档文章",
+      "child_count": 1
+    },
+    {
+      "path": "ding message",
+      "argv": [
+        "ding",
+        "message"
+      ],
+      "depth": 2,
+      "description": "DING 消息管理",
+      "child_count": 7
+    },
+    {
+      "path": "doc block",
+      "argv": [
+        "doc",
+        "block"
+      ],
+      "depth": 2,
+      "description": "块级编辑",
+      "child_count": 4
+    },
+    {
+      "path": "doc comment",
+      "argv": [
+        "doc",
+        "comment"
+      ],
+      "depth": 2,
+      "description": "文档评论 / 评论管理",
+      "child_count": 4
+    },
+    {
+      "path": "doc create",
+      "argv": [
+        "doc",
+        "create"
+      ],
+      "depth": 2,
+      "description": "创建文档",
+      "child_count": 0
+    },
+    {
+      "path": "doc export",
+      "argv": [
+        "doc",
+        "export"
+      ],
+      "depth": 2,
+      "description": "导出在线文档 (支持 docx / markdown / pdf)",
+      "child_count": 1
+    },
+    {
+      "path": "doc file",
+      "argv": [
+        "doc",
+        "file"
+      ],
+      "depth": 2,
+      "description": "文件管理",
+      "child_count": 1
+    },
+    {
+      "path": "doc info",
+      "argv": [
+        "doc",
+        "info"
+      ],
+      "depth": 2,
+      "description": "获取文档元信息",
+      "child_count": 0
+    },
+    {
+      "path": "doc media",
+      "argv": [
+        "doc",
+        "media"
+      ],
+      "depth": 2,
+      "description": "文档媒体 / 附件管理",
+      "child_count": 2
+    },
+    {
+      "path": "doc read",
+      "argv": [
+        "doc",
+        "read"
+      ],
+      "depth": 2,
+      "description": "读取文档内容 (Markdown)",
+      "child_count": 0
+    },
+    {
+      "path": "doc template",
+      "argv": [
+        "doc",
+        "template"
+      ],
+      "depth": 2,
+      "description": "文档模板管理",
+      "child_count": 3
+    },
+    {
+      "path": "doc update",
+      "argv": [
+        "doc",
+        "update"
+      ],
+      "depth": 2,
+      "description": "更新文档内容",
+      "child_count": 0
+    },
+    {
+      "path": "doc version",
+      "argv": [
+        "doc",
+        "version"
+      ],
+      "depth": 2,
+      "description": "文档历史版本管理",
+      "child_count": 3
+    },
+    {
+      "path": "drive commit",
+      "argv": [
+        "drive",
+        "commit"
+      ],
+      "depth": 2,
+      "description": "提交文件上传",
+      "child_count": 0
+    },
+    {
+      "path": "drive copy",
+      "argv": [
+        "drive",
+        "copy"
+      ],
+      "depth": 2,
+      "description": "复制文件/文档到指定位置",
+      "child_count": 0
+    },
+    {
+      "path": "drive delete",
+      "argv": [
+        "drive",
+        "delete"
+      ],
+      "depth": 2,
+      "description": "删除文件/文件夹到回收站",
+      "child_count": 0
+    },
+    {
+      "path": "drive download",
+      "argv": [
+        "drive",
+        "download"
+      ],
+      "depth": 2,
+      "description": "下载钉盘文件到本地",
+      "child_count": 0
+    },
+    {
+      "path": "drive info",
+      "argv": [
+        "drive",
+        "info"
+      ],
+      "depth": 2,
+      "description": "获取文件元数据信息",
+      "child_count": 0
+    },
+    {
+      "path": "drive list",
+      "argv": [
+        "drive",
+        "list"
+      ],
+      "depth": 2,
+      "description": "获取文件/文件夹列表（统一入口）",
+      "child_count": 0
+    },
+    {
+      "path": "drive list-spaces",
+      "argv": [
+        "drive",
+        "list-spaces"
+      ],
+      "depth": 2,
+      "description": "获取钉盘空间列表 (deprecated → dws wiki space list --type orgSpace/mySpace)",
+      "child_count": 0
+    },
+    {
+      "path": "drive mkdir",
+      "argv": [
+        "drive",
+        "mkdir"
+      ],
+      "depth": 2,
+      "description": "创建文件夹",
+      "child_count": 0
+    },
+    {
+      "path": "drive move",
+      "argv": [
+        "drive",
+        "move"
+      ],
+      "depth": 2,
+      "description": "移动文件/文档到指定位置",
+      "child_count": 0
+    },
+    {
+      "path": "drive permission",
+      "argv": [
+        "drive",
+        "permission"
+      ],
+      "depth": 2,
+      "description": "文档节点权限管理",
+      "child_count": 4
+    },
+    {
+      "path": "drive publish",
+      "argv": [
+        "drive",
+        "publish"
+      ],
+      "depth": 2,
+      "description": "文件互联网公开发布管理",
+      "child_count": 3
+    },
+    {
+      "path": "drive recent",
+      "argv": [
+        "drive",
+        "recent"
+      ],
+      "depth": 2,
+      "description": "获取最近访问/编辑的文档列表",
+      "child_count": 0
+    },
+    {
+      "path": "drive recycle",
+      "argv": [
+        "drive",
+        "recycle"
+      ],
+      "depth": 2,
+      "description": "钉盘回收站管理",
+      "child_count": 2
+    },
+    {
+      "path": "drive rename",
+      "argv": [
+        "drive",
+        "rename"
+      ],
+      "depth": 2,
+      "description": "重命名文件/文档",
+      "child_count": 0
+    },
+    {
+      "path": "drive search",
+      "argv": [
+        "drive",
+        "search"
+      ],
+      "depth": 2,
+      "description": "搜索文件（聚合钉盘+文档空间）",
+      "child_count": 0
+    },
+    {
+      "path": "drive upload",
+      "argv": [
+        "drive",
+        "upload"
+      ],
+      "depth": 2,
+      "description": "上传本地文件到钉盘或文档空间",
+      "child_count": 0
+    },
+    {
+      "path": "drive upload-info",
+      "argv": [
+        "drive",
+        "upload-info"
+      ],
+      "depth": 2,
+      "description": "获取文件上传信息",
+      "child_count": 0
+    },
+    {
+      "path": "live stream",
+      "argv": [
+        "live",
+        "stream"
+      ],
+      "depth": 2,
+      "description": "直播流管理",
+      "child_count": 1
+    },
+    {
+      "path": "mail attachment",
+      "argv": [
+        "mail",
+        "attachment"
+      ],
+      "depth": 2,
+      "description": "邮件附件管理",
+      "child_count": 2
+    },
+    {
+      "path": "mail auto-reply",
+      "argv": [
+        "mail",
+        "auto-reply"
+      ],
+      "depth": 2,
+      "description": "邮件自动回复管理",
+      "child_count": 1
+    },
+    {
+      "path": "mail contact",
+      "argv": [
+        "mail",
+        "contact"
+      ],
+      "depth": 2,
+      "description": "邮件联系人管理",
+      "child_count": 4
+    },
+    {
+      "path": "mail draft",
+      "argv": [
+        "mail",
+        "draft"
+      ],
+      "depth": 2,
+      "description": "草稿管理",
+      "child_count": 3
+    },
+    {
+      "path": "mail folder",
+      "argv": [
+        "mail",
+        "folder"
+      ],
+      "depth": 2,
+      "description": "邮件文件夹管理",
+      "child_count": 4
+    },
+    {
+      "path": "mail mailbox",
+      "argv": [
+        "mail",
+        "mailbox"
+      ],
+      "depth": 2,
+      "description": "邮箱地址管理",
+      "child_count": 1
+    },
+    {
+      "path": "mail message",
+      "argv": [
+        "mail",
+        "message"
+      ],
+      "depth": 2,
+      "description": "邮件管理",
+      "child_count": 11
+    },
+    {
+      "path": "mail rule",
+      "argv": [
+        "mail",
+        "rule"
+      ],
+      "depth": 2,
+      "description": "收信规则管理",
+      "child_count": 5
+    },
+    {
+      "path": "mail tag",
+      "argv": [
+        "mail",
+        "tag"
+      ],
+      "depth": 2,
+      "description": "邮件标签管理",
+      "child_count": 4
+    },
+    {
+      "path": "mail template",
+      "argv": [
+        "mail",
+        "template"
+      ],
+      "depth": 2,
+      "description": "邮件模板管理",
+      "child_count": 5
+    },
+    {
+      "path": "mail thread",
+      "argv": [
+        "mail",
+        "thread"
+      ],
+      "depth": 2,
+      "description": "邮件会话管理",
+      "child_count": 6
+    },
+    {
+      "path": "mail user",
+      "argv": [
+        "mail",
+        "user"
+      ],
+      "depth": 2,
+      "description": "邮箱用户管理",
+      "child_count": 1
+    },
+    {
+      "path": "minutes get",
+      "argv": [
+        "minutes",
+        "get"
+      ],
+      "depth": 2,
+      "description": "获取听记内容",
+      "child_count": 7
+    },
+    {
+      "path": "minutes hot-word",
+      "argv": [
+        "minutes",
+        "hot-word"
+      ],
+      "depth": 2,
+      "description": "个人热词管理",
+      "child_count": 2
+    },
+    {
+      "path": "minutes list",
+      "argv": [
+        "minutes",
+        "list"
+      ],
+      "depth": 2,
+      "description": "听记列表",
+      "child_count": 3
+    },
+    {
+      "path": "minutes mind-graph",
+      "argv": [
+        "minutes",
+        "mind-graph"
+      ],
+      "depth": 2,
+      "description": "思维导图管理",
+      "child_count": 2
+    },
+    {
+      "path": "minutes permission",
+      "argv": [
+        "minutes",
+        "permission"
+      ],
+      "depth": 2,
+      "description": "听记成员权限管理",
+      "child_count": 2
+    },
+    {
+      "path": "minutes record",
+      "argv": [
+        "minutes",
+        "record"
+      ],
+      "depth": 2,
+      "description": "控制听记录音",
+      "child_count": 4
+    },
+    {
+      "path": "minutes replace-text",
+      "argv": [
+        "minutes",
+        "replace-text"
+      ],
+      "depth": 2,
+      "description": "查找替换段落和纪要中匹配的文字",
+      "child_count": 0
+    },
+    {
+      "path": "minutes speaker",
+      "argv": [
+        "minutes",
+        "speaker"
+      ],
+      "depth": 2,
+      "description": "发言人管理",
+      "child_count": 2
+    },
+    {
+      "path": "minutes tag",
+      "argv": [
+        "minutes",
+        "tag"
+      ],
+      "depth": 2,
+      "description": "听记标签/分组管理",
+      "child_count": 2
+    },
+    {
+      "path": "minutes update",
+      "argv": [
+        "minutes",
+        "update"
+      ],
+      "depth": 2,
+      "description": "更新听记信息",
+      "child_count": 2
+    },
+    {
+      "path": "minutes upload",
+      "argv": [
+        "minutes",
+        "upload"
+      ],
+      "depth": 2,
+      "description": "文件上传管理",
+      "child_count": 3
+    },
+    {
+      "path": "oa approval",
+      "argv": [
+        "oa",
+        "approval"
+      ],
+      "depth": 2,
+      "description": "审批管理",
+      "child_count": 20
+    },
+    {
+      "path": "pat browser-policy",
+      "argv": [
+        "pat",
+        "browser-policy"
+      ],
+      "depth": 2,
+      "description": "配置 PAT 授权时是否打开浏览器",
+      "child_count": 0
+    },
+    {
+      "path": "pat chmod",
+      "argv": [
+        "pat",
+        "chmod"
+      ],
+      "depth": 2,
+      "description": "授予指定权限",
+      "child_count": 0
+    },
+    {
+      "path": "report create",
+      "argv": [
+        "report",
+        "create"
+      ],
+      "depth": 2,
+      "description": "[deprecated] 已废弃，请改用 `dws report entry submit`",
+      "child_count": 0
+    },
+    {
+      "path": "report created",
+      "argv": [
+        "report",
+        "created"
+      ],
+      "depth": 2,
+      "description": "[deprecated] 已废弃，请改用 `dws report outbox list`",
+      "child_count": 0
+    },
+    {
+      "path": "report detail",
+      "argv": [
+        "report",
+        "detail"
+      ],
+      "depth": 2,
+      "description": "[deprecated] 已废弃，请改用 `dws report entry get`",
+      "child_count": 0
+    },
+    {
+      "path": "report entry",
+      "argv": [
+        "report",
+        "entry"
+      ],
+      "depth": 2,
+      "description": "日志条目（单条日报操作 — get / stats / submit）",
+      "child_count": 3
+    },
+    {
+      "path": "report inbox",
+      "argv": [
+        "report",
+        "inbox"
+      ],
+      "depth": 2,
+      "description": "收件箱（我收到的日报）",
+      "child_count": 1
+    },
+    {
+      "path": "report list",
+      "argv": [
+        "report",
+        "list"
+      ],
+      "depth": 2,
+      "description": "[deprecated] 已废弃，请改用 `dws report inbox list`",
+      "child_count": 0
+    },
+    {
+      "path": "report outbox",
+      "argv": [
+        "report",
+        "outbox"
+      ],
+      "depth": 2,
+      "description": "发件箱（我发出的日报）",
+      "child_count": 1
+    },
+    {
+      "path": "report sent",
+      "argv": [
+        "report",
+        "sent"
+      ],
+      "depth": 2,
+      "description": "[deprecated] 已废弃，请改用 `dws report outbox list`",
+      "child_count": 0
+    },
+    {
+      "path": "report stats",
+      "argv": [
+        "report",
+        "stats"
+      ],
+      "depth": 2,
+      "description": "[deprecated] 已废弃，请改用 `dws report entry stats`",
+      "child_count": 0
+    },
+    {
+      "path": "report template",
+      "argv": [
+        "report",
+        "template"
+      ],
+      "depth": 2,
+      "description": "日志模版",
+      "child_count": 3
+    },
+    {
+      "path": "sheet add-dimension",
+      "argv": [
+        "sheet",
+        "add-dimension"
+      ],
+      "depth": 2,
+      "description": "在末尾追加空行或空列",
+      "child_count": 0
+    },
+    {
+      "path": "sheet append",
+      "argv": [
+        "sheet",
+        "append"
+      ],
+      "depth": 2,
+      "description": "在工作表末尾追加数据",
+      "child_count": 0
+    },
+    {
+      "path": "sheet batch-update",
+      "argv": [
+        "sheet",
+        "batch-update"
+      ],
+      "depth": 2,
+      "description": "批量执行多个写操作（原子事务）",
+      "child_count": 0
+    },
+    {
+      "path": "sheet chart",
+      "argv": [
+        "sheet",
+        "chart"
+      ],
+      "depth": 2,
+      "description": "浮动图表管理",
+      "child_count": 4
+    },
+    {
+      "path": "sheet cond-format",
+      "argv": [
+        "sheet",
+        "cond-format"
+      ],
+      "depth": 2,
+      "description": "条件格式管理",
+      "child_count": 4
+    },
+    {
+      "path": "sheet copy",
+      "argv": [
+        "sheet",
+        "copy"
+      ],
+      "depth": 2,
+      "description": "复制工作表",
+      "child_count": 0
+    },
+    {
+      "path": "sheet create",
+      "argv": [
+        "sheet",
+        "create"
+      ],
+      "depth": 2,
+      "description": "创建钉钉表格文档",
+      "child_count": 0
+    },
+    {
+      "path": "sheet create-float-image",
+      "argv": [
+        "sheet",
+        "create-float-image"
+      ],
+      "depth": 2,
+      "description": "创建浮动图片",
+      "child_count": 0
+    },
+    {
+      "path": "sheet csv-get",
+      "argv": [
+        "sheet",
+        "csv-get"
+      ],
+      "depth": 2,
+      "description": "以 CSV 格式读取工作表数据",
+      "child_count": 0
+    },
+    {
+      "path": "sheet csv-put",
+      "argv": [
+        "sheet",
+        "csv-put"
+      ],
+      "depth": 2,
+      "description": "将 CSV 数据写入表格指定位置（纯值，自动扩容）",
+      "child_count": 0
+    },
+    {
+      "path": "sheet delete-dimension",
+      "argv": [
+        "sheet",
+        "delete-dimension"
+      ],
+      "depth": 2,
+      "description": "删除指定位置的行或列",
+      "child_count": 0
+    },
+    {
+      "path": "sheet delete-dropdown",
+      "argv": [
+        "sheet",
+        "delete-dropdown"
+      ],
+      "depth": 2,
+      "description": "删除下拉列表",
+      "child_count": 0
+    },
+    {
+      "path": "sheet delete-float-image",
+      "argv": [
+        "sheet",
+        "delete-float-image"
+      ],
+      "depth": 2,
+      "description": "删除浮动图片",
+      "child_count": 0
+    },
+    {
+      "path": "sheet delete-sheet",
+      "argv": [
+        "sheet",
+        "delete-sheet"
+      ],
+      "depth": 2,
+      "description": "删除工作表",
+      "child_count": 0
+    },
+    {
+      "path": "sheet export",
+      "argv": [
+        "sheet",
+        "export"
+      ],
+      "depth": 2,
+      "description": "导出表格为 xlsx（异步任务一站式）",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter",
+      "argv": [
+        "sheet",
+        "filter"
+      ],
+      "depth": 2,
+      "description": "全局筛选管理",
+      "child_count": 6
+    },
+    {
+      "path": "sheet filter-view",
+      "argv": [
+        "sheet",
+        "filter-view"
+      ],
+      "depth": 2,
+      "description": "筛选视图管理",
+      "child_count": 9
+    },
+    {
+      "path": "sheet find",
+      "argv": [
+        "sheet",
+        "find"
+      ],
+      "depth": 2,
+      "description": "在工作表中搜索单元格内容",
+      "child_count": 0
+    },
+    {
+      "path": "sheet get-dropdown",
+      "argv": [
+        "sheet",
+        "get-dropdown"
+      ],
+      "depth": 2,
+      "description": "获取下拉列表配置",
+      "child_count": 0
+    },
+    {
+      "path": "sheet get-float-image",
+      "argv": [
+        "sheet",
+        "get-float-image"
+      ],
+      "depth": 2,
+      "description": "获取浮动图片详情",
+      "child_count": 0
+    },
+    {
+      "path": "sheet info",
+      "argv": [
+        "sheet",
+        "info"
+      ],
+      "depth": 2,
+      "description": "获取指定工作表详情",
+      "child_count": 0
+    },
+    {
+      "path": "sheet insert-dimension",
+      "argv": [
+        "sheet",
+        "insert-dimension"
+      ],
+      "depth": 2,
+      "description": "在指定位置插入行或列",
+      "child_count": 0
+    },
+    {
+      "path": "sheet list",
+      "argv": [
+        "sheet",
+        "list"
+      ],
+      "depth": 2,
+      "description": "获取全部工作表列表",
+      "child_count": 0
+    },
+    {
+      "path": "sheet list-float-images",
+      "argv": [
+        "sheet",
+        "list-float-images"
+      ],
+      "depth": 2,
+      "description": "列出工作表所有浮动图片",
+      "child_count": 0
+    },
+    {
+      "path": "sheet media-upload",
+      "argv": [
+        "sheet",
+        "media-upload"
+      ],
+      "depth": 2,
+      "description": "上传附件到表格",
+      "child_count": 0
+    },
+    {
+      "path": "sheet merge-cells",
+      "argv": [
+        "sheet",
+        "merge-cells"
+      ],
+      "depth": 2,
+      "description": "合并单元格",
+      "child_count": 0
+    },
+    {
+      "path": "sheet move-dimension",
+      "argv": [
+        "sheet",
+        "move-dimension"
+      ],
+      "depth": 2,
+      "description": "移动行或列到指定位置/调整顺序",
+      "child_count": 0
+    },
+    {
+      "path": "sheet new",
+      "argv": [
+        "sheet",
+        "new"
+      ],
+      "depth": 2,
+      "description": "新建工作表",
+      "child_count": 0
+    },
+    {
+      "path": "sheet range",
+      "argv": [
+        "sheet",
+        "range"
+      ],
+      "depth": 2,
+      "description": "数据区域操作",
+      "child_count": 10
+    },
+    {
+      "path": "sheet replace",
+      "argv": [
+        "sheet",
+        "replace"
+      ],
+      "depth": 2,
+      "description": "查找替换/批量替换/精确匹配替换/正则替换文本",
+      "child_count": 0
+    },
+    {
+      "path": "sheet set-dropdown",
+      "argv": [
+        "sheet",
+        "set-dropdown"
+      ],
+      "depth": 2,
+      "description": "设置下拉列表",
+      "child_count": 0
+    },
+    {
+      "path": "sheet template",
+      "argv": [
+        "sheet",
+        "template"
+      ],
+      "depth": 2,
+      "description": "表格模板管理",
+      "child_count": 3
+    },
+    {
+      "path": "sheet unmerge-cells",
+      "argv": [
+        "sheet",
+        "unmerge-cells"
+      ],
+      "depth": 2,
+      "description": "取消合并单元格",
+      "child_count": 0
+    },
+    {
+      "path": "sheet update",
+      "argv": [
+        "sheet",
+        "update"
+      ],
+      "depth": 2,
+      "description": "更新工作表属性",
+      "child_count": 0
+    },
+    {
+      "path": "sheet update-dimension",
+      "argv": [
+        "sheet",
+        "update-dimension"
+      ],
+      "depth": 2,
+      "description": "更新指定范围行/列属性（显隐、行高/列宽）",
+      "child_count": 0
+    },
+    {
+      "path": "sheet update-float-image",
+      "argv": [
+        "sheet",
+        "update-float-image"
+      ],
+      "depth": 2,
+      "description": "更新浮动图片属性",
+      "child_count": 0
+    },
+    {
+      "path": "sheet write-image",
+      "argv": [
+        "sheet",
+        "write-image"
+      ],
+      "depth": 2,
+      "description": "上传图片并写入表格单元格",
+      "child_count": 0
+    },
+    {
+      "path": "todo comment",
+      "argv": [
+        "todo",
+        "comment"
+      ],
+      "depth": 2,
+      "description": "待办评论：新增 / 列表 / 删除",
+      "child_count": 3
+    },
+    {
+      "path": "todo task",
+      "argv": [
+        "todo",
+        "task"
+      ],
+      "depth": 2,
+      "description": "创建 / 查询 / 更新 / 删除待办",
+      "child_count": 17
+    },
+    {
+      "path": "wiki member",
+      "argv": [
+        "wiki",
+        "member"
+      ],
+      "depth": 2,
+      "description": "知识库成员管理",
+      "child_count": 4
+    },
+    {
+      "path": "wiki node",
+      "argv": [
+        "wiki",
+        "node"
+      ],
+      "depth": 2,
+      "description": "知识库节点管理",
+      "child_count": 6
+    },
+    {
+      "path": "wiki space",
+      "argv": [
+        "wiki",
+        "space"
+      ],
+      "depth": 2,
+      "description": "知识库管理",
+      "child_count": 5
+    },
+    {
+      "path": "auth export",
+      "argv": [
+        "auth",
+        "export"
+      ],
+      "depth": 2,
+      "description": "导出可迁移认证包",
+      "child_count": 0
+    },
+    {
+      "path": "auth import",
+      "argv": [
+        "auth",
+        "import"
+      ],
+      "depth": 2,
+      "description": "导入可迁移认证包",
+      "child_count": 0
+    },
+    {
+      "path": "auth login",
+      "argv": [
+        "auth",
+        "login"
+      ],
+      "depth": 2,
+      "description": "登录钉钉（自动刷新 token，必要时扫码）",
+      "child_count": 0
+    },
+    {
+      "path": "auth logout",
+      "argv": [
+        "auth",
+        "logout"
+      ],
+      "depth": 2,
+      "description": "清除认证信息（默认退出所有组织）",
+      "child_count": 0
+    },
+    {
+      "path": "auth reset",
+      "argv": [
+        "auth",
+        "reset"
+      ],
+      "depth": 2,
+      "description": "重置认证信息（清除本地 Token，触发重新授权）",
+      "child_count": 0
+    },
+    {
+      "path": "auth status",
+      "argv": [
+        "auth",
+        "status"
+      ],
+      "depth": 2,
+      "description": "查看认证状态",
+      "child_count": 0
+    },
+    {
+      "path": "config list",
+      "argv": [
+        "config",
+        "list"
+      ],
+      "depth": 2,
+      "description": "列出所有可用配置项",
+      "child_count": 0
+    },
+    {
+      "path": "dev app",
+      "argv": [
+        "dev",
+        "app"
+      ],
+      "depth": 2,
+      "description": "开放平台应用",
+      "child_count": 15
+    },
+    {
+      "path": "dev connect",
+      "argv": [
+        "dev",
+        "connect"
+      ],
+      "depth": 2,
+      "description": "建联：把现成机器人接到当前本地 agent（起 Stream，不建号）",
+      "child_count": 4
+    },
+    {
+      "path": "dev doc",
+      "argv": [
+        "dev",
+        "doc"
+      ],
+      "depth": 2,
+      "description": "开放平台文档搜索",
+      "child_count": 1
+    },
+    {
+      "path": "plugin build",
+      "argv": [
+        "plugin",
+        "build"
+      ],
+      "depth": 2,
+      "description": "将插件 stdio server 编译为原生二进制",
+      "child_count": 0
+    },
+    {
+      "path": "plugin config",
+      "argv": [
+        "plugin",
+        "config"
+      ],
+      "depth": 2,
+      "description": "管理插件配置",
+      "child_count": 4
+    },
+    {
+      "path": "plugin create",
+      "argv": [
+        "plugin",
+        "create"
+      ],
+      "depth": 2,
+      "description": "脚手架生成新插件目录",
+      "child_count": 0
+    },
+    {
+      "path": "plugin dev",
+      "argv": [
+        "plugin",
+        "dev"
+      ],
+      "depth": 2,
+      "description": "将本地目录注册为开发态插件",
+      "child_count": 0
+    },
+    {
+      "path": "plugin disable",
+      "argv": [
+        "plugin",
+        "disable"
+      ],
+      "depth": 2,
+      "description": "禁用插件",
+      "child_count": 0
+    },
+    {
+      "path": "plugin enable",
+      "argv": [
+        "plugin",
+        "enable"
+      ],
+      "depth": 2,
+      "description": "启用插件",
+      "child_count": 0
+    },
+    {
+      "path": "plugin info",
+      "argv": [
+        "plugin",
+        "info"
+      ],
+      "depth": 2,
+      "description": "查看插件详情",
+      "child_count": 0
+    },
+    {
+      "path": "plugin install",
+      "argv": [
+        "plugin",
+        "install"
+      ],
+      "depth": 2,
+      "description": "安装插件",
+      "child_count": 0
+    },
+    {
+      "path": "plugin list",
+      "argv": [
+        "plugin",
+        "list"
+      ],
+      "depth": 2,
+      "description": "列出已安装的插件",
+      "child_count": 0
+    },
+    {
+      "path": "plugin remove",
+      "argv": [
+        "plugin",
+        "remove"
+      ],
+      "depth": 2,
+      "description": "卸载已安装的插件",
+      "child_count": 0
+    },
+    {
+      "path": "plugin validate",
+      "argv": [
+        "plugin",
+        "validate"
+      ],
+      "depth": 2,
+      "description": "校验 plugin.json",
+      "child_count": 0
+    },
+    {
+      "path": "profile list",
+      "argv": [
+        "profile",
+        "list"
+      ],
+      "depth": 2,
+      "description": "列出已登录组织 profile",
+      "child_count": 0
+    },
+    {
+      "path": "profile switch",
+      "argv": [
+        "profile",
+        "switch"
+      ],
+      "depth": 2,
+      "description": "切换当前组织 profile",
+      "child_count": 0
+    },
+    {
+      "path": "profile use",
+      "argv": [
+        "profile",
+        "use"
+      ],
+      "depth": 2,
+      "description": "切换当前组织 profile（兼容 profile switch）",
+      "child_count": 0
+    },
+    {
+      "path": "recovery execute",
+      "argv": [
+        "recovery",
+        "execute"
+      ],
+      "depth": 2,
+      "description": "生成面向 Agent 的恢复分析包",
+      "child_count": 0
+    },
+    {
+      "path": "recovery finalize",
+      "argv": [
+        "recovery",
+        "finalize"
+      ],
+      "depth": 2,
+      "description": "回写恢复闭环结果",
+      "child_count": 0
+    },
+    {
+      "path": "recovery plan",
+      "argv": [
+        "recovery",
+        "plan"
+      ],
+      "depth": 2,
+      "description": "基于失败快照生成恢复计划",
+      "child_count": 0
+    },
+    {
+      "path": "skill get",
+      "argv": [
+        "skill",
+        "get"
+      ],
+      "depth": 2,
+      "description": "获取技能压缩文件",
+      "child_count": 0
+    },
+    {
+      "path": "skill install",
+      "argv": [
+        "skill",
+        "install"
+      ],
+      "depth": 2,
+      "description": "下载并安装技能到指定目录",
+      "child_count": 0
+    },
+    {
+      "path": "skill search",
+      "argv": [
+        "skill",
+        "search"
+      ],
+      "depth": 2,
+      "description": "从钉钉技能市场搜索技能",
+      "child_count": 0
+    },
+    {
+      "path": "skill setup",
+      "argv": [
+        "skill",
+        "setup"
+      ],
+      "depth": 2,
+      "description": "安装 dws 自身 skill 到 Agent 目录",
+      "child_count": 0
+    },
+    {
+      "path": "aitable advperm disable",
+      "argv": [
+        "aitable",
+        "advperm",
+        "disable"
+      ],
+      "depth": 3,
+      "description": "关闭高级权限总开关（高危）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable advperm enable",
+      "argv": [
+        "aitable",
+        "advperm",
+        "enable"
+      ],
+      "depth": 3,
+      "description": "开启高级权限总开关",
+      "child_count": 0
+    },
+    {
+      "path": "aitable advperm role-create",
+      "argv": [
+        "aitable",
+        "advperm",
+        "role-create"
+      ],
+      "depth": 3,
+      "description": "创建自定义角色",
+      "child_count": 0
+    },
+    {
+      "path": "aitable advperm role-delete",
+      "argv": [
+        "aitable",
+        "advperm",
+        "role-delete"
+      ],
+      "depth": 3,
+      "description": "删除自定义角色（不可逆）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable advperm role-get",
+      "argv": [
+        "aitable",
+        "advperm",
+        "role-get"
+      ],
+      "depth": 3,
+      "description": "获取单个角色完整配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable advperm role-list",
+      "argv": [
+        "aitable",
+        "advperm",
+        "role-list"
+      ],
+      "depth": 3,
+      "description": "列出 Base 下所有角色",
+      "child_count": 0
+    },
+    {
+      "path": "aitable advperm role-update",
+      "argv": [
+        "aitable",
+        "advperm",
+        "role-update"
+      ],
+      "depth": 3,
+      "description": "增量更新自定义角色配置（patch 语义）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable attachment upload",
+      "argv": [
+        "aitable",
+        "attachment",
+        "upload"
+      ],
+      "depth": 3,
+      "description": "准备附件上传",
+      "child_count": 0
+    },
+    {
+      "path": "aitable base copy",
+      "argv": [
+        "aitable",
+        "base",
+        "copy"
+      ],
+      "depth": 3,
+      "description": "复制 AI 表格",
+      "child_count": 0
+    },
+    {
+      "path": "aitable base create",
+      "argv": [
+        "aitable",
+        "base",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建 AI 表格",
+      "child_count": 0
+    },
+    {
+      "path": "aitable base delete",
+      "argv": [
+        "aitable",
+        "base",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除 AI 表格",
+      "child_count": 0
+    },
+    {
+      "path": "aitable base get",
+      "argv": [
+        "aitable",
+        "base",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取 AI 表格信息",
+      "child_count": 0
+    },
+    {
+      "path": "aitable base get-primary-doc-id",
+      "argv": [
+        "aitable",
+        "base",
+        "get-primary-doc-id"
+      ],
+      "depth": 3,
+      "description": "获取主键文档ID",
+      "child_count": 0
+    },
+    {
+      "path": "aitable base list",
+      "argv": [
+        "aitable",
+        "base",
+        "list"
+      ],
+      "depth": 3,
+      "description": "获取 AI 表格列表",
+      "child_count": 0
+    },
+    {
+      "path": "aitable base search",
+      "argv": [
+        "aitable",
+        "base",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索 AI 表格",
+      "child_count": 0
+    },
+    {
+      "path": "aitable base update",
+      "argv": [
+        "aitable",
+        "base",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新 AI 表格",
+      "child_count": 0
+    },
+    {
+      "path": "aitable chart create",
+      "argv": [
+        "aitable",
+        "chart",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建图表",
+      "child_count": 0
+    },
+    {
+      "path": "aitable chart delete",
+      "argv": [
+        "aitable",
+        "chart",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除图表",
+      "child_count": 0
+    },
+    {
+      "path": "aitable chart get",
+      "argv": [
+        "aitable",
+        "chart",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取图表信息",
+      "child_count": 0
+    },
+    {
+      "path": "aitable chart share",
+      "argv": [
+        "aitable",
+        "chart",
+        "share"
+      ],
+      "depth": 3,
+      "description": "图表分享管理",
+      "child_count": 2
+    },
+    {
+      "path": "aitable chart update",
+      "argv": [
+        "aitable",
+        "chart",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新图表",
+      "child_count": 0
+    },
+    {
+      "path": "aitable chart widgets-example",
+      "argv": [
+        "aitable",
+        "chart",
+        "widgets-example"
+      ],
+      "depth": 3,
+      "description": "获取图表配置示例",
+      "child_count": 0
+    },
+    {
+      "path": "aitable dashboard arrange",
+      "argv": [
+        "aitable",
+        "dashboard",
+        "arrange"
+      ],
+      "depth": 3,
+      "description": "自动重排仪表盘图表布局",
+      "child_count": 0
+    },
+    {
+      "path": "aitable dashboard config-example",
+      "argv": [
+        "aitable",
+        "dashboard",
+        "config-example"
+      ],
+      "depth": 3,
+      "description": "获取仪表盘配置示例",
+      "child_count": 0
+    },
+    {
+      "path": "aitable dashboard create",
+      "argv": [
+        "aitable",
+        "dashboard",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建仪表盘",
+      "child_count": 0
+    },
+    {
+      "path": "aitable dashboard delete",
+      "argv": [
+        "aitable",
+        "dashboard",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除仪表盘",
+      "child_count": 0
+    },
+    {
+      "path": "aitable dashboard get",
+      "argv": [
+        "aitable",
+        "dashboard",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取仪表盘信息",
+      "child_count": 0
+    },
+    {
+      "path": "aitable dashboard share",
+      "argv": [
+        "aitable",
+        "dashboard",
+        "share"
+      ],
+      "depth": 3,
+      "description": "仪表盘分享管理",
+      "child_count": 2
+    },
+    {
+      "path": "aitable dashboard update",
+      "argv": [
+        "aitable",
+        "dashboard",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新仪表盘",
+      "child_count": 0
+    },
+    {
+      "path": "aitable export data",
+      "argv": [
+        "aitable",
+        "export",
+        "data"
+      ],
+      "depth": 3,
+      "description": "导出数据",
+      "child_count": 0
+    },
+    {
+      "path": "aitable field create",
+      "argv": [
+        "aitable",
+        "field",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建字段",
+      "child_count": 0
+    },
+    {
+      "path": "aitable field delete",
+      "argv": [
+        "aitable",
+        "field",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除字段",
+      "child_count": 0
+    },
+    {
+      "path": "aitable field get",
+      "argv": [
+        "aitable",
+        "field",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取字段详情",
+      "child_count": 0
+    },
+    {
+      "path": "aitable field list",
+      "argv": [
+        "aitable",
+        "field",
+        "list"
+      ],
+      "depth": 3,
+      "description": "获取字段信息（dws aitable field get 的别名）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable field search-options",
+      "argv": [
+        "aitable",
+        "field",
+        "search-options"
+      ],
+      "depth": 3,
+      "description": "搜索单选/多选字段的选项",
+      "child_count": 0
+    },
+    {
+      "path": "aitable field update",
+      "argv": [
+        "aitable",
+        "field",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新字段",
+      "child_count": 0
+    },
+    {
+      "path": "aitable form create",
+      "argv": [
+        "aitable",
+        "form",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建表单视图",
+      "child_count": 0
+    },
+    {
+      "path": "aitable form delete",
+      "argv": [
+        "aitable",
+        "form",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除表单",
+      "child_count": 0
+    },
+    {
+      "path": "aitable form field",
+      "argv": [
+        "aitable",
+        "form",
+        "field"
+      ],
+      "depth": 3,
+      "description": "表单字段管理",
+      "child_count": 3
+    },
+    {
+      "path": "aitable form get",
+      "argv": [
+        "aitable",
+        "form",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取单个表单视图详情",
+      "child_count": 0
+    },
+    {
+      "path": "aitable form list",
+      "argv": [
+        "aitable",
+        "form",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列出表单视图",
+      "child_count": 0
+    },
+    {
+      "path": "aitable form questions",
+      "argv": [
+        "aitable",
+        "form",
+        "questions"
+      ],
+      "depth": 3,
+      "description": "表单题目管理（等价于 field create / delete）",
+      "child_count": 2
+    },
+    {
+      "path": "aitable form share",
+      "argv": [
+        "aitable",
+        "form",
+        "share"
+      ],
+      "depth": 3,
+      "description": "表单分享管理",
+      "child_count": 2
+    },
+    {
+      "path": "aitable form update",
+      "argv": [
+        "aitable",
+        "form",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新表单配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable import data",
+      "argv": [
+        "aitable",
+        "import",
+        "data"
+      ],
+      "depth": 3,
+      "description": "导入数据",
+      "child_count": 0
+    },
+    {
+      "path": "aitable import upload",
+      "argv": [
+        "aitable",
+        "import",
+        "upload"
+      ],
+      "depth": 3,
+      "description": "准备导入文件上传",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record batch-update",
+      "argv": [
+        "aitable",
+        "record",
+        "batch-update"
+      ],
+      "depth": 3,
+      "description": "批量更新记录（同一 cells 应用到多条 recordId）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record create",
+      "argv": [
+        "aitable",
+        "record",
+        "create"
+      ],
+      "depth": 3,
+      "description": "新增记录",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record delete",
+      "argv": [
+        "aitable",
+        "record",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除行记录",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record get",
+      "argv": [
+        "aitable",
+        "record",
+        "get"
+      ],
+      "depth": 3,
+      "description": "按 ID 获取记录（record query --record-ids 的便捷别名，单次最多 100 条）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record history-list",
+      "argv": [
+        "aitable",
+        "record",
+        "history-list"
+      ],
+      "depth": 3,
+      "description": "查询行记录变更历史",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record list",
+      "argv": [
+        "aitable",
+        "record",
+        "list"
+      ],
+      "depth": 3,
+      "description": "获取行记录（dws aitable record query 的别名）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record primary-doc-create",
+      "argv": [
+        "aitable",
+        "record",
+        "primary-doc-create"
+      ],
+      "depth": 3,
+      "description": "为记录创建主键文档",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record primary-doc-get",
+      "argv": [
+        "aitable",
+        "record",
+        "primary-doc-get"
+      ],
+      "depth": 3,
+      "description": "查询记录的主键文档",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record query",
+      "argv": [
+        "aitable",
+        "record",
+        "query"
+      ],
+      "depth": 3,
+      "description": "获取行记录",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record query-empty",
+      "argv": [
+        "aitable",
+        "record",
+        "query-empty"
+      ],
+      "depth": 3,
+      "description": "查询完全没填用户字段的空行",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record share-url",
+      "argv": [
+        "aitable",
+        "record",
+        "share-url"
+      ],
+      "depth": 3,
+      "description": "批量获取记录分享链接",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record update",
+      "argv": [
+        "aitable",
+        "record",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新记录",
+      "child_count": 0
+    },
+    {
+      "path": "aitable record upsert",
+      "argv": [
+        "aitable",
+        "record",
+        "upsert"
+      ],
+      "depth": 3,
+      "description": "批量创建或更新记录（Upsert）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable section create",
+      "argv": [
+        "aitable",
+        "section",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建文件夹",
+      "child_count": 0
+    },
+    {
+      "path": "aitable section delete",
+      "argv": [
+        "aitable",
+        "section",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除文件夹",
+      "child_count": 0
+    },
+    {
+      "path": "aitable section list-empty",
+      "argv": [
+        "aitable",
+        "section",
+        "list-empty"
+      ],
+      "depth": 3,
+      "description": "列出空文件夹",
+      "child_count": 0
+    },
+    {
+      "path": "aitable section list-nodes",
+      "argv": [
+        "aitable",
+        "section",
+        "list-nodes"
+      ],
+      "depth": 3,
+      "description": "列出全部节点",
+      "child_count": 0
+    },
+    {
+      "path": "aitable section move-node",
+      "argv": [
+        "aitable",
+        "section",
+        "move-node"
+      ],
+      "depth": 3,
+      "description": "移动节点",
+      "child_count": 0
+    },
+    {
+      "path": "aitable section rename",
+      "argv": [
+        "aitable",
+        "section",
+        "rename"
+      ],
+      "depth": 3,
+      "description": "重命名文件夹",
+      "child_count": 0
+    },
+    {
+      "path": "aitable section reorder",
+      "argv": [
+        "aitable",
+        "section",
+        "reorder"
+      ],
+      "depth": 3,
+      "description": "调整文件夹顺序",
+      "child_count": 0
+    },
+    {
+      "path": "aitable table create",
+      "argv": [
+        "aitable",
+        "table",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建数据表",
+      "child_count": 0
+    },
+    {
+      "path": "aitable table delete",
+      "argv": [
+        "aitable",
+        "table",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除数据表",
+      "child_count": 0
+    },
+    {
+      "path": "aitable table get",
+      "argv": [
+        "aitable",
+        "table",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取数据表",
+      "child_count": 0
+    },
+    {
+      "path": "aitable table list",
+      "argv": [
+        "aitable",
+        "table",
+        "list"
+      ],
+      "depth": 3,
+      "description": "获取数据表信息（dws aitable table get 的别名）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable table update",
+      "argv": [
+        "aitable",
+        "table",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新数据表",
+      "child_count": 0
+    },
+    {
+      "path": "aitable template search",
+      "argv": [
+        "aitable",
+        "template",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索模板",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view create",
+      "argv": [
+        "aitable",
+        "view",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建视图",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view delete",
+      "argv": [
+        "aitable",
+        "view",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除视图",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view duplicate",
+      "argv": [
+        "aitable",
+        "view",
+        "duplicate"
+      ],
+      "depth": 3,
+      "description": "复制视图",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get",
+      "argv": [
+        "aitable",
+        "view",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取视图详情",
+      "child_count": 12
+    },
+    {
+      "path": "aitable view list",
+      "argv": [
+        "aitable",
+        "view",
+        "list"
+      ],
+      "depth": 3,
+      "description": "获取视图信息（dws aitable view get 的别名）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view lock",
+      "argv": [
+        "aitable",
+        "view",
+        "lock"
+      ],
+      "depth": 3,
+      "description": "锁定/解锁视图",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update",
+      "argv": [
+        "aitable",
+        "view",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新视图",
+      "child_count": 12
+    },
+    {
+      "path": "aitable workflow disable",
+      "argv": [
+        "aitable",
+        "workflow",
+        "disable"
+      ],
+      "depth": 3,
+      "description": "禁用指定工作流（高危）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable workflow enable",
+      "argv": [
+        "aitable",
+        "workflow",
+        "enable"
+      ],
+      "depth": 3,
+      "description": "启用指定工作流",
+      "child_count": 0
+    },
+    {
+      "path": "aitable workflow get",
+      "argv": [
+        "aitable",
+        "workflow",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取单个工作流详情",
+      "child_count": 0
+    },
+    {
+      "path": "aitable workflow list",
+      "argv": [
+        "aitable",
+        "workflow",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列出 Base 下的工作流",
+      "child_count": 0
+    },
+    {
+      "path": "attendance adjustment get",
+      "argv": [
+        "attendance",
+        "adjustment",
+        "get"
+      ],
+      "depth": 3,
+      "description": "根据补卡规则主键 ID 查询补卡规则详情",
+      "child_count": 0
+    },
+    {
+      "path": "attendance adjustment search",
+      "argv": [
+        "attendance",
+        "adjustment",
+        "search"
+      ],
+      "depth": 3,
+      "description": "查询当前用户可管理的补卡规则列表",
+      "child_count": 0
+    },
+    {
+      "path": "attendance approve list",
+      "argv": [
+        "attendance",
+        "approve",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询用户审批单（补卡/加班/请假/出差外出）",
+      "child_count": 0
+    },
+    {
+      "path": "attendance approve templates",
+      "argv": [
+        "attendance",
+        "approve",
+        "templates"
+      ],
+      "depth": 3,
+      "description": "查询补卡/请假/加班/外出/出差审批提交链接",
+      "child_count": 0
+    },
+    {
+      "path": "attendance check record",
+      "argv": [
+        "attendance",
+        "check",
+        "record"
+      ],
+      "depth": 3,
+      "description": "查询打卡流水",
+      "child_count": 0
+    },
+    {
+      "path": "attendance check result",
+      "argv": [
+        "attendance",
+        "check",
+        "result"
+      ],
+      "depth": 3,
+      "description": "查询打卡结果",
+      "child_count": 0
+    },
+    {
+      "path": "attendance checkin records",
+      "argv": [
+        "attendance",
+        "checkin",
+        "records"
+      ],
+      "depth": 3,
+      "description": "查询指定员工的签到记录",
+      "child_count": 0
+    },
+    {
+      "path": "attendance class create",
+      "argv": [
+        "attendance",
+        "class",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建班次",
+      "child_count": 0
+    },
+    {
+      "path": "attendance class get",
+      "argv": [
+        "attendance",
+        "class",
+        "get"
+      ],
+      "depth": 3,
+      "description": "根据班次 ID 查询班次详情",
+      "child_count": 0
+    },
+    {
+      "path": "attendance class search",
+      "argv": [
+        "attendance",
+        "class",
+        "search"
+      ],
+      "depth": 3,
+      "description": "查询当前用户可管理的所有班次详情",
+      "child_count": 0
+    },
+    {
+      "path": "attendance class update",
+      "argv": [
+        "attendance",
+        "class",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新班次",
+      "child_count": 0
+    },
+    {
+      "path": "attendance globalsetting get",
+      "argv": [
+        "attendance",
+        "globalsetting",
+        "get"
+      ],
+      "depth": 3,
+      "description": "查询全局规则设置（仅管理员）",
+      "child_count": 0
+    },
+    {
+      "path": "attendance globalsetting save",
+      "argv": [
+        "attendance",
+        "globalsetting",
+        "save"
+      ],
+      "depth": 3,
+      "description": "更新保存全局规则设置（仅管理员）",
+      "child_count": 0
+    },
+    {
+      "path": "attendance group create",
+      "argv": [
+        "attendance",
+        "group",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建考勤组",
+      "child_count": 0
+    },
+    {
+      "path": "attendance group filtered-get",
+      "argv": [
+        "attendance",
+        "group",
+        "filtered-get"
+      ],
+      "depth": 3,
+      "description": "根据考勤组 ID 按需查询成员/打卡地址/蓝牙/Wifi 信息",
+      "child_count": 0
+    },
+    {
+      "path": "attendance group get",
+      "argv": [
+        "attendance",
+        "group",
+        "get"
+      ],
+      "depth": 3,
+      "description": "根据考勤组 ID 查询考勤组全量信息",
+      "child_count": 0
+    },
+    {
+      "path": "attendance group search",
+      "argv": [
+        "attendance",
+        "group",
+        "search"
+      ],
+      "depth": 3,
+      "description": "查询当前用户可管理的考勤组列表",
+      "child_count": 0
+    },
+    {
+      "path": "attendance group update",
+      "argv": [
+        "attendance",
+        "group",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新考勤组配置（仅修改需要变更的字段）",
+      "child_count": 0
+    },
+    {
+      "path": "attendance group update-members",
+      "argv": [
+        "attendance",
+        "group",
+        "update-members"
+      ],
+      "depth": 3,
+      "description": "更新考勤组成员（添加/删除考勤人员、部门、无需考勤人员）",
+      "child_count": 0
+    },
+    {
+      "path": "attendance overtime get",
+      "argv": [
+        "attendance",
+        "overtime",
+        "get"
+      ],
+      "depth": 3,
+      "description": "根据加班规则主键 ID 查询加班规则详情",
+      "child_count": 0
+    },
+    {
+      "path": "attendance overtime search",
+      "argv": [
+        "attendance",
+        "overtime",
+        "search"
+      ],
+      "depth": 3,
+      "description": "查询当前用户可管理的加班规则列表",
+      "child_count": 0
+    },
+    {
+      "path": "attendance record get",
+      "argv": [
+        "attendance",
+        "record",
+        "get"
+      ],
+      "depth": 3,
+      "description": "查询个人考勤详情",
+      "child_count": 0
+    },
+    {
+      "path": "attendance report columns",
+      "argv": [
+        "attendance",
+        "report",
+        "columns"
+      ],
+      "depth": 3,
+      "description": "获取企业考勤字段列表",
+      "child_count": 0
+    },
+    {
+      "path": "attendance report query-data",
+      "argv": [
+        "attendance",
+        "report",
+        "query-data"
+      ],
+      "depth": 3,
+      "description": "根据字段查询考勤数据",
+      "child_count": 0
+    },
+    {
+      "path": "attendance report query-leave",
+      "argv": [
+        "attendance",
+        "report",
+        "query-leave"
+      ],
+      "depth": 3,
+      "description": "查询用户假期数据",
+      "child_count": 0
+    },
+    {
+      "path": "attendance schedule get",
+      "argv": [
+        "attendance",
+        "schedule",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取指定用户的排班记录",
+      "child_count": 0
+    },
+    {
+      "path": "attendance schedule import",
+      "argv": [
+        "attendance",
+        "schedule",
+        "import"
+      ],
+      "depth": 3,
+      "description": "导入排班记录到排班制考勤组",
+      "child_count": 0
+    },
+    {
+      "path": "attendance selfsetting get",
+      "argv": [
+        "attendance",
+        "selfsetting",
+        "get"
+      ],
+      "depth": 3,
+      "description": "查询个人规则设置",
+      "child_count": 0
+    },
+    {
+      "path": "attendance selfsetting save",
+      "argv": [
+        "attendance",
+        "selfsetting",
+        "save"
+      ],
+      "depth": 3,
+      "description": "更新保存个人规则设置",
+      "child_count": 0
+    },
+    {
+      "path": "attendance shift list",
+      "argv": [
+        "attendance",
+        "shift",
+        "list"
+      ],
+      "depth": 3,
+      "description": "批量查询员工班次信息",
+      "child_count": 0
+    },
+    {
+      "path": "attendance vacation balance",
+      "argv": [
+        "attendance",
+        "vacation",
+        "balance"
+      ],
+      "depth": 3,
+      "description": "查询指定员工假期余额",
+      "child_count": 0
+    },
+    {
+      "path": "attendance vacation records",
+      "argv": [
+        "attendance",
+        "vacation",
+        "records"
+      ],
+      "depth": 3,
+      "description": "查询指定员工假期余额变更记录",
+      "child_count": 0
+    },
+    {
+      "path": "attendance vacation save-balance",
+      "argv": [
+        "attendance",
+        "vacation",
+        "save-balance"
+      ],
+      "depth": 3,
+      "description": "设置员工假期余额",
+      "child_count": 0
+    },
+    {
+      "path": "attendance vacation types",
+      "argv": [
+        "attendance",
+        "vacation",
+        "types"
+      ],
+      "depth": 3,
+      "description": "查询当前用户假期规则列表",
+      "child_count": 0
+    },
+    {
+      "path": "attendance vacation update-type",
+      "argv": [
+        "attendance",
+        "vacation",
+        "update-type"
+      ],
+      "depth": 3,
+      "description": "更新假期规则",
+      "child_count": 0
+    },
+    {
+      "path": "calendar acl add",
+      "argv": [
+        "calendar",
+        "acl",
+        "add"
+      ],
+      "depth": 3,
+      "description": "把我的日历共享给某人",
+      "child_count": 0
+    },
+    {
+      "path": "calendar acl delete",
+      "argv": [
+        "calendar",
+        "acl",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除日历访问权限",
+      "child_count": 0
+    },
+    {
+      "path": "calendar acl list",
+      "argv": [
+        "calendar",
+        "acl",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询我的日历共享给了谁",
+      "child_count": 0
+    },
+    {
+      "path": "calendar attachment add",
+      "argv": [
+        "calendar",
+        "attachment",
+        "add"
+      ],
+      "depth": 3,
+      "description": "添加日程附件",
+      "child_count": 0
+    },
+    {
+      "path": "calendar attendee add",
+      "argv": [
+        "calendar",
+        "attendee",
+        "add"
+      ],
+      "depth": 3,
+      "description": "添加参会人",
+      "child_count": 0
+    },
+    {
+      "path": "calendar attendee delete",
+      "argv": [
+        "calendar",
+        "attendee",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "移除参会人",
+      "child_count": 0
+    },
+    {
+      "path": "calendar attendee list",
+      "argv": [
+        "calendar",
+        "attendee",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查看参会人",
+      "child_count": 0
+    },
+    {
+      "path": "calendar book get",
+      "argv": [
+        "calendar",
+        "book",
+        "get"
+      ],
+      "depth": 3,
+      "description": "查询指定日历本",
+      "child_count": 0
+    },
+    {
+      "path": "calendar book list",
+      "argv": [
+        "calendar",
+        "book",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询用户的日历列表",
+      "child_count": 0
+    },
+    {
+      "path": "calendar book search",
+      "argv": [
+        "calendar",
+        "book",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索日历本",
+      "child_count": 0
+    },
+    {
+      "path": "calendar book update",
+      "argv": [
+        "calendar",
+        "book",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新指定日历本",
+      "child_count": 0
+    },
+    {
+      "path": "calendar busy search",
+      "argv": [
+        "calendar",
+        "busy",
+        "search"
+      ],
+      "depth": 3,
+      "description": "查询用户 / 会议室闲忙状态",
+      "child_count": 0
+    },
+    {
+      "path": "calendar event create",
+      "argv": [
+        "calendar",
+        "event",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建日程",
+      "child_count": 0
+    },
+    {
+      "path": "calendar event delete",
+      "argv": [
+        "calendar",
+        "event",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除日程",
+      "child_count": 0
+    },
+    {
+      "path": "calendar event get",
+      "argv": [
+        "calendar",
+        "event",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取日程详情",
+      "child_count": 0
+    },
+    {
+      "path": "calendar event list",
+      "argv": [
+        "calendar",
+        "event",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询日程列表",
+      "child_count": 0
+    },
+    {
+      "path": "calendar event list-mine",
+      "argv": [
+        "calendar",
+        "event",
+        "list-mine"
+      ],
+      "depth": 3,
+      "description": "查询归属个人的日程列表",
+      "child_count": 0
+    },
+    {
+      "path": "calendar event respond",
+      "argv": [
+        "calendar",
+        "event",
+        "respond"
+      ],
+      "depth": 3,
+      "description": "响应日程（接受/拒绝/暂定）",
+      "child_count": 0
+    },
+    {
+      "path": "calendar event suggest",
+      "argv": [
+        "calendar",
+        "event",
+        "suggest"
+      ],
+      "depth": 3,
+      "description": "建议日程时间",
+      "child_count": 0
+    },
+    {
+      "path": "calendar event update",
+      "argv": [
+        "calendar",
+        "event",
+        "update"
+      ],
+      "depth": 3,
+      "description": "修改日程",
+      "child_count": 0
+    },
+    {
+      "path": "calendar room add",
+      "argv": [
+        "calendar",
+        "room",
+        "add"
+      ],
+      "depth": 3,
+      "description": "预定会议室",
+      "child_count": 0
+    },
+    {
+      "path": "calendar room delete",
+      "argv": [
+        "calendar",
+        "room",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "移除会议室",
+      "child_count": 0
+    },
+    {
+      "path": "calendar room list-groups",
+      "argv": [
+        "calendar",
+        "room",
+        "list-groups"
+      ],
+      "depth": 3,
+      "description": "会议室分组列表",
+      "child_count": 0
+    },
+    {
+      "path": "calendar room search",
+      "argv": [
+        "calendar",
+        "room",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索会议室 (按名称搜索或按时间段查可用会议室)",
+      "child_count": 0
+    },
+    {
+      "path": "chat bot find",
+      "argv": [
+        "chat",
+        "bot",
+        "find"
+      ],
+      "depth": 3,
+      "description": "搜索【全部可用】机器人（含他人/官方，额外返回 openDingTalkId 可发单聊）",
+      "child_count": 0
+    },
+    {
+      "path": "chat bot search",
+      "argv": [
+        "chat",
+        "bot",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索【我自己创建】的机器人（仅本人创建的，不含他人/官方机器人）",
+      "child_count": 0
+    },
+    {
+      "path": "chat category add-conv",
+      "argv": [
+        "chat",
+        "category",
+        "add-conv"
+      ],
+      "depth": 3,
+      "description": "将会话移动到指定的自定义分组中",
+      "child_count": 0
+    },
+    {
+      "path": "chat category create",
+      "argv": [
+        "chat",
+        "category",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建用户自定义会话分组",
+      "child_count": 0
+    },
+    {
+      "path": "chat category delete",
+      "argv": [
+        "chat",
+        "category",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除用户自定义会话分组",
+      "child_count": 0
+    },
+    {
+      "path": "chat category list",
+      "argv": [
+        "chat",
+        "category",
+        "list"
+      ],
+      "depth": 3,
+      "description": "获取用户自定义会话分组",
+      "child_count": 0
+    },
+    {
+      "path": "chat category list-conversations",
+      "argv": [
+        "chat",
+        "category",
+        "list-conversations"
+      ],
+      "depth": 3,
+      "description": "拉取指定自定义会话分组下的会话",
+      "child_count": 0
+    },
+    {
+      "path": "chat category remove-conv",
+      "argv": [
+        "chat",
+        "category",
+        "remove-conv"
+      ],
+      "depth": 3,
+      "description": "将会话从指定的自定义分组中移出",
+      "child_count": 0
+    },
+    {
+      "path": "chat category rename",
+      "argv": [
+        "chat",
+        "category",
+        "rename"
+      ],
+      "depth": 3,
+      "description": "更新用户自定义会话分组的名称",
+      "child_count": 0
+    },
+    {
+      "path": "chat data-auth cross-org",
+      "argv": [
+        "chat",
+        "data-auth",
+        "cross-org"
+      ],
+      "depth": 3,
+      "description": "授予跨组织 chat 数据访问权限",
+      "child_count": 0
+    },
+    {
+      "path": "chat file upload",
+      "argv": [
+        "chat",
+        "file",
+        "upload"
+      ],
+      "depth": 3,
+      "description": "上传本地文件或 URL 文件到会话文件空间",
+      "child_count": 0
+    },
+    {
+      "path": "chat group audit-join-validation",
+      "argv": [
+        "chat",
+        "group",
+        "audit-join-validation"
+      ],
+      "depth": 3,
+      "description": "审批入群验证（通过、拒绝、删除）",
+      "child_count": 0
+    },
+    {
+      "path": "chat group bots",
+      "argv": [
+        "chat",
+        "group",
+        "bots"
+      ],
+      "depth": 3,
+      "description": "查看群内所有机器人",
+      "child_count": 0
+    },
+    {
+      "path": "chat group create",
+      "argv": [
+        "chat",
+        "group",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建群（支持内部群/外部群/普通群/话题圈）",
+      "child_count": 0
+    },
+    {
+      "path": "chat group dismiss",
+      "argv": [
+        "chat",
+        "group",
+        "dismiss"
+      ],
+      "depth": 3,
+      "description": "解散群聊",
+      "child_count": 0
+    },
+    {
+      "path": "chat group get-by-group-id",
+      "argv": [
+        "chat",
+        "group",
+        "get-by-group-id"
+      ],
+      "depth": 3,
+      "description": "根据群号获取群聊信息",
+      "child_count": 0
+    },
+    {
+      "path": "chat group invite-url",
+      "argv": [
+        "chat",
+        "group",
+        "invite-url"
+      ],
+      "depth": 3,
+      "description": "获取群邀请链接",
+      "child_count": 0
+    },
+    {
+      "path": "chat group list-all",
+      "argv": [
+        "chat",
+        "group",
+        "list-all"
+      ],
+      "depth": 3,
+      "description": "分页拉取我所有群列表",
+      "child_count": 0
+    },
+    {
+      "path": "chat group list-join-validations",
+      "argv": [
+        "chat",
+        "group",
+        "list-join-validations"
+      ],
+      "depth": 3,
+      "description": "分页拉取入群验证记录",
+      "child_count": 0
+    },
+    {
+      "path": "chat group list-my-groups",
+      "argv": [
+        "chat",
+        "group",
+        "list-my-groups"
+      ],
+      "depth": 3,
+      "description": "拉取我创建/管理的群",
+      "child_count": 0
+    },
+    {
+      "path": "chat group members",
+      "argv": [
+        "chat",
+        "group",
+        "members"
+      ],
+      "depth": 3,
+      "description": "群成员管理",
+      "child_count": 5
+    },
+    {
+      "path": "chat group quit",
+      "argv": [
+        "chat",
+        "group",
+        "quit"
+      ],
+      "depth": 3,
+      "description": "退出群聊",
+      "child_count": 0
+    },
+    {
+      "path": "chat group rename",
+      "argv": [
+        "chat",
+        "group",
+        "rename"
+      ],
+      "depth": 3,
+      "description": "更新群名称",
+      "child_count": 0
+    },
+    {
+      "path": "chat group set-admin",
+      "argv": [
+        "chat",
+        "group",
+        "set-admin"
+      ],
+      "depth": 3,
+      "description": "设置 / 取消群管理员",
+      "child_count": 0
+    },
+    {
+      "path": "chat group set-history",
+      "argv": [
+        "chat",
+        "group",
+        "set-history"
+      ],
+      "depth": 3,
+      "description": "设置新成员入群可查看历史消息选项",
+      "child_count": 0
+    },
+    {
+      "path": "chat group transfer-owner",
+      "argv": [
+        "chat",
+        "group",
+        "transfer-owner"
+      ],
+      "depth": 3,
+      "description": "转让群主",
+      "child_count": 0
+    },
+    {
+      "path": "chat group update-alias",
+      "argv": [
+        "chat",
+        "group",
+        "update-alias"
+      ],
+      "depth": 3,
+      "description": "设置群备注",
+      "child_count": 0
+    },
+    {
+      "path": "chat group update-icon",
+      "argv": [
+        "chat",
+        "group",
+        "update-icon"
+      ],
+      "depth": 3,
+      "description": "更新群头像",
+      "child_count": 0
+    },
+    {
+      "path": "chat group update-nick",
+      "argv": [
+        "chat",
+        "group",
+        "update-nick"
+      ],
+      "depth": 3,
+      "description": "设置用户在群内的群昵称",
+      "child_count": 0
+    },
+    {
+      "path": "chat group update-settings",
+      "argv": [
+        "chat",
+        "group",
+        "update-settings"
+      ],
+      "depth": 3,
+      "description": "更新群设置",
+      "child_count": 0
+    },
+    {
+      "path": "chat group-role add",
+      "argv": [
+        "chat",
+        "group-role",
+        "add"
+      ],
+      "depth": 3,
+      "description": "添加群身份",
+      "child_count": 0
+    },
+    {
+      "path": "chat group-role list",
+      "argv": [
+        "chat",
+        "group-role",
+        "list"
+      ],
+      "depth": 3,
+      "description": "拉取会话的群身份列表",
+      "child_count": 0
+    },
+    {
+      "path": "chat group-role query-user",
+      "argv": [
+        "chat",
+        "group-role",
+        "query-user"
+      ],
+      "depth": 3,
+      "description": "查询群成员的群身份",
+      "child_count": 0
+    },
+    {
+      "path": "chat group-role remove",
+      "argv": [
+        "chat",
+        "group-role",
+        "remove"
+      ],
+      "depth": 3,
+      "description": "删除群身份",
+      "child_count": 0
+    },
+    {
+      "path": "chat group-role remove-user",
+      "argv": [
+        "chat",
+        "group-role",
+        "remove-user"
+      ],
+      "depth": 3,
+      "description": "移除用户的指定群身份",
+      "child_count": 0
+    },
+    {
+      "path": "chat group-role set-user",
+      "argv": [
+        "chat",
+        "group-role",
+        "set-user"
+      ],
+      "depth": 3,
+      "description": "设置用户的群身份（覆盖该用户的全部群身份）",
+      "child_count": 0
+    },
+    {
+      "path": "chat group-role update",
+      "argv": [
+        "chat",
+        "group-role",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新群身份名称",
+      "child_count": 0
+    },
+    {
+      "path": "chat media upload",
+      "argv": [
+        "chat",
+        "media",
+        "upload"
+      ],
+      "depth": 3,
+      "description": "上传图片获取 mediaId（用于 chat message send --msg-type image）",
+      "child_count": 0
+    },
+    {
+      "path": "chat message add-emoji",
+      "argv": [
+        "chat",
+        "message",
+        "add-emoji"
+      ],
+      "depth": 3,
+      "description": "对消息添加 emoji 表情回应",
+      "child_count": 0
+    },
+    {
+      "path": "chat message add-text-emotion",
+      "argv": [
+        "chat",
+        "message",
+        "add-text-emotion"
+      ],
+      "depth": 3,
+      "description": "对消息添加文字表情回应",
+      "child_count": 0
+    },
+    {
+      "path": "chat message combine-forward",
+      "argv": [
+        "chat",
+        "message",
+        "combine-forward"
+      ],
+      "depth": 3,
+      "description": "合并转发多条消息",
+      "child_count": 0
+    },
+    {
+      "path": "chat message create-text-emotion",
+      "argv": [
+        "chat",
+        "message",
+        "create-text-emotion"
+      ],
+      "depth": 3,
+      "description": "创建文字表情（获取 emotionId）",
+      "child_count": 0
+    },
+    {
+      "path": "chat message download-media",
+      "argv": [
+        "chat",
+        "message",
+        "download-media"
+      ],
+      "depth": 3,
+      "description": "下载消息中的资源（图片/视频/语音等）到本地",
+      "child_count": 0
+    },
+    {
+      "path": "chat message forward",
+      "argv": [
+        "chat",
+        "message",
+        "forward"
+      ],
+      "depth": 3,
+      "description": "转发单条消息（源/目标会话均支持单聊/群聊）",
+      "child_count": 0
+    },
+    {
+      "path": "chat message forward-topic",
+      "argv": [
+        "chat",
+        "message",
+        "forward-topic"
+      ],
+      "depth": 3,
+      "description": "转发话题消息到目标会话",
+      "child_count": 0
+    },
+    {
+      "path": "chat message list",
+      "argv": [
+        "chat",
+        "message",
+        "list"
+      ],
+      "depth": 3,
+      "description": "拉取会话消息内容",
+      "child_count": 0
+    },
+    {
+      "path": "chat message list-all",
+      "argv": [
+        "chat",
+        "message",
+        "list-all"
+      ],
+      "depth": 3,
+      "description": "拉取指定时间范围内当前用户的所有会话消息",
+      "child_count": 0
+    },
+    {
+      "path": "chat message list-by-ids",
+      "argv": [
+        "chat",
+        "message",
+        "list-by-ids"
+      ],
+      "depth": 3,
+      "description": "根据消息 ID 批量查询消息",
+      "child_count": 0
+    },
+    {
+      "path": "chat message list-by-sender",
+      "argv": [
+        "chat",
+        "message",
+        "list-by-sender"
+      ],
+      "depth": 3,
+      "description": "拉取指定发送者的消息（包含单聊和群聊）",
+      "child_count": 0
+    },
+    {
+      "path": "chat message list-focused",
+      "argv": [
+        "chat",
+        "message",
+        "list-focused"
+      ],
+      "depth": 3,
+      "description": "拉取特别关注人的消息",
+      "child_count": 0
+    },
+    {
+      "path": "chat message list-mentions",
+      "argv": [
+        "chat",
+        "message",
+        "list-mentions"
+      ],
+      "depth": 3,
+      "description": "拉取 @我 的消息",
+      "child_count": 0
+    },
+    {
+      "path": "chat message list-pin-msg",
+      "argv": [
+        "chat",
+        "message",
+        "list-pin-msg"
+      ],
+      "depth": 3,
+      "description": "拉取会话中钉住的消息列表",
+      "child_count": 0
+    },
+    {
+      "path": "chat message list-topic-replies",
+      "argv": [
+        "chat",
+        "message",
+        "list-topic-replies"
+      ],
+      "depth": 3,
+      "description": "拉取群话题回复消息列表",
+      "child_count": 0
+    },
+    {
+      "path": "chat message list-unread-conversations",
+      "argv": [
+        "chat",
+        "message",
+        "list-unread-conversations"
+      ],
+      "depth": 3,
+      "description": "获取未读会话列表",
+      "child_count": 0
+    },
+    {
+      "path": "chat message query-send-status",
+      "argv": [
+        "chat",
+        "message",
+        "query-send-status"
+      ],
+      "depth": 3,
+      "description": "查询消息发送状态",
+      "child_count": 0
+    },
+    {
+      "path": "chat message read-status",
+      "argv": [
+        "chat",
+        "message",
+        "read-status"
+      ],
+      "depth": 3,
+      "description": "查询消息的已读/未读状态",
+      "child_count": 0
+    },
+    {
+      "path": "chat message recall",
+      "argv": [
+        "chat",
+        "message",
+        "recall"
+      ],
+      "depth": 3,
+      "description": "撤回用户发送的消息",
+      "child_count": 0
+    },
+    {
+      "path": "chat message recall-by-bot",
+      "argv": [
+        "chat",
+        "message",
+        "recall-by-bot"
+      ],
+      "depth": 3,
+      "description": "机器人撤回消息（--group 群聊 / 不传为单聊）",
+      "child_count": 0
+    },
+    {
+      "path": "chat message remove-emoji",
+      "argv": [
+        "chat",
+        "message",
+        "remove-emoji"
+      ],
+      "depth": 3,
+      "description": "移除消息的 emoji 表情回应",
+      "child_count": 0
+    },
+    {
+      "path": "chat message remove-text-emotion",
+      "argv": [
+        "chat",
+        "message",
+        "remove-text-emotion"
+      ],
+      "depth": 3,
+      "description": "移除消息的文字表情回应",
+      "child_count": 0
+    },
+    {
+      "path": "chat message reply",
+      "argv": [
+        "chat",
+        "message",
+        "reply"
+      ],
+      "depth": 3,
+      "description": "引用回复消息（支持单聊/群聊）",
+      "child_count": 0
+    },
+    {
+      "path": "chat message search",
+      "argv": [
+        "chat",
+        "message",
+        "search"
+      ],
+      "depth": 3,
+      "description": "按关键词搜索消息",
+      "child_count": 0
+    },
+    {
+      "path": "chat message search-advanced",
+      "argv": [
+        "chat",
+        "message",
+        "search-advanced"
+      ],
+      "depth": 3,
+      "description": "多维度搜索消息",
+      "child_count": 0
+    },
+    {
+      "path": "chat message send",
+      "argv": [
+        "chat",
+        "message",
+        "send"
+      ],
+      "depth": 3,
+      "description": "以当前用户身份发送消息（--group 群聊 / --user 或 --open-dingtalk-id 单聊）",
+      "child_count": 0
+    },
+    {
+      "path": "chat message send-by-bot",
+      "argv": [
+        "chat",
+        "message",
+        "send-by-bot"
+      ],
+      "depth": 3,
+      "description": "机器人发送消息（--group 群聊 / --users 单聊）",
+      "child_count": 0
+    },
+    {
+      "path": "chat message send-by-webhook",
+      "argv": [
+        "chat",
+        "message",
+        "send-by-webhook"
+      ],
+      "depth": 3,
+      "description": "自定义机器人 Webhook 发送群消息",
+      "child_count": 0
+    },
+    {
+      "path": "chat message send-card",
+      "argv": [
+        "chat",
+        "message",
+        "send-card"
+      ],
+      "depth": 3,
+      "description": "创建并推送流式卡片",
+      "child_count": 0
+    },
+    {
+      "path": "chat message set-pin-msg",
+      "argv": [
+        "chat",
+        "message",
+        "set-pin-msg"
+      ],
+      "depth": 3,
+      "description": "钉住消息（Pin）",
+      "child_count": 0
+    },
+    {
+      "path": "chat message set-top-msg",
+      "argv": [
+        "chat",
+        "message",
+        "set-top-msg"
+      ],
+      "depth": 3,
+      "description": "置顶消息",
+      "child_count": 0
+    },
+    {
+      "path": "chat message unset-pin-msg",
+      "argv": [
+        "chat",
+        "message",
+        "unset-pin-msg"
+      ],
+      "depth": 3,
+      "description": "取消钉住消息（Unpin）",
+      "child_count": 0
+    },
+    {
+      "path": "chat message unset-top-msg",
+      "argv": [
+        "chat",
+        "message",
+        "unset-top-msg"
+      ],
+      "depth": 3,
+      "description": "取消置顶消息",
+      "child_count": 0
+    },
+    {
+      "path": "chat message update-card",
+      "argv": [
+        "chat",
+        "message",
+        "update-card"
+      ],
+      "depth": 3,
+      "description": "流式更新卡片内容",
+      "child_count": 0
+    },
+    {
+      "path": "contact dept get-info",
+      "argv": [
+        "contact",
+        "dept",
+        "get-info"
+      ],
+      "depth": 3,
+      "description": "获取部门详情（部门ID、名称、人数）",
+      "child_count": 0
+    },
+    {
+      "path": "contact dept list-children",
+      "argv": [
+        "contact",
+        "dept",
+        "list-children"
+      ],
+      "depth": 3,
+      "description": "查看子部门",
+      "child_count": 0
+    },
+    {
+      "path": "contact dept list-members",
+      "argv": [
+        "contact",
+        "dept",
+        "list-members"
+      ],
+      "depth": 3,
+      "description": "查看部门成员（仅本部门，不含下级）",
+      "child_count": 0
+    },
+    {
+      "path": "contact dept search",
+      "argv": [
+        "contact",
+        "dept",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索部门",
+      "child_count": 0
+    },
+    {
+      "path": "contact relation list-my-followings",
+      "argv": [
+        "contact",
+        "relation",
+        "list-my-followings"
+      ],
+      "depth": 3,
+      "description": "获取当前用户的特别关注列表",
+      "child_count": 0
+    },
+    {
+      "path": "contact user dismission",
+      "argv": [
+        "contact",
+        "user",
+        "dismission"
+      ],
+      "depth": 3,
+      "description": "离职员工查询",
+      "child_count": 1
+    },
+    {
+      "path": "contact user get",
+      "argv": [
+        "contact",
+        "user",
+        "get"
+      ],
+      "depth": 3,
+      "description": "批量获取用户详情（组织管理信息）",
+      "child_count": 0
+    },
+    {
+      "path": "contact user get-self",
+      "argv": [
+        "contact",
+        "user",
+        "get-self"
+      ],
+      "depth": 3,
+      "description": "获取当前用户信息（我是谁 / 本人）",
+      "child_count": 0
+    },
+    {
+      "path": "contact user profile",
+      "argv": [
+        "contact",
+        "user",
+        "profile"
+      ],
+      "depth": 3,
+      "description": "用户档案（花名册）",
+      "child_count": 2
+    },
+    {
+      "path": "contact user search",
+      "argv": [
+        "contact",
+        "user",
+        "search"
+      ],
+      "depth": 3,
+      "description": "按关键词搜索用户",
+      "child_count": 0
+    },
+    {
+      "path": "contact user search-mobile",
+      "argv": [
+        "contact",
+        "user",
+        "search-mobile"
+      ],
+      "depth": 3,
+      "description": "按手机号搜索用户",
+      "child_count": 0
+    },
+    {
+      "path": "devdoc article search",
+      "argv": [
+        "devdoc",
+        "article",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索开放平台文档",
+      "child_count": 0
+    },
+    {
+      "path": "ding message list",
+      "argv": [
+        "ding",
+        "message",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询 DING 消息历史",
+      "child_count": 0
+    },
+    {
+      "path": "ding message recall",
+      "argv": [
+        "ding",
+        "message",
+        "recall"
+      ],
+      "depth": 3,
+      "description": "撤回 DING 消息",
+      "child_count": 0
+    },
+    {
+      "path": "ding message recall-personal",
+      "argv": [
+        "ding",
+        "message",
+        "recall-personal"
+      ],
+      "depth": 3,
+      "description": "以用户身份撤回 DING",
+      "child_count": 0
+    },
+    {
+      "path": "ding message receiver-status",
+      "argv": [
+        "ding",
+        "message",
+        "receiver-status"
+      ],
+      "depth": 3,
+      "description": "查看 DING 接收状态",
+      "child_count": 0
+    },
+    {
+      "path": "ding message send",
+      "argv": [
+        "ding",
+        "message",
+        "send"
+      ],
+      "depth": 3,
+      "description": "发送 DING 消息",
+      "child_count": 0
+    },
+    {
+      "path": "ding message send-by-message",
+      "argv": [
+        "ding",
+        "message",
+        "send-by-message"
+      ],
+      "depth": 3,
+      "description": "消息转 DING（将聊天消息转为 DING 通知）",
+      "child_count": 0
+    },
+    {
+      "path": "ding message send-personal",
+      "argv": [
+        "ding",
+        "message",
+        "send-personal"
+      ],
+      "depth": 3,
+      "description": "以用户身份发送 DING",
+      "child_count": 0
+    },
+    {
+      "path": "doc block delete",
+      "argv": [
+        "doc",
+        "block",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除块元素",
+      "child_count": 0
+    },
+    {
+      "path": "doc block insert",
+      "argv": [
+        "doc",
+        "block",
+        "insert"
+      ],
+      "depth": 3,
+      "description": "插入块元素",
+      "child_count": 0
+    },
+    {
+      "path": "doc block list",
+      "argv": [
+        "doc",
+        "block",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询块元素",
+      "child_count": 0
+    },
+    {
+      "path": "doc block update",
+      "argv": [
+        "doc",
+        "block",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新块元素",
+      "child_count": 0
+    },
+    {
+      "path": "doc comment create",
+      "argv": [
+        "doc",
+        "comment",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建文档评论",
+      "child_count": 0
+    },
+    {
+      "path": "doc comment create-inline",
+      "argv": [
+        "doc",
+        "comment",
+        "create-inline"
+      ],
+      "depth": 3,
+      "description": "创建划词评论",
+      "child_count": 0
+    },
+    {
+      "path": "doc comment list",
+      "argv": [
+        "doc",
+        "comment",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询文档评论列表",
+      "child_count": 0
+    },
+    {
+      "path": "doc comment reply",
+      "argv": [
+        "doc",
+        "comment",
+        "reply"
+      ],
+      "depth": 3,
+      "description": "回复评论",
+      "child_count": 0
+    },
+    {
+      "path": "doc export get",
+      "argv": [
+        "doc",
+        "export",
+        "get"
+      ],
+      "depth": 3,
+      "description": "查询导出任务结果（手动兜底）",
+      "child_count": 0
+    },
+    {
+      "path": "doc file create",
+      "argv": [
+        "doc",
+        "file",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建文件",
+      "child_count": 0
+    },
+    {
+      "path": "doc media download",
+      "argv": [
+        "doc",
+        "media",
+        "download"
+      ],
+      "depth": 3,
+      "description": "下载文档附件",
+      "child_count": 0
+    },
+    {
+      "path": "doc media insert",
+      "argv": [
+        "doc",
+        "media",
+        "insert"
+      ],
+      "depth": 3,
+      "description": "上传附件并插入文档",
+      "child_count": 0
+    },
+    {
+      "path": "doc template apply",
+      "argv": [
+        "doc",
+        "template",
+        "apply"
+      ],
+      "depth": 3,
+      "description": "应用文档模板",
+      "child_count": 0
+    },
+    {
+      "path": "doc template list",
+      "argv": [
+        "doc",
+        "template",
+        "list"
+      ],
+      "depth": 3,
+      "description": "获取文档模板列表",
+      "child_count": 0
+    },
+    {
+      "path": "doc template search",
+      "argv": [
+        "doc",
+        "template",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索文档模板",
+      "child_count": 0
+    },
+    {
+      "path": "doc version list",
+      "argv": [
+        "doc",
+        "version",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查看文档历史版本列表",
+      "child_count": 0
+    },
+    {
+      "path": "doc version revert",
+      "argv": [
+        "doc",
+        "version",
+        "revert"
+      ],
+      "depth": 3,
+      "description": "回滚文档到指定版本",
+      "child_count": 0
+    },
+    {
+      "path": "doc version save",
+      "argv": [
+        "doc",
+        "version",
+        "save"
+      ],
+      "depth": 3,
+      "description": "手动保存文档版本快照",
+      "child_count": 0
+    },
+    {
+      "path": "drive permission add",
+      "argv": [
+        "drive",
+        "permission",
+        "add"
+      ],
+      "depth": 3,
+      "description": "添加协作者",
+      "child_count": 0
+    },
+    {
+      "path": "drive permission list",
+      "argv": [
+        "drive",
+        "permission",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询协作者列表",
+      "child_count": 0
+    },
+    {
+      "path": "drive permission remove",
+      "argv": [
+        "drive",
+        "permission",
+        "remove"
+      ],
+      "depth": 3,
+      "description": "移除协作者权限",
+      "child_count": 0
+    },
+    {
+      "path": "drive permission update",
+      "argv": [
+        "drive",
+        "permission",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新协作者权限",
+      "child_count": 0
+    },
+    {
+      "path": "drive publish get",
+      "argv": [
+        "drive",
+        "publish",
+        "get"
+      ],
+      "depth": 3,
+      "description": "查询文件公开发布状态",
+      "child_count": 0
+    },
+    {
+      "path": "drive publish set",
+      "argv": [
+        "drive",
+        "publish",
+        "set"
+      ],
+      "depth": 3,
+      "description": "[危险] 设置文件为互联网公开",
+      "child_count": 0
+    },
+    {
+      "path": "drive publish unset",
+      "argv": [
+        "drive",
+        "publish",
+        "unset"
+      ],
+      "depth": 3,
+      "description": "[危险] 关闭文件互联网公开",
+      "child_count": 0
+    },
+    {
+      "path": "drive recycle list",
+      "argv": [
+        "drive",
+        "recycle",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查看回收站文件列表",
+      "child_count": 0
+    },
+    {
+      "path": "drive recycle restore",
+      "argv": [
+        "drive",
+        "recycle",
+        "restore"
+      ],
+      "depth": 3,
+      "description": "还原回收站中的文件",
+      "child_count": 0
+    },
+    {
+      "path": "live stream list",
+      "argv": [
+        "live",
+        "stream",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查看我的直播列表",
+      "child_count": 0
+    },
+    {
+      "path": "mail attachment download",
+      "argv": [
+        "mail",
+        "attachment",
+        "download"
+      ],
+      "depth": 3,
+      "description": "下载邮件附件到本地",
+      "child_count": 0
+    },
+    {
+      "path": "mail attachment list",
+      "argv": [
+        "mail",
+        "attachment",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列举邮件附件",
+      "child_count": 0
+    },
+    {
+      "path": "mail auto-reply get",
+      "argv": [
+        "mail",
+        "auto-reply",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取用户的自动回复配置",
+      "child_count": 0
+    },
+    {
+      "path": "mail contact batch-delete",
+      "argv": [
+        "mail",
+        "contact",
+        "batch-delete"
+      ],
+      "depth": 3,
+      "description": "批量删除邮件联系人",
+      "child_count": 0
+    },
+    {
+      "path": "mail contact create",
+      "argv": [
+        "mail",
+        "contact",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建邮件联系人",
+      "child_count": 0
+    },
+    {
+      "path": "mail contact list",
+      "argv": [
+        "mail",
+        "contact",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列举邮件联系人",
+      "child_count": 0
+    },
+    {
+      "path": "mail contact update",
+      "argv": [
+        "mail",
+        "contact",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新邮件联系人",
+      "child_count": 0
+    },
+    {
+      "path": "mail draft create",
+      "argv": [
+        "mail",
+        "draft",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建草稿",
+      "child_count": 0
+    },
+    {
+      "path": "mail draft send",
+      "argv": [
+        "mail",
+        "draft",
+        "send"
+      ],
+      "depth": 3,
+      "description": "发送草稿",
+      "child_count": 0
+    },
+    {
+      "path": "mail draft update",
+      "argv": [
+        "mail",
+        "draft",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新草稿",
+      "child_count": 0
+    },
+    {
+      "path": "mail folder create",
+      "argv": [
+        "mail",
+        "folder",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建邮件文件夹",
+      "child_count": 0
+    },
+    {
+      "path": "mail folder delete",
+      "argv": [
+        "mail",
+        "folder",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除邮件文件夹",
+      "child_count": 0
+    },
+    {
+      "path": "mail folder list",
+      "argv": [
+        "mail",
+        "folder",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列举邮件文件夹",
+      "child_count": 0
+    },
+    {
+      "path": "mail folder update",
+      "argv": [
+        "mail",
+        "folder",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新邮件文件夹",
+      "child_count": 0
+    },
+    {
+      "path": "mail mailbox list",
+      "argv": [
+        "mail",
+        "mailbox",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询可用邮箱地址",
+      "child_count": 0
+    },
+    {
+      "path": "mail message batch-delete",
+      "argv": [
+        "mail",
+        "message",
+        "batch-delete"
+      ],
+      "depth": 3,
+      "description": "批量删除邮件",
+      "child_count": 0
+    },
+    {
+      "path": "mail message batch-move",
+      "argv": [
+        "mail",
+        "message",
+        "batch-move"
+      ],
+      "depth": 3,
+      "description": "批量移动邮件到指定文件夹",
+      "child_count": 0
+    },
+    {
+      "path": "mail message batch-update",
+      "argv": [
+        "mail",
+        "message",
+        "batch-update"
+      ],
+      "depth": 3,
+      "description": "批量修改邮件状态（标记已读/未读/添加标签/移除标签）",
+      "child_count": 0
+    },
+    {
+      "path": "mail message forward",
+      "argv": [
+        "mail",
+        "message",
+        "forward"
+      ],
+      "depth": 3,
+      "description": "转发邮件",
+      "child_count": 0
+    },
+    {
+      "path": "mail message get",
+      "argv": [
+        "mail",
+        "message",
+        "get"
+      ],
+      "depth": 3,
+      "description": "查看邮件完整内容",
+      "child_count": 0
+    },
+    {
+      "path": "mail message list",
+      "argv": [
+        "mail",
+        "message",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列出文件夹中的邮件",
+      "child_count": 0
+    },
+    {
+      "path": "mail message reply",
+      "argv": [
+        "mail",
+        "message",
+        "reply"
+      ],
+      "depth": 3,
+      "description": "回复邮件",
+      "child_count": 0
+    },
+    {
+      "path": "mail message reply-all",
+      "argv": [
+        "mail",
+        "message",
+        "reply-all"
+      ],
+      "depth": 3,
+      "description": "回复所有人",
+      "child_count": 0
+    },
+    {
+      "path": "mail message search",
+      "argv": [
+        "mail",
+        "message",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索邮件 (KQL 语法)",
+      "child_count": 0
+    },
+    {
+      "path": "mail message send",
+      "argv": [
+        "mail",
+        "message",
+        "send"
+      ],
+      "depth": 3,
+      "description": "发送邮件",
+      "child_count": 0
+    },
+    {
+      "path": "mail message verify",
+      "argv": [
+        "mail",
+        "message",
+        "verify"
+      ],
+      "depth": 3,
+      "description": "查询邮件发送状态",
+      "child_count": 0
+    },
+    {
+      "path": "mail rule adjust",
+      "argv": [
+        "mail",
+        "rule",
+        "adjust"
+      ],
+      "depth": 3,
+      "description": "调整收信规则排序",
+      "child_count": 0
+    },
+    {
+      "path": "mail rule create",
+      "argv": [
+        "mail",
+        "rule",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建个人收信规则",
+      "child_count": 0
+    },
+    {
+      "path": "mail rule delete",
+      "argv": [
+        "mail",
+        "rule",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除个人收信规则",
+      "child_count": 0
+    },
+    {
+      "path": "mail rule list",
+      "argv": [
+        "mail",
+        "rule",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列出个人收信规则",
+      "child_count": 0
+    },
+    {
+      "path": "mail rule update",
+      "argv": [
+        "mail",
+        "rule",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新个人收信规则",
+      "child_count": 0
+    },
+    {
+      "path": "mail tag create",
+      "argv": [
+        "mail",
+        "tag",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建邮件标签",
+      "child_count": 0
+    },
+    {
+      "path": "mail tag delete",
+      "argv": [
+        "mail",
+        "tag",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除邮件标签",
+      "child_count": 0
+    },
+    {
+      "path": "mail tag list",
+      "argv": [
+        "mail",
+        "tag",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列举邮件标签",
+      "child_count": 0
+    },
+    {
+      "path": "mail tag update",
+      "argv": [
+        "mail",
+        "tag",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新邮件标签",
+      "child_count": 0
+    },
+    {
+      "path": "mail template create",
+      "argv": [
+        "mail",
+        "template",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建邮件模板",
+      "child_count": 0
+    },
+    {
+      "path": "mail template delete",
+      "argv": [
+        "mail",
+        "template",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除邮件模板",
+      "child_count": 0
+    },
+    {
+      "path": "mail template get",
+      "argv": [
+        "mail",
+        "template",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取邮件模板详情",
+      "child_count": 0
+    },
+    {
+      "path": "mail template list",
+      "argv": [
+        "mail",
+        "template",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列举邮件模板",
+      "child_count": 0
+    },
+    {
+      "path": "mail template update",
+      "argv": [
+        "mail",
+        "template",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新邮件模板",
+      "child_count": 0
+    },
+    {
+      "path": "mail thread batch-trash",
+      "argv": [
+        "mail",
+        "thread",
+        "batch-trash"
+      ],
+      "depth": 3,
+      "description": "[危险] 批量删除邮件会话",
+      "child_count": 0
+    },
+    {
+      "path": "mail thread batch-update",
+      "argv": [
+        "mail",
+        "thread",
+        "batch-update"
+      ],
+      "depth": 3,
+      "description": "批量修改邮件会话状态",
+      "child_count": 0
+    },
+    {
+      "path": "mail thread get",
+      "argv": [
+        "mail",
+        "thread",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取会话详情",
+      "child_count": 0
+    },
+    {
+      "path": "mail thread list",
+      "argv": [
+        "mail",
+        "thread",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列出邮件会话",
+      "child_count": 0
+    },
+    {
+      "path": "mail thread trash",
+      "argv": [
+        "mail",
+        "thread",
+        "trash"
+      ],
+      "depth": 3,
+      "description": "[危险] 删除邮件会话",
+      "child_count": 0
+    },
+    {
+      "path": "mail thread update",
+      "argv": [
+        "mail",
+        "thread",
+        "update"
+      ],
+      "depth": 3,
+      "description": "修改邮件会话状态",
+      "child_count": 0
+    },
+    {
+      "path": "mail user search",
+      "argv": [
+        "mail",
+        "user",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索邮箱用户",
+      "child_count": 0
+    },
+    {
+      "path": "minutes get audio",
+      "argv": [
+        "minutes",
+        "get",
+        "audio"
+      ],
+      "depth": 3,
+      "description": "获取听记音频/视频地址",
+      "child_count": 0
+    },
+    {
+      "path": "minutes get batch",
+      "argv": [
+        "minutes",
+        "get",
+        "batch"
+      ],
+      "depth": 3,
+      "description": "批量查询听记详情",
+      "child_count": 0
+    },
+    {
+      "path": "minutes get info",
+      "argv": [
+        "minutes",
+        "get",
+        "info"
+      ],
+      "depth": 3,
+      "description": "获取听记基础信息",
+      "child_count": 0
+    },
+    {
+      "path": "minutes get keywords",
+      "argv": [
+        "minutes",
+        "get",
+        "keywords"
+      ],
+      "depth": 3,
+      "description": "获取听记关键字列表",
+      "child_count": 0
+    },
+    {
+      "path": "minutes get summary",
+      "argv": [
+        "minutes",
+        "get",
+        "summary"
+      ],
+      "depth": 3,
+      "description": "获取听记 AI 摘要",
+      "child_count": 0
+    },
+    {
+      "path": "minutes get todos",
+      "argv": [
+        "minutes",
+        "get",
+        "todos"
+      ],
+      "depth": 3,
+      "description": "获取听记中提取的待办事项",
+      "child_count": 0
+    },
+    {
+      "path": "minutes get transcription",
+      "argv": [
+        "minutes",
+        "get",
+        "transcription"
+      ],
+      "depth": 3,
+      "description": "获取听记语音转写原文",
+      "child_count": 0
+    },
+    {
+      "path": "minutes hot-word add",
+      "argv": [
+        "minutes",
+        "hot-word",
+        "add"
+      ],
+      "depth": 3,
+      "description": "添加个人热词",
+      "child_count": 0
+    },
+    {
+      "path": "minutes hot-word list",
+      "argv": [
+        "minutes",
+        "hot-word",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询我的热词列表",
+      "child_count": 0
+    },
+    {
+      "path": "minutes list all",
+      "argv": [
+        "minutes",
+        "list",
+        "all"
+      ],
+      "depth": 3,
+      "description": "查询我有权限访问的所有听记列表",
+      "child_count": 0
+    },
+    {
+      "path": "minutes list mine",
+      "argv": [
+        "minutes",
+        "list",
+        "mine"
+      ],
+      "depth": 3,
+      "description": "查询我创建的听记列表",
+      "child_count": 0
+    },
+    {
+      "path": "minutes list shared",
+      "argv": [
+        "minutes",
+        "list",
+        "shared"
+      ],
+      "depth": 3,
+      "description": "查询他人共享给我的听记列表",
+      "child_count": 0
+    },
+    {
+      "path": "minutes mind-graph create",
+      "argv": [
+        "minutes",
+        "mind-graph",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建思维导图",
+      "child_count": 0
+    },
+    {
+      "path": "minutes mind-graph status",
+      "argv": [
+        "minutes",
+        "mind-graph",
+        "status"
+      ],
+      "depth": 3,
+      "description": "查询思维导图状态",
+      "child_count": 0
+    },
+    {
+      "path": "minutes permission add",
+      "argv": [
+        "minutes",
+        "permission",
+        "add"
+      ],
+      "depth": 3,
+      "description": "批量添加听记成员并设置权限",
+      "child_count": 0
+    },
+    {
+      "path": "minutes permission remove",
+      "argv": [
+        "minutes",
+        "permission",
+        "remove"
+      ],
+      "depth": 3,
+      "description": "批量移除听记成员权限",
+      "child_count": 0
+    },
+    {
+      "path": "minutes record pause",
+      "argv": [
+        "minutes",
+        "record",
+        "pause"
+      ],
+      "depth": 3,
+      "description": "暂停听记录音",
+      "child_count": 0
+    },
+    {
+      "path": "minutes record resume",
+      "argv": [
+        "minutes",
+        "record",
+        "resume"
+      ],
+      "depth": 3,
+      "description": "恢复听记录音",
+      "child_count": 0
+    },
+    {
+      "path": "minutes record start",
+      "argv": [
+        "minutes",
+        "record",
+        "start"
+      ],
+      "depth": 3,
+      "description": "发起听记（开始录音）",
+      "child_count": 0
+    },
+    {
+      "path": "minutes record stop",
+      "argv": [
+        "minutes",
+        "record",
+        "stop"
+      ],
+      "depth": 3,
+      "description": "结束听记录音",
+      "child_count": 0
+    },
+    {
+      "path": "minutes speaker replace",
+      "argv": [
+        "minutes",
+        "speaker",
+        "replace"
+      ],
+      "depth": 3,
+      "description": "替换发言人",
+      "child_count": 0
+    },
+    {
+      "path": "minutes speaker summary",
+      "argv": [
+        "minutes",
+        "speaker",
+        "summary"
+      ],
+      "depth": 3,
+      "description": "发言人段落总结",
+      "child_count": 2
+    },
+    {
+      "path": "minutes tag list",
+      "argv": [
+        "minutes",
+        "tag",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询我的听记标签/分组列表",
+      "child_count": 0
+    },
+    {
+      "path": "minutes tag query",
+      "argv": [
+        "minutes",
+        "tag",
+        "query"
+      ],
+      "depth": 3,
+      "description": "根据标签ID查询听记列表",
+      "child_count": 0
+    },
+    {
+      "path": "minutes update summary",
+      "argv": [
+        "minutes",
+        "update",
+        "summary"
+      ],
+      "depth": 3,
+      "description": "更新纪要内容",
+      "child_count": 0
+    },
+    {
+      "path": "minutes update title",
+      "argv": [
+        "minutes",
+        "update",
+        "title"
+      ],
+      "depth": 3,
+      "description": "修改听记标题",
+      "child_count": 0
+    },
+    {
+      "path": "minutes upload cancel",
+      "argv": [
+        "minutes",
+        "upload",
+        "cancel"
+      ],
+      "depth": 3,
+      "description": "取消文件上传会话",
+      "child_count": 0
+    },
+    {
+      "path": "minutes upload complete",
+      "argv": [
+        "minutes",
+        "upload",
+        "complete"
+      ],
+      "depth": 3,
+      "description": "完成文件上传并创建听记",
+      "child_count": 0
+    },
+    {
+      "path": "minutes upload create",
+      "argv": [
+        "minutes",
+        "upload",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建文件上传会话",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval append-task",
+      "argv": [
+        "oa",
+        "approval",
+        "append-task"
+      ],
+      "depth": 3,
+      "description": "对审批任务进行加签",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval approve",
+      "argv": [
+        "oa",
+        "approval",
+        "approve"
+      ],
+      "depth": 3,
+      "description": "同意审批",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval detail",
+      "argv": [
+        "oa",
+        "approval",
+        "detail"
+      ],
+      "depth": 3,
+      "description": "获取审批实例详情",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval ding-info",
+      "argv": [
+        "oa",
+        "approval",
+        "ding-info"
+      ],
+      "depth": 3,
+      "description": "获取审批任务的被催办人 userId（需与 ding message send 串联使用）",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval list-cc",
+      "argv": [
+        "oa",
+        "approval",
+        "list-cc"
+      ],
+      "depth": 3,
+      "description": "获取抄送当前用户的审批单列表",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval list-executed",
+      "argv": [
+        "oa",
+        "approval",
+        "list-executed"
+      ],
+      "depth": 3,
+      "description": "获取当前用户已经处理过的审批单列表",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval list-forms",
+      "argv": [
+        "oa",
+        "approval",
+        "list-forms"
+      ],
+      "depth": 3,
+      "description": "获取当前用户可见的审批表单列表",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval list-initiated",
+      "argv": [
+        "oa",
+        "approval",
+        "list-initiated"
+      ],
+      "depth": 3,
+      "description": "查询审批模板下已发起的审批记录",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval list-pending",
+      "argv": [
+        "oa",
+        "approval",
+        "list-pending"
+      ],
+      "depth": 3,
+      "description": "查询待我处理的审批",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval list-submitted",
+      "argv": [
+        "oa",
+        "approval",
+        "list-submitted"
+      ],
+      "depth": 3,
+      "description": "获取当前用户已发起的审批单列表",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval oa-cc-noticer",
+      "argv": [
+        "oa",
+        "approval",
+        "oa-cc-noticer"
+      ],
+      "depth": 3,
+      "description": "对审批实例进行抄送",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval oa-comments",
+      "argv": [
+        "oa",
+        "approval",
+        "oa-comments"
+      ],
+      "depth": 3,
+      "description": "对审批实例添加评论",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval records",
+      "argv": [
+        "oa",
+        "approval",
+        "records"
+      ],
+      "depth": 3,
+      "description": "获取审批操作记录",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval redirect-task",
+      "argv": [
+        "oa",
+        "approval",
+        "redirect-task"
+      ],
+      "depth": 3,
+      "description": "转交审批任务给其他人",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval reject",
+      "argv": [
+        "oa",
+        "approval",
+        "reject"
+      ],
+      "depth": 3,
+      "description": "拒绝审批",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval revert-activities",
+      "argv": [
+        "oa",
+        "approval",
+        "revert-activities"
+      ],
+      "depth": 3,
+      "description": "获取审批任务可回退的节点信息（退回前必须调用，获取可回退节点列表）",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval revert-task",
+      "argv": [
+        "oa",
+        "approval",
+        "revert-task"
+      ],
+      "depth": 3,
+      "description": "退回审批任务到指定节点（审批人或发起人）",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval revoke",
+      "argv": [
+        "oa",
+        "approval",
+        "revoke"
+      ],
+      "depth": 3,
+      "description": "撤销已发起的审批",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval search-forms",
+      "argv": [
+        "oa",
+        "approval",
+        "search-forms"
+      ],
+      "depth": 3,
+      "description": "按关键字模糊搜索当前用户可见的审批表单",
+      "child_count": 0
+    },
+    {
+      "path": "oa approval tasks",
+      "argv": [
+        "oa",
+        "approval",
+        "tasks"
+      ],
+      "depth": 3,
+      "description": "查询待我审批的任务 ID",
+      "child_count": 0
+    },
+    {
+      "path": "report entry get",
+      "argv": [
+        "report",
+        "entry",
+        "get"
+      ],
+      "depth": 3,
+      "description": "读取单份日报正文（含字段明细 + 钉钉跳转链接）",
+      "child_count": 0
+    },
+    {
+      "path": "report entry stats",
+      "argv": [
+        "report",
+        "entry",
+        "stats"
+      ],
+      "depth": 3,
+      "description": "读取单份日报的已读统计",
+      "child_count": 0
+    },
+    {
+      "path": "report entry submit",
+      "argv": [
+        "report",
+        "entry",
+        "submit"
+      ],
+      "depth": 3,
+      "description": "提交一份新日报（按模版）",
+      "child_count": 0
+    },
+    {
+      "path": "report inbox list",
+      "argv": [
+        "report",
+        "inbox",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列出我收到的日报",
+      "child_count": 0
+    },
+    {
+      "path": "report outbox list",
+      "argv": [
+        "report",
+        "outbox",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列出我发出的日报",
+      "child_count": 0
+    },
+    {
+      "path": "report template detail",
+      "argv": [
+        "report",
+        "template",
+        "detail"
+      ],
+      "depth": 3,
+      "description": "[deprecated] 已废弃，请改用 `dws report template get`",
+      "child_count": 0
+    },
+    {
+      "path": "report template get",
+      "argv": [
+        "report",
+        "template",
+        "get"
+      ],
+      "depth": 3,
+      "description": "读取单个日志模版的字段定义",
+      "child_count": 0
+    },
+    {
+      "path": "report template list",
+      "argv": [
+        "report",
+        "template",
+        "list"
+      ],
+      "depth": 3,
+      "description": "获取当前用户可用的日志模版列表",
+      "child_count": 0
+    },
+    {
+      "path": "sheet chart create",
+      "argv": [
+        "sheet",
+        "chart",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建浮动图表",
+      "child_count": 0
+    },
+    {
+      "path": "sheet chart delete",
+      "argv": [
+        "sheet",
+        "chart",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除浮动图表",
+      "child_count": 0
+    },
+    {
+      "path": "sheet chart list",
+      "argv": [
+        "sheet",
+        "chart",
+        "list"
+      ],
+      "depth": 3,
+      "description": "获取浮动图表",
+      "child_count": 0
+    },
+    {
+      "path": "sheet chart update",
+      "argv": [
+        "sheet",
+        "chart",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新浮动图表",
+      "child_count": 0
+    },
+    {
+      "path": "sheet cond-format create",
+      "argv": [
+        "sheet",
+        "cond-format",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建条件格式规则",
+      "child_count": 0
+    },
+    {
+      "path": "sheet cond-format delete",
+      "argv": [
+        "sheet",
+        "cond-format",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除条件格式规则",
+      "child_count": 0
+    },
+    {
+      "path": "sheet cond-format list",
+      "argv": [
+        "sheet",
+        "cond-format",
+        "list"
+      ],
+      "depth": 3,
+      "description": "获取条件格式规则",
+      "child_count": 0
+    },
+    {
+      "path": "sheet cond-format update",
+      "argv": [
+        "sheet",
+        "cond-format",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新条件格式规则",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter clear-criteria",
+      "argv": [
+        "sheet",
+        "filter",
+        "clear-criteria"
+      ],
+      "depth": 3,
+      "description": "清除单列筛选条件",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter create",
+      "argv": [
+        "sheet",
+        "filter",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建全局筛选",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter delete",
+      "argv": [
+        "sheet",
+        "filter",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除全局筛选",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter get",
+      "argv": [
+        "sheet",
+        "filter",
+        "get"
+      ],
+      "depth": 3,
+      "description": "获取全局筛选信息",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter sort",
+      "argv": [
+        "sheet",
+        "filter",
+        "sort"
+      ],
+      "depth": 3,
+      "description": "筛选排序",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter update",
+      "argv": [
+        "sheet",
+        "filter",
+        "update"
+      ],
+      "depth": 3,
+      "description": "批量更新筛选条件",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter-view create",
+      "argv": [
+        "sheet",
+        "filter-view",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建筛选视图",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter-view delete",
+      "argv": [
+        "sheet",
+        "filter-view",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除筛选视图",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter-view delete-criteria",
+      "argv": [
+        "sheet",
+        "filter-view",
+        "delete-criteria"
+      ],
+      "depth": 3,
+      "description": "删除筛选视图列条件",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter-view get-criteria",
+      "argv": [
+        "sheet",
+        "filter-view",
+        "get-criteria"
+      ],
+      "depth": 3,
+      "description": "获取单列筛选条件",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter-view info",
+      "argv": [
+        "sheet",
+        "filter-view",
+        "info"
+      ],
+      "depth": 3,
+      "description": "获取单个筛选视图详情",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter-view list",
+      "argv": [
+        "sheet",
+        "filter-view",
+        "list"
+      ],
+      "depth": 3,
+      "description": "获取所有筛选视图",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter-view list-criteria",
+      "argv": [
+        "sheet",
+        "filter-view",
+        "list-criteria"
+      ],
+      "depth": 3,
+      "description": "列出筛选视图所有列条件",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter-view update",
+      "argv": [
+        "sheet",
+        "filter-view",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新筛选视图属性",
+      "child_count": 0
+    },
+    {
+      "path": "sheet filter-view update-criteria",
+      "argv": [
+        "sheet",
+        "filter-view",
+        "update-criteria"
+      ],
+      "depth": 3,
+      "description": "更新筛选视图列条件",
+      "child_count": 0
+    },
+    {
+      "path": "sheet range batch-clear",
+      "argv": [
+        "sheet",
+        "range",
+        "batch-clear"
+      ],
+      "depth": 3,
+      "description": "批量清除多个区域（原子事务）",
+      "child_count": 0
+    },
+    {
+      "path": "sheet range batch-set-style",
+      "argv": [
+        "sheet",
+        "range",
+        "batch-set-style"
+      ],
+      "depth": 3,
+      "description": "按配置文件批量设置样式",
+      "child_count": 0
+    },
+    {
+      "path": "sheet range clear",
+      "argv": [
+        "sheet",
+        "range",
+        "clear"
+      ],
+      "depth": 3,
+      "description": "清除工作表指定区域",
+      "child_count": 0
+    },
+    {
+      "path": "sheet range copy-to",
+      "argv": [
+        "sheet",
+        "range",
+        "copy-to"
+      ],
+      "depth": 3,
+      "description": "复制工作表指定区域到目标位置",
+      "child_count": 0
+    },
+    {
+      "path": "sheet range fill",
+      "argv": [
+        "sheet",
+        "range",
+        "fill"
+      ],
+      "depth": 3,
+      "description": "自动填充工作表指定区域",
+      "child_count": 0
+    },
+    {
+      "path": "sheet range move-to",
+      "argv": [
+        "sheet",
+        "range",
+        "move-to"
+      ],
+      "depth": 3,
+      "description": "移动工作表指定区域到目标位置",
+      "child_count": 0
+    },
+    {
+      "path": "sheet range read",
+      "argv": [
+        "sheet",
+        "range",
+        "read"
+      ],
+      "depth": 3,
+      "description": "读取工作表数据（别名: get）",
+      "child_count": 0
+    },
+    {
+      "path": "sheet range set-style",
+      "argv": [
+        "sheet",
+        "range",
+        "set-style"
+      ],
+      "depth": 3,
+      "description": "设置指定单元格区域的样式",
+      "child_count": 0
+    },
+    {
+      "path": "sheet range sort",
+      "argv": [
+        "sheet",
+        "range",
+        "sort"
+      ],
+      "depth": 3,
+      "description": "对工作表指定区域排序",
+      "child_count": 0
+    },
+    {
+      "path": "sheet range update",
+      "argv": [
+        "sheet",
+        "range",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新工作表指定区域内容",
+      "child_count": 0
+    },
+    {
+      "path": "sheet template apply",
+      "argv": [
+        "sheet",
+        "template",
+        "apply"
+      ],
+      "depth": 3,
+      "description": "应用表格模板",
+      "child_count": 0
+    },
+    {
+      "path": "sheet template list",
+      "argv": [
+        "sheet",
+        "template",
+        "list"
+      ],
+      "depth": 3,
+      "description": "获取表格模板列表",
+      "child_count": 0
+    },
+    {
+      "path": "sheet template search",
+      "argv": [
+        "sheet",
+        "template",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索表格模板",
+      "child_count": 0
+    },
+    {
+      "path": "todo comment add",
+      "argv": [
+        "todo",
+        "comment",
+        "add"
+      ],
+      "depth": 3,
+      "description": "新增待办评论",
+      "child_count": 0
+    },
+    {
+      "path": "todo comment delete",
+      "argv": [
+        "todo",
+        "comment",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除待办评论",
+      "child_count": 0
+    },
+    {
+      "path": "todo comment list",
+      "argv": [
+        "todo",
+        "comment",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询待办评论列表",
+      "child_count": 0
+    },
+    {
+      "path": "todo task add-attachment",
+      "argv": [
+        "todo",
+        "task",
+        "add-attachment"
+      ],
+      "depth": 3,
+      "description": "上传待办附件",
+      "child_count": 0
+    },
+    {
+      "path": "todo task add-executor",
+      "argv": [
+        "todo",
+        "task",
+        "add-executor"
+      ],
+      "depth": 3,
+      "description": "添加待办执行人",
+      "child_count": 0
+    },
+    {
+      "path": "todo task add-participant",
+      "argv": [
+        "todo",
+        "task",
+        "add-participant"
+      ],
+      "depth": 3,
+      "description": "添加待办参与人",
+      "child_count": 0
+    },
+    {
+      "path": "todo task add-reminder",
+      "argv": [
+        "todo",
+        "task",
+        "add-reminder"
+      ],
+      "depth": 3,
+      "description": "添加待办提醒",
+      "child_count": 0
+    },
+    {
+      "path": "todo task create",
+      "argv": [
+        "todo",
+        "task",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建待办",
+      "child_count": 0
+    },
+    {
+      "path": "todo task create-sub",
+      "argv": [
+        "todo",
+        "task",
+        "create-sub"
+      ],
+      "depth": 3,
+      "description": "创建子待办",
+      "child_count": 0
+    },
+    {
+      "path": "todo task delete",
+      "argv": [
+        "todo",
+        "task",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除待办",
+      "child_count": 0
+    },
+    {
+      "path": "todo task done",
+      "argv": [
+        "todo",
+        "task",
+        "done"
+      ],
+      "depth": 3,
+      "description": "修改执行者的待办完成状态",
+      "child_count": 0
+    },
+    {
+      "path": "todo task get",
+      "argv": [
+        "todo",
+        "task",
+        "get"
+      ],
+      "depth": 3,
+      "description": "待办详情",
+      "child_count": 0
+    },
+    {
+      "path": "todo task list",
+      "argv": [
+        "todo",
+        "task",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询待办列表",
+      "child_count": 0
+    },
+    {
+      "path": "todo task list-attachment",
+      "argv": [
+        "todo",
+        "task",
+        "list-attachment"
+      ],
+      "depth": 3,
+      "description": "查询待办任务的附件列表",
+      "child_count": 0
+    },
+    {
+      "path": "todo task list-sub",
+      "argv": [
+        "todo",
+        "task",
+        "list-sub"
+      ],
+      "depth": 3,
+      "description": "查询子待办列表",
+      "child_count": 0
+    },
+    {
+      "path": "todo task remove-attachment",
+      "argv": [
+        "todo",
+        "task",
+        "remove-attachment"
+      ],
+      "depth": 3,
+      "description": "删除待办任务的附件",
+      "child_count": 0
+    },
+    {
+      "path": "todo task remove-executor",
+      "argv": [
+        "todo",
+        "task",
+        "remove-executor"
+      ],
+      "depth": 3,
+      "description": "移除待办执行人",
+      "child_count": 0
+    },
+    {
+      "path": "todo task remove-participant",
+      "argv": [
+        "todo",
+        "task",
+        "remove-participant"
+      ],
+      "depth": 3,
+      "description": "移除待办参与人",
+      "child_count": 0
+    },
+    {
+      "path": "todo task reset-reminder",
+      "argv": [
+        "todo",
+        "task",
+        "reset-reminder"
+      ],
+      "depth": 3,
+      "description": "重置待办提醒",
+      "child_count": 0
+    },
+    {
+      "path": "todo task update",
+      "argv": [
+        "todo",
+        "task",
+        "update"
+      ],
+      "depth": 3,
+      "description": "修改待办任务",
+      "child_count": 0
+    },
+    {
+      "path": "wiki member add",
+      "argv": [
+        "wiki",
+        "member",
+        "add"
+      ],
+      "depth": 3,
+      "description": "添加知识库成员",
+      "child_count": 0
+    },
+    {
+      "path": "wiki member list",
+      "argv": [
+        "wiki",
+        "member",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询知识库成员列表",
+      "child_count": 0
+    },
+    {
+      "path": "wiki member remove",
+      "argv": [
+        "wiki",
+        "member",
+        "remove"
+      ],
+      "depth": 3,
+      "description": "移除知识库成员",
+      "child_count": 0
+    },
+    {
+      "path": "wiki member update",
+      "argv": [
+        "wiki",
+        "member",
+        "update"
+      ],
+      "depth": 3,
+      "description": "更新知识库成员权限",
+      "child_count": 0
+    },
+    {
+      "path": "wiki node copy",
+      "argv": [
+        "wiki",
+        "node",
+        "copy"
+      ],
+      "depth": 3,
+      "description": "复制知识库节点",
+      "child_count": 0
+    },
+    {
+      "path": "wiki node create",
+      "argv": [
+        "wiki",
+        "node",
+        "create"
+      ],
+      "depth": 3,
+      "description": "在知识库中创建节点",
+      "child_count": 0
+    },
+    {
+      "path": "wiki node delete",
+      "argv": [
+        "wiki",
+        "node",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除知识库节点",
+      "child_count": 0
+    },
+    {
+      "path": "wiki node list",
+      "argv": [
+        "wiki",
+        "node",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列出知识库节点",
+      "child_count": 0
+    },
+    {
+      "path": "wiki node move",
+      "argv": [
+        "wiki",
+        "node",
+        "move"
+      ],
+      "depth": 3,
+      "description": "移动知识库节点",
+      "child_count": 0
+    },
+    {
+      "path": "wiki node search",
+      "argv": [
+        "wiki",
+        "node",
+        "search"
+      ],
+      "depth": 3,
+      "description": "在知识库中搜索节点",
+      "child_count": 0
+    },
+    {
+      "path": "wiki space create",
+      "argv": [
+        "wiki",
+        "space",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建知识库",
+      "child_count": 0
+    },
+    {
+      "path": "wiki space delete",
+      "argv": [
+        "wiki",
+        "space",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除知识库",
+      "child_count": 0
+    },
+    {
+      "path": "wiki space get",
+      "argv": [
+        "wiki",
+        "space",
+        "get"
+      ],
+      "depth": 3,
+      "description": "查看知识库详情",
+      "child_count": 0
+    },
+    {
+      "path": "wiki space list",
+      "argv": [
+        "wiki",
+        "space",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列出空间（知识库 / 钉盘空间）",
+      "child_count": 0
+    },
+    {
+      "path": "wiki space search",
+      "argv": [
+        "wiki",
+        "space",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索知识库",
+      "child_count": 0
+    },
+    {
+      "path": "dev app create",
+      "argv": [
+        "dev",
+        "app",
+        "create"
+      ],
+      "depth": 3,
+      "description": "创建开放平台企业内部应用",
+      "child_count": 0
+    },
+    {
+      "path": "dev app credentials",
+      "argv": [
+        "dev",
+        "app",
+        "credentials"
+      ],
+      "depth": 3,
+      "description": "开放平台应用凭证",
+      "child_count": 1
+    },
+    {
+      "path": "dev app delete",
+      "argv": [
+        "dev",
+        "app",
+        "delete"
+      ],
+      "depth": 3,
+      "description": "删除开放平台企业内部应用（不可逆，需 --confirm-name 二次确认）",
+      "child_count": 0
+    },
+    {
+      "path": "dev app disable",
+      "argv": [
+        "dev",
+        "app",
+        "disable"
+      ],
+      "depth": 3,
+      "description": "停用开放平台企业内部应用",
+      "child_count": 0
+    },
+    {
+      "path": "dev app enable",
+      "argv": [
+        "dev",
+        "app",
+        "enable"
+      ],
+      "depth": 3,
+      "description": "启用开放平台企业内部应用",
+      "child_count": 0
+    },
+    {
+      "path": "dev app event",
+      "argv": [
+        "dev",
+        "app",
+        "event"
+      ],
+      "depth": 3,
+      "description": "开放平台应用事件订阅",
+      "child_count": 3
+    },
+    {
+      "path": "dev app get",
+      "argv": [
+        "dev",
+        "app",
+        "get"
+      ],
+      "depth": 3,
+      "description": "查询开放平台企业内部应用详情",
+      "child_count": 0
+    },
+    {
+      "path": "dev app list",
+      "argv": [
+        "dev",
+        "app",
+        "list"
+      ],
+      "depth": 3,
+      "description": "查询开放平台企业内部应用列表",
+      "child_count": 0
+    },
+    {
+      "path": "dev app member",
+      "argv": [
+        "dev",
+        "app",
+        "member"
+      ],
+      "depth": 3,
+      "description": "开放平台应用成员管理",
+      "child_count": 3
+    },
+    {
+      "path": "dev app permission",
+      "argv": [
+        "dev",
+        "app",
+        "permission"
+      ],
+      "depth": 3,
+      "description": "开放平台应用权限",
+      "child_count": 3
+    },
+    {
+      "path": "dev app robot",
+      "argv": [
+        "dev",
+        "app",
+        "robot"
+      ],
+      "depth": 3,
+      "description": "开放平台应用机器人能力",
+      "child_count": 6
+    },
+    {
+      "path": "dev app security",
+      "argv": [
+        "dev",
+        "app",
+        "security"
+      ],
+      "depth": 3,
+      "description": "开放平台应用安全设置",
+      "child_count": 1
+    },
+    {
+      "path": "dev app update",
+      "argv": [
+        "dev",
+        "app",
+        "update"
+      ],
+      "depth": 3,
+      "description": "修改开放平台企业内部应用基础信息",
+      "child_count": 0
+    },
+    {
+      "path": "dev app version",
+      "argv": [
+        "dev",
+        "app",
+        "version"
+      ],
+      "depth": 3,
+      "description": "开放平台应用版本发布",
+      "child_count": 6
+    },
+    {
+      "path": "dev app webapp",
+      "argv": [
+        "dev",
+        "app",
+        "webapp"
+      ],
+      "depth": 3,
+      "description": "开放平台网页应用配置",
+      "child_count": 2
+    },
+    {
+      "path": "dev connect list",
+      "argv": [
+        "dev",
+        "connect",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列出本机所有连接器及健康状态（healthy/degraded/down）；--json 供脚本消费",
+      "child_count": 0
+    },
+    {
+      "path": "dev connect restart",
+      "argv": [
+        "dev",
+        "connect",
+        "restart"
+      ],
+      "depth": 3,
+      "description": "重启连接器守护进程（通过持久化的 unifiedAppId 重新拉取密钥，无需本地存密钥）",
+      "child_count": 0
+    },
+    {
+      "path": "dev connect status",
+      "argv": [
+        "dev",
+        "connect",
+        "status"
+      ],
+      "depth": 3,
+      "description": "查看连接器健康状态（healthy/degraded/down，pid、收发活动、日志路径；--json 供外部托管消费）",
+      "child_count": 0
+    },
+    {
+      "path": "dev connect stop",
+      "argv": [
+        "dev",
+        "connect",
+        "stop"
+      ],
+      "depth": 3,
+      "description": "优雅停止后台连接器守护进程（释放单实例锁与 Stream 连接）",
+      "child_count": 0
+    },
+    {
+      "path": "dev doc search",
+      "argv": [
+        "dev",
+        "doc",
+        "search"
+      ],
+      "depth": 3,
+      "description": "搜索开放平台文档",
+      "child_count": 0
+    },
+    {
+      "path": "plugin config get",
+      "argv": [
+        "plugin",
+        "config",
+        "get"
+      ],
+      "depth": 3,
+      "description": "读取插件配置项",
+      "child_count": 0
+    },
+    {
+      "path": "plugin config list",
+      "argv": [
+        "plugin",
+        "config",
+        "list"
+      ],
+      "depth": 3,
+      "description": "列出插件所有配置项",
+      "child_count": 0
+    },
+    {
+      "path": "plugin config set",
+      "argv": [
+        "plugin",
+        "config",
+        "set"
+      ],
+      "depth": 3,
+      "description": "设置插件配置项",
+      "child_count": 0
+    },
+    {
+      "path": "plugin config unset",
+      "argv": [
+        "plugin",
+        "config",
+        "unset"
+      ],
+      "depth": 3,
+      "description": "删除插件配置项",
+      "child_count": 0
+    },
+    {
+      "path": "aitable chart share get",
+      "argv": [
+        "aitable",
+        "chart",
+        "share",
+        "get"
+      ],
+      "depth": 4,
+      "description": "获取图表分享配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable chart share update",
+      "argv": [
+        "aitable",
+        "chart",
+        "share",
+        "update"
+      ],
+      "depth": 4,
+      "description": "更新图表分享配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable dashboard share get",
+      "argv": [
+        "aitable",
+        "dashboard",
+        "share",
+        "get"
+      ],
+      "depth": 4,
+      "description": "获取仪表盘分享配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable dashboard share update",
+      "argv": [
+        "aitable",
+        "dashboard",
+        "share",
+        "update"
+      ],
+      "depth": 4,
+      "description": "更新仪表盘分享配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable form field hide",
+      "argv": [
+        "aitable",
+        "form",
+        "field",
+        "hide"
+      ],
+      "depth": 4,
+      "description": "切换表单字段隐藏",
+      "child_count": 0
+    },
+    {
+      "path": "aitable form field list",
+      "argv": [
+        "aitable",
+        "form",
+        "field",
+        "list"
+      ],
+      "depth": 4,
+      "description": "列出表单字段",
+      "child_count": 0
+    },
+    {
+      "path": "aitable form field update",
+      "argv": [
+        "aitable",
+        "form",
+        "field",
+        "update"
+      ],
+      "depth": 4,
+      "description": "更新表单字段",
+      "child_count": 0
+    },
+    {
+      "path": "aitable form questions create",
+      "argv": [
+        "aitable",
+        "form",
+        "questions",
+        "create"
+      ],
+      "depth": 4,
+      "description": "向表单添加题目（等价于 field create）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable form questions delete",
+      "argv": [
+        "aitable",
+        "form",
+        "questions",
+        "delete"
+      ],
+      "depth": 4,
+      "description": "从表单删除题目（等价于 field delete，不可逆）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable form share get",
+      "argv": [
+        "aitable",
+        "form",
+        "share",
+        "get"
+      ],
+      "depth": 4,
+      "description": "获取表单分享配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable form share update",
+      "argv": [
+        "aitable",
+        "form",
+        "share",
+        "update"
+      ],
+      "depth": 4,
+      "description": "开启/关闭分享表单",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get aggregate",
+      "argv": [
+        "aitable",
+        "view",
+        "get",
+        "aggregate"
+      ],
+      "depth": 4,
+      "description": "获取视图 aggregate 配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get card",
+      "argv": [
+        "aitable",
+        "view",
+        "get",
+        "card"
+      ],
+      "depth": 4,
+      "description": "获取视图 card 配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get field-widths",
+      "argv": [
+        "aitable",
+        "view",
+        "get",
+        "field-widths"
+      ],
+      "depth": 4,
+      "description": "获取视图 field-widths 配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get fill-color-rule",
+      "argv": [
+        "aitable",
+        "view",
+        "get",
+        "fill-color-rule"
+      ],
+      "depth": 4,
+      "description": "获取视图 fill-color-rule 配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get filter",
+      "argv": [
+        "aitable",
+        "view",
+        "get",
+        "filter"
+      ],
+      "depth": 4,
+      "description": "获取视图 filter 配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get frozen-cols",
+      "argv": [
+        "aitable",
+        "view",
+        "get",
+        "frozen-cols"
+      ],
+      "depth": 4,
+      "description": "获取视图冻结列数",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get group",
+      "argv": [
+        "aitable",
+        "view",
+        "get",
+        "group"
+      ],
+      "depth": 4,
+      "description": "获取视图 group 配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get lock",
+      "argv": [
+        "aitable",
+        "view",
+        "get",
+        "lock"
+      ],
+      "depth": 4,
+      "description": "获取视图锁定状态",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get row-height",
+      "argv": [
+        "aitable",
+        "view",
+        "get",
+        "row-height"
+      ],
+      "depth": 4,
+      "description": "获取视图行高（单元格高度）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get sort",
+      "argv": [
+        "aitable",
+        "view",
+        "get",
+        "sort"
+      ],
+      "depth": 4,
+      "description": "获取视图 sort 配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get timebar",
+      "argv": [
+        "aitable",
+        "view",
+        "get",
+        "timebar"
+      ],
+      "depth": 4,
+      "description": "获取视图 timebar 配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view get visible-fields",
+      "argv": [
+        "aitable",
+        "view",
+        "get",
+        "visible-fields"
+      ],
+      "depth": 4,
+      "description": "获取视图 visible-fields 配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update aggregate",
+      "argv": [
+        "aitable",
+        "view",
+        "update",
+        "aggregate"
+      ],
+      "depth": 4,
+      "description": "更新视图字段聚合统计（仅 Grid）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update card",
+      "argv": [
+        "aitable",
+        "view",
+        "update",
+        "card"
+      ],
+      "depth": 4,
+      "description": "更新视图 card 配置（Kanban / Gallery）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update field-widths",
+      "argv": [
+        "aitable",
+        "view",
+        "update",
+        "field-widths"
+      ],
+      "depth": 4,
+      "description": "更新视图字段列宽（仅 Grid）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update fill-color-rule",
+      "argv": [
+        "aitable",
+        "view",
+        "update",
+        "fill-color-rule"
+      ],
+      "depth": 4,
+      "description": "更新视图数据高亮规则",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update filter",
+      "argv": [
+        "aitable",
+        "view",
+        "update",
+        "filter"
+      ],
+      "depth": 4,
+      "description": "更新视图 filter 配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update frozen-cols",
+      "argv": [
+        "aitable",
+        "view",
+        "update",
+        "frozen-cols"
+      ],
+      "depth": 4,
+      "description": "更新视图冻结列数",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update group",
+      "argv": [
+        "aitable",
+        "view",
+        "update",
+        "group"
+      ],
+      "depth": 4,
+      "description": "更新视图 group 配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update name",
+      "argv": [
+        "aitable",
+        "view",
+        "update",
+        "name"
+      ],
+      "depth": 4,
+      "description": "重命名视图（= view update --name 的便捷子命令）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update row-height",
+      "argv": [
+        "aitable",
+        "view",
+        "update",
+        "row-height"
+      ],
+      "depth": 4,
+      "description": "更新视图行高（单元格高度）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update sort",
+      "argv": [
+        "aitable",
+        "view",
+        "update",
+        "sort"
+      ],
+      "depth": 4,
+      "description": "更新视图 sort 配置",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update timebar",
+      "argv": [
+        "aitable",
+        "view",
+        "update",
+        "timebar"
+      ],
+      "depth": 4,
+      "description": "更新视图 timebar 配置（仅 Gantt）",
+      "child_count": 0
+    },
+    {
+      "path": "aitable view update visible-fields",
+      "argv": [
+        "aitable",
+        "view",
+        "update",
+        "visible-fields"
+      ],
+      "depth": 4,
+      "description": "更新视图可见字段列表",
+      "child_count": 0
+    },
+    {
+      "path": "chat group members add",
+      "argv": [
+        "chat",
+        "group",
+        "members",
+        "add"
+      ],
+      "depth": 4,
+      "description": "添加群成员",
+      "child_count": 0
+    },
+    {
+      "path": "chat group members add-bot",
+      "argv": [
+        "chat",
+        "group",
+        "members",
+        "add-bot"
+      ],
+      "depth": 4,
+      "description": "将机器人添加到群中",
+      "child_count": 0
+    },
+    {
+      "path": "chat group members list-by-ids",
+      "argv": [
+        "chat",
+        "group",
+        "members",
+        "list-by-ids"
+      ],
+      "depth": 4,
+      "description": "根据成员 ID 批量查询群成员详情",
+      "child_count": 0
+    },
+    {
+      "path": "chat group members remove",
+      "argv": [
+        "chat",
+        "group",
+        "members",
+        "remove"
+      ],
+      "depth": 4,
+      "description": "移除群成员",
+      "child_count": 0
+    },
+    {
+      "path": "chat group members remove-bot",
+      "argv": [
+        "chat",
+        "group",
+        "members",
+        "remove-bot"
+      ],
+      "depth": 4,
+      "description": "从群内移除机器人",
+      "child_count": 0
+    },
+    {
+      "path": "contact user dismission search",
+      "argv": [
+        "contact",
+        "user",
+        "dismission",
+        "search"
+      ],
+      "depth": 4,
+      "description": "分页获取离职员工列表",
+      "child_count": 0
+    },
+    {
+      "path": "contact user profile fields",
+      "argv": [
+        "contact",
+        "user",
+        "profile",
+        "fields"
+      ],
+      "depth": 4,
+      "description": "查询花名册有权限的字段列表",
+      "child_count": 0
+    },
+    {
+      "path": "contact user profile get",
+      "argv": [
+        "contact",
+        "user",
+        "profile",
+        "get"
+      ],
+      "depth": 4,
+      "description": "查询员工花名册字段信息（个人档案）",
+      "child_count": 0
+    },
+    {
+      "path": "minutes speaker summary create",
+      "argv": [
+        "minutes",
+        "speaker",
+        "summary",
+        "create"
+      ],
+      "depth": 4,
+      "description": "触发创建发言人段落总结任务",
+      "child_count": 0
+    },
+    {
+      "path": "minutes speaker summary get",
+      "argv": [
+        "minutes",
+        "speaker",
+        "summary",
+        "get"
+      ],
+      "depth": 4,
+      "description": "查询发言人段落总结结果",
+      "child_count": 0
+    },
+    {
+      "path": "dev app credentials get",
+      "argv": [
+        "dev",
+        "app",
+        "credentials",
+        "get"
+      ],
+      "depth": 4,
+      "description": "读取开放平台应用凭证",
+      "child_count": 0
+    },
+    {
+      "path": "dev app event list",
+      "argv": [
+        "dev",
+        "app",
+        "event",
+        "list"
+      ],
+      "depth": 4,
+      "description": "查询应用已订阅的事件列表",
+      "child_count": 0
+    },
+    {
+      "path": "dev app event subscribe",
+      "argv": [
+        "dev",
+        "app",
+        "event",
+        "subscribe"
+      ],
+      "depth": 4,
+      "description": "订阅应用事件回调",
+      "child_count": 0
+    },
+    {
+      "path": "dev app event unsubscribe",
+      "argv": [
+        "dev",
+        "app",
+        "event",
+        "unsubscribe"
+      ],
+      "depth": 4,
+      "description": "取消订阅应用事件",
+      "child_count": 0
+    },
+    {
+      "path": "dev app member add",
+      "argv": [
+        "dev",
+        "app",
+        "member",
+        "add"
+      ],
+      "depth": 4,
+      "description": "添加开放平台应用成员",
+      "child_count": 0
+    },
+    {
+      "path": "dev app member list",
+      "argv": [
+        "dev",
+        "app",
+        "member",
+        "list"
+      ],
+      "depth": 4,
+      "description": "查询开放平台应用成员",
+      "child_count": 0
+    },
+    {
+      "path": "dev app member remove",
+      "argv": [
+        "dev",
+        "app",
+        "member",
+        "remove"
+      ],
+      "depth": 4,
+      "description": "移除开放平台应用成员",
+      "child_count": 0
+    },
+    {
+      "path": "dev app permission add",
+      "argv": [
+        "dev",
+        "app",
+        "permission",
+        "add"
+      ],
+      "depth": 4,
+      "description": "申请开放平台应用权限点",
+      "child_count": 0
+    },
+    {
+      "path": "dev app permission list",
+      "argv": [
+        "dev",
+        "app",
+        "permission",
+        "list"
+      ],
+      "depth": 4,
+      "description": "查询开放平台应用权限列表",
+      "child_count": 0
+    },
+    {
+      "path": "dev app permission remove",
+      "argv": [
+        "dev",
+        "app",
+        "permission",
+        "remove"
+      ],
+      "depth": 4,
+      "description": "取消开放平台应用权限点",
+      "child_count": 0
+    },
+    {
+      "path": "dev app robot config",
+      "argv": [
+        "dev",
+        "app",
+        "robot",
+        "config"
+      ],
+      "depth": 4,
+      "description": "创建或更新现有应用的机器人配置（upsert）",
+      "child_count": 0
+    },
+    {
+      "path": "dev app robot disable",
+      "argv": [
+        "dev",
+        "app",
+        "robot",
+        "disable"
+      ],
+      "depth": 4,
+      "description": "停用现有应用的机器人能力",
+      "child_count": 0
+    },
+    {
+      "path": "dev app robot enable",
+      "argv": [
+        "dev",
+        "app",
+        "robot",
+        "enable"
+      ],
+      "depth": 4,
+      "description": "启用现有应用机器人能力（纯启用，无需配置字段）",
+      "child_count": 0
+    },
+    {
+      "path": "dev app robot get",
+      "argv": [
+        "dev",
+        "app",
+        "robot",
+        "get"
+      ],
+      "depth": 4,
+      "description": "查询现有应用的机器人配置",
+      "child_count": 0
+    },
+    {
+      "path": "dev app robot result",
+      "argv": [
+        "dev",
+        "app",
+        "robot",
+        "result"
+      ],
+      "depth": 4,
+      "description": "查询机器人异步创建任务结果",
+      "child_count": 0
+    },
+    {
+      "path": "dev app robot submit",
+      "argv": [
+        "dev",
+        "app",
+        "robot",
+        "submit"
+      ],
+      "depth": 4,
+      "description": "异步提交钉钉智能体机器人创建任务（支持失败重试）",
+      "child_count": 0
+    },
+    {
+      "path": "dev app security config",
+      "argv": [
+        "dev",
+        "app",
+        "security",
+        "config"
+      ],
+      "depth": 4,
+      "description": "更新开放平台应用安全配置",
+      "child_count": 0
+    },
+    {
+      "path": "dev app version check-approval",
+      "argv": [
+        "dev",
+        "app",
+        "version",
+        "check-approval"
+      ],
+      "depth": 4,
+      "description": "预检版本发布是否需要审批（不实际发布）",
+      "child_count": 0
+    },
+    {
+      "path": "dev app version create",
+      "argv": [
+        "dev",
+        "app",
+        "version",
+        "create"
+      ],
+      "depth": 4,
+      "description": "基于当前配置创建应用新版本",
+      "child_count": 0
+    },
+    {
+      "path": "dev app version get",
+      "argv": [
+        "dev",
+        "app",
+        "version",
+        "get"
+      ],
+      "depth": 4,
+      "description": "查询指定版本详情",
+      "child_count": 0
+    },
+    {
+      "path": "dev app version list",
+      "argv": [
+        "dev",
+        "app",
+        "version",
+        "list"
+      ],
+      "depth": 4,
+      "description": "分页查询应用版本列表",
+      "child_count": 0
+    },
+    {
+      "path": "dev app version publish",
+      "argv": [
+        "dev",
+        "app",
+        "version",
+        "publish"
+      ],
+      "depth": 4,
+      "description": "发布指定版本（含高敏权限需 --confirmed-sensitive）",
+      "child_count": 0
+    },
+    {
+      "path": "dev app version status",
+      "argv": [
+        "dev",
+        "app",
+        "version",
+        "status"
+      ],
+      "depth": 4,
+      "description": "查询版本发布/审批状态",
+      "child_count": 0
+    },
+    {
+      "path": "dev app webapp config",
+      "argv": [
+        "dev",
+        "app",
+        "webapp",
+        "config"
+      ],
+      "depth": 4,
+      "description": "配置网页应用能力",
+      "child_count": 0
+    },
+    {
+      "path": "dev app webapp get",
+      "argv": [
+        "dev",
+        "app",
+        "webapp",
+        "get"
+      ],
+      "depth": 4,
+      "description": "查询网页应用配置",
+      "child_count": 0
+    }
+  ],
+  "errors": []
+}
