@@ -22,12 +22,12 @@ curl -fsSL https://raw.githubusercontent.com/PeterGuy326/dingtalk-workspace-cli/
 
 ## Build
 
-Release binary checked:
+Release binary checked from the `delivery-remove-discovery-yolo-latest` tag target:
 
 ```json
 {
   "architecture": "MCP Static Endpoint Mode",
-  "commit": "1b823514",
+  "commit": "<release tag target>",
   "edition": "open",
   "version": "v1.0.50-delivery-remove-discovery-yolo"
 }
@@ -62,6 +62,8 @@ Release assets uploaded:
 | `dws skill setup --mode mono --target codex` in temp HOME | Pass |
 | `dws skill setup --mode multi --target codex -s dev -s chat` in temp HOME | Pass |
 | Recursive visible `dws <path> --help` scan for open delivery | Pass, 779 commands, 0 help errors |
+| `dws skill search --help` aligns with Wukong `--source`; old `--scopes` remains hidden/deprecated | Pass |
+| Chat old file/forward flags remain registered but hidden from help | Pass |
 
 ## Skill Setup Verification
 
@@ -100,6 +102,8 @@ Visible command tree snapshots are committed next to this report:
 - `command-tree-wukong-local.md`
 - `command-tree-wukong-local.json`
 - `command-tree-comparison.md`
+- `flag-diff-open-vs-wukong.md`
+- `flag-diff-open-vs-wukong.json`
 
 Summary:
 
@@ -112,6 +116,7 @@ Skill/help drift notes:
 
 - No install drift: mono and multi skill setup both install successfully in an isolated HOME.
 - No command-help reachability drift: every visible open delivery command path has a working `dws <path> --help`.
+- Flag drift check: `--ai-tag` is open-only visible customization on `chat message send/reply`; old chat compatibility flags remain hidden but executable; `skill search` now uses visible `--source` and hidden deprecated `--scopes`.
 - Content drift found in mono skill coverage: open help exposes `live` and `pat`, but mono skill does not currently include product reference pages for them. Multi mode has `dingtalk-live`; `pat` is still not covered by product skill docs.
 
 Top-level wukong-only visible products:
