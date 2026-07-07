@@ -239,3 +239,20 @@ func extractAtPollText(content, contentType string) string {
 	}
 	return content
 }
+
+// Keep-alive references: this poller was introduced alongside the connect
+// daemon work but is pending wiring into the daemon startup path. Remove
+// this block once atMentionPoller is instantiated by the daemon (or delete
+// the file if the feature is abandoned).
+var _ = func() any {
+	_ = atPollInterval
+	_ = atPollWindow
+	_ = atMentionMessage{}
+	p := (*atMentionPoller)(nil)
+	_ = p.start
+	_ = p.poll
+	_ = p.handleMessage
+	_ = p.sendGroupReply
+	_ = extractAtPollText
+	return nil
+}

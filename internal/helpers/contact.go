@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -634,7 +635,9 @@ contact user profile fields 获取可用字段列表。
 	var attachContactHelpHint func(c *cobra.Command)
 	attachContactHelpHint = func(c *cobra.Command) {
 		c.SetFlagErrorFunc(func(cc *cobra.Command, err error) error {
-			return fmt.Errorf("%s\nSee '%s --help' for usage.", err.Error(), cc.CommandPath())
+			// 与 root 级 flagErrorWithSuggestions 保持同款尾部 hint 格式（句号结尾为全树 UX 约定）。
+			msg := fmt.Sprintf("%s\nSee '%s --help' for usage.", err.Error(), cc.CommandPath())
+			return errors.New(msg)
 		})
 		for _, sub := range c.Commands() {
 			attachContactHelpHint(sub)

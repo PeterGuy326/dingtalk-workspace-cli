@@ -517,10 +517,6 @@ var (
 	chatContactNestedUserKeys = []string{"orgEmployeeModel", "employee", "user", "profile", "staff"}
 )
 
-func collectOpenDingTalkIDMappings(value any, mapping map[string]string) {
-	collectContactUserMappings(value, mapping, map[string]string{})
-}
-
 func collectContactUserMappings(value any, openByUserID map[string]string, nameByUserID map[string]string) {
 	switch typed := value.(type) {
 	case []any:
@@ -886,14 +882,6 @@ func uploadConversationLocalFile(ctx context.Context, targetArgs map[string]any,
 		commitArgs["uuid"] = uuid
 	}
 	return callMCPToolReturnTextOnServer(ctx, "im", "commit_conversation_file_upload", commitArgs)
-}
-
-func buildConversationFileContentFromCommit(commitText string, meta conversationLocalFileMeta) (string, error) {
-	dentryID, spaceID, err := parseConversationFileSendIDs(commitText)
-	if err != nil {
-		return "", err
-	}
-	return buildConversationFileContent(dentryID, spaceID, meta)
 }
 
 func buildConversationFileContent(dentryID, spaceID int64, meta conversationLocalFileMeta) (string, error) {

@@ -77,28 +77,3 @@ func mustLoadSchemaV2(raw []byte) *SchemaV2 {
 }
 
 var schemaV2 = mustLoadSchemaV2(jsonmlSchemaV2Raw)
-
-// validBlockTags is a set of block-level tags derived from the v2 schema.
-// Inline tags (span, text, leaf) are excluded since they appear as children
-// inside block nodes, not at body level.
-var validBlockTags = func() map[string]bool {
-	inline := map[string]bool{"span": true, "text": true, "leaf": true}
-	m := make(map[string]bool)
-	for tag := range schemaV2.Tags {
-		if !inline[tag] {
-			m[tag] = true
-		}
-	}
-	return m
-}()
-
-// childStartIndex returns the index of the first child element in a JSONML
-// node array, skipping the tag string and optional attrs object.
-func childStartIndex(arr []any) int {
-	if len(arr) > 1 {
-		if _, ok := arr[1].(map[string]any); ok {
-			return 2
-		}
-	}
-	return 1
-}

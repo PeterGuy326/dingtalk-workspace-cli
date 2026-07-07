@@ -953,11 +953,6 @@ func loadPlugins(engine *pipeline.Engine, runner executor.Runner) []*cobra.Comma
 	return pluginCmds
 }
 
-// pluginCacheKey derives the stable key for a plugin MCP server.
-func pluginCacheKey(pluginName, serverKey string) string {
-	return "plugin:" + pluginName + ":" + serverKey
-}
-
 // registerHTTPServer discovers tools from a streamable-http MCP server and
 // registers the server. Dynamic command building has been removed; this now
 // simply registers the server descriptor for direct runtime dispatch.
@@ -1012,19 +1007,6 @@ func buildHTTPCommandsFromTools(srv mcptypes.ServerDescriptor, tools []transport
 	_ = runner
 	// Dynamic command building from compat.BuildDynamicCommands has been removed.
 	return nil
-}
-
-// deriveToolCLIName converts an MCP tool name (e.g. "web_search" or
-// "maps.search_poi") into a kebab-case CLI command name ("search" or
-// "search-poi"). It strips common prefixes and replaces underscores/dots
-// with hyphens.
-func deriveToolCLIName(toolName string) string {
-	// Use the last segment after "." as the base name.
-	if idx := strings.LastIndex(toolName, "."); idx >= 0 {
-		toolName = toolName[idx+1:]
-	}
-	// Replace underscores with hyphens for kebab-case.
-	return strings.ReplaceAll(toolName, "_", "-")
 }
 
 // buildPluginAuthClient creates a transport.Client copy with the plugin's

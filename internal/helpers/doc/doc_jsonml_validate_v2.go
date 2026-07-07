@@ -112,16 +112,14 @@ func validateNodeV2(node any, path string, parentSchema *TagSchema, r *JsonMLVal
 	}
 
 	// Validate attrs
-	if attrs != nil {
-		for key, val := range attrs {
-			spec, known := tagSchema.Attrs[key]
-			if !known {
-				r.addWarn(path+".attrs."+key,
-					fmt.Sprintf("unknown attr %q", key), "")
-				continue
-			}
-			checkTypeV2(val, &spec, path+".attrs."+key, r)
+	for key, val := range attrs {
+		spec, known := tagSchema.Attrs[key]
+		if !known {
+			r.addWarn(path+".attrs."+key,
+				fmt.Sprintf("unknown attr %q", key), "")
+			continue
 		}
+		checkTypeV2(val, &spec, path+".attrs."+key, r)
 	}
 
 	// Validate children

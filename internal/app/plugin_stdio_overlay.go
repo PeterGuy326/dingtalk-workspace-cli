@@ -113,9 +113,3 @@ func registerStdioServerFromOverlay(
 	_ = runner
 	return nil, descriptor, true
 }
-
-// hasOverlayToolOverrides reports whether a stdio plugin server carries
-// enough CLI metadata to be registered via the overlay-first path.
-func hasOverlayToolOverrides(p *plugin.Plugin, sc plugin.StdioServerClient) bool {
-	return len(resolveStdioOverlay(p, sc).ToolOverrides) > 0
-}

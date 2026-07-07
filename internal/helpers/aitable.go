@@ -269,7 +269,7 @@ func normalizeFilters(parsed any) any {
 		fieldID, hasFieldID := cond["fieldId"]
 		if hasFieldID {
 			// MCP 格式：{fieldId, operator, value} → {operator, operands:[fieldId, value]}
-			childOp, _ := cond["operator"]
+			childOp := cond["operator"]
 			value, hasValue := cond["value"]
 			newCond := map[string]any{
 				"operator": childOp,
@@ -516,16 +516,6 @@ func callAitableHelperTool(toolName string, args map[string]any) error {
 }
 
 // ─── view 子命令公共 helper ──────────────────────────────────────────
-
-// viewBlockApplicableViewTypes 列出每个 config 子块支持的 viewType，用于读/写
-// 子命令的前置校验与错误提示。与服务端 UpdateViewConfigInput.java 注释保持一致。
-var viewBlockApplicableViewTypes = map[string][]string{
-	"kanbanCard":   {"Kanban"},
-	"galleryCard":  {"Gallery"},
-	"ganttTimebar": {"Gantt"},
-	"aggregate":    {"Grid"},
-	"fieldWidths":  {"Grid"},
-}
 
 // getViewRaw 调用 get_views 服务端 filter 单个 viewId，返回原始视图 map 与 viewType。
 // 当响应中没有目标视图、解析失败、或服务端报错时，返回带 CLIError 的错误。
