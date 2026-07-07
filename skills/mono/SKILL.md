@@ -9,7 +9,7 @@ cli_version: ">=1.0.15"
 通过 `dws` 命令管理钉钉产品能力。
 
 
-> ⚠️ **命令可用性可能因企业服务发现配置而异**。本文档列出的命令基于 dws envelope schema 与本仓库 v1.0.30 实测，但部分命令的 cobra 子命令暴露与否还取决于你的企业 MCP gateway 是否注册了对应 tool。如果跑某条命令报 `unknown command` 或 fall back 到父级 help，说明当前账号企业未开通该能力。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
+> ⚠️ **命令可用性以当前 dws 二进制为准**。服务发现已下线，本文档随内置 skill 发布；如果 `dws <cmd> --help` 不存在，说明当前版本未暴露该命令。若命令存在但调用失败，请按错误中的 endpoint 或 tool 提示确认静态端点目录和后端工具注册。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
 
 ## 严格禁止 (NEVER DO)
 - 不要使用 dws 命令以外的方式操作（禁止 curl、HTTP API、浏览器）
@@ -121,27 +121,24 @@ Step 3 → 加 --yes 执行命令
 
 ## 命令发现（flag / 参数以 binary 为准）
 
-产品参考文档（`references/products/*.md`）里的 flag 列表是**便于理解用途的参考**，不是权威契约。参数名称、默认值、必填约束随服务发现动态变化，**以下两个命令的输出才是调用的事实源**：
+产品参考文档（`references/products/*.md`）里的 flag 列表是**便于理解用途的参考**，不是权威契约。参数名称、默认值、必填约束以当前二进制编译出的 Cobra 命令为准，**`--help` 是产品命令调用的事实源**：
 
 ```bash
-# 1) 人读视图：看 Usage / Example / Flags
+# 人读视图：看 Usage / Example / Flags
 dws <command-path> --help
 # 例：dws calendar event list --help
 
-# 2) 机读视图：JSON Schema + flag 别名映射 + 必填字段
-dws schema                                 # 列出所有产品及工具
-dws schema <product>.<canonical_name>      # 规范路径（如 calendar.list_suggested_event_times）
-dws schema "<product> <group> <cli_name>"  # CLI 路径（如 "calendar event list"）
-dws schema <path> --jq '.tool.flag_overlay'  # 只看 flag 别名
-dws schema <path> --jq '.tool.required'      # 只看必填字段
+# helper-only schema 查询（如 dev.*），普通产品命令不要依赖 schema 推断参数
+dws schema "dev app create"
+dws schema "dev app create" --jq '.tool.required'
 ```
 
 **何时用哪条路径：**
 - 只需看某个命令怎么调用 → `dws <cmd> --help`
-- 构造 `--params` / `--json` 时不确定字段类型、必填、别名 → `dws schema <path>`
-- 参考文档和 `--help` 冲突时 → **以 `--help` / `dws schema` 为准**，文档视为过期
+- 构造 `--params` / `--json` 时不确定字段类型、必填、别名 → 先看 `dws <cmd> --help`，helper-only 命令再看 `dws schema`
+- 参考文档和 `--help` 冲突时 → **以 `--help` 为准**，文档视为过期
 
-`dws schema` 输出的 `flag_overlay[key].alias` 就是实际生效的 flag 名（如 `attendeeUserIds → --attendee-user-ids`）；`parameters[key]` 是原始 JSON Schema；`required` 是必填字段数组；`sensitive: true` 表示写/删操作，须先向用户确认再加 `--yes`。
+`dws schema` 在静态端点模式下只保留 helper-only 子树；普通产品命令和 flag 不再通过远程 schema 动态发现。写/删操作须先向用户确认再加 `--yes`。
 
 ## 错误处理
 1. 遇到错误，加 `--verbose` 重试一次

@@ -63,7 +63,7 @@ M  internal/cli/loader.go                degraded hint 去服务发现化
 - `openStaticServers()` 只做类型转换，不维护手写 endpoint。
 - `internal/helpers/register_products.go` 是生成文件，注册开源可见产品。
 - 主干旧开源指令（尤其 `dev connect`）属于开源 overlay，不能被悟空同步覆盖或删除。
-- 交付态必须是单仓库可编译：`dws-wukong` 是同步源，`internal/syncdata` 是提交到开源仓库的同步产物，不再依赖兄弟目录或独立 `dws-data` workspace。
+- 交付态必须是单仓库可编译：`dws-wukong` 是同步源，`internal/syncdata` 是提交到开源仓库的同步产物，不再依赖兄弟目录或外部数据 workspace。
 
 **同步入口：** `/Users/huyz/Documents/data/dingding/dws/dws-wukong/cmd/sync-oss/main.go`
 

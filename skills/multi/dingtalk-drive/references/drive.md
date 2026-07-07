@@ -37,7 +37,7 @@ Flags:
 ```
 
 > 适用场景：复制/移动文件到「我的文件」或团队空间根目录时，先取 `rootFolderId`；或者枚举用户可访问的团队空间。
-> 注意：由企业服务发现 envelope 注册；个别企业 MCP gateway 可能未开通，调用前可用 `dws drive list-spaces --help` / `--dry-run` 验证。
+> 注意：由当前二进制静态注册；如果当前版本未暴露或后端工具未注册，调用前可用 `dws drive list-spaces --help` / `--dry-run` 验证。
 
 ### 列出钉盘目录
 ```
@@ -212,7 +212,7 @@ Global Flags:
       --yes   跳过二次确认 (危险操作，建议先与用户确认)
 ```
 
-> 由企业服务发现 envelope 注册（路由到 doc 服务的 `delete_document` tool）；不同企业 MCP gateway 可能不暴露，调用前可用 `dws drive delete --help` 验证。
+> 由当前二进制静态注册（路由到 doc 服务的 `delete_document` tool）；如果当前版本未暴露，调用前可用 `dws drive delete --help` 验证。
 > 删除是软删除（进回收站），但仍需用户明确确认；不要在自动化脚本里默认带 `--yes`。
 
 ## 意图判断
