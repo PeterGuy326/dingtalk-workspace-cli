@@ -22,6 +22,40 @@
 > 4. 如果用户指定了具体日期范围（如"4月1日到4月15日"），直接使用用户给定的范围，不套用上述规则。
 > 5. 日期格式统一按各命令要求：`shift list` / `check result` 等使用 `YYYY-MM-DD`；`report query-data` / `report query-leave` 等使用 `yyyy-MM-dd HH:mm:ss`（start 取当天 `00:00:00`，end 取当天 `23:59:59`）。
 
+## 签到（checkin）— 优先路由
+
+> **只要用户句中含"签到"二字（签到记录/签到数据/签到明细/外勤签到/导出签到/签到报表），就走本节，不要走 `check record`（打卡流水）。"签到" ≠ "打卡"，签到是外勤场景的独立功能。**
+
+### 导出 vs 查询 判断规则（必须先判断）
+
+| 用户说 | 路由 |
+|--------|------|
+| 含"导出"/"报表"/"Excel"/"表格"/"生成"中**任何一个** + 含"签到" | → **导出签到报表**（走脚本） |
+| 不含上述导出关键词，仅"查签到"/"签到记录"/"看看签到" | → **查询签到记录**（走命令） |
+
+> **示例**："帮我导出最近一个月的签到记录" → 含"导出" → 走报表脚本
+> "查一下张三的签到记录" → 不含导出关键词 → 走查询命令
+
+- **导出签到报表** → **必须先 `read_file` 读取 [attendance-report.md](./attendance-report.md) 后按其中的工作流执行（报表类型为"签到报表"）**，对应脚本 `attendance_report_checkin.py`
+  - **严禁**绕过 `attendance-report.md` 直接调用脚本
+  - **严禁**自己手动分段调用 `dws attendance checkin records` 来拼数据，必须用脚本
+- **查询签到记录**（无需导出，仅查看） → `dws attendance checkin records`（数据源为 MCP 工具 `get_checkin_record`）
+
+签到记录返回字段（`result.list` 数组，按 sortedProps 顺序）：
+- `corpId`（string）：企业 ID
+- `name`（string）：用户名称
+- `userId`（string）：用户 ID
+- `timestamp`（number）：签到时间
+- `place`（string）：签到地点
+- `detailPlace`（string）：签到详细地点
+- `longitude`（number）：签到地点经度
+- `latitude`（number）：签到地点纬度
+- `remark`（string）：备注信息
+- `imageList`（string[]）：图片列表
+- `customers`（string）：拜访客户
+- `checkinType`（string）：签到类型
+- `mobileId`（string）：设备 ID
+
 ## 命令总览
 
 
@@ -55,22 +89,32 @@ Flags:
 
 返回每条记录含：用户 ID、实际打卡时间、打卡地址、打卡经纬度、打卡类型（OnDuty/OffDuty）、定位方式（Map/Wifi/etc）。时间跨度不超过 1 个月。
 
-### 查询审批单
+### 查询审批单（补卡/加班/请假/出差外出）
 ```
 Usage:
   dws attendance approve list [flags]
 Example:
   dws attendance approve list --users userId1 --types overtime,leave --start 2026-04-01 --end 2026-04-30
+  dws attendance approve list --users userId1 --types trip --start 2026-04-01 --end 2026-04-30      # 同时返回出差与外出
+  dws attendance approve list --users userId1 --types 加班,请假,补卡 --start 2026-04-01 --end 2026-04-30
 Flags:
       --start string  起始日期, 格式 YYYY-MM-DD (必填)
       --end string    结束日期, 格式 YYYY-MM-DD (必填)
-      --types string  审批类型, 逗号分隔: overtime/trip/leave/patch (必填)
+      --types string  审批类型, 逗号分隔: overtime/加班、trip/travel/business_trip/出差/外出、leave/请假、patch/repair-check/补卡 (必填)
       --users string  用户 ID 列表, 逗号分隔 (必填)
 ```
 
-审批类型映射：overtime=加班, trip=出差, leave=请假, patch=补卡。返回每条记录含：用户 ID、审批标签、审批子类型、审批类型、生效时间、时长、时长单位、流程实例 ID。
+审批类型映射（关键词 → bizType）：
+- `overtime` / `加班` → `1`
+- `trip` / `travel` / `business_trip` / `business-trip` / `出差` / `外出` → `2`（**服务端查询接口 bizType=2 同时覆盖出差与外出，两者合并为同一类、不再细分**；传入任一别名都会返回这两类记录）
+- `leave` / `请假` → `3`
+- `patch` / `repair-check` / `repair_check` / `补卡` → `4`
 
-### 查询补卡/请假/加班审批提交链接 (必须走引导流程)
+> 查询不区分外出与出差，如果需要在提交入口区分外出（`TRAVEL`）与出差（`OUT`），请改用 `dws attendance approve templates --type travel|out`。
+
+返回每条记录含：用户 ID、审批标签、审批子类型、审批类型、生效时间、时长、时长单位、流程实例 ID。
+
+### 查询补卡/请假/加班/外出/出差审批提交链接 (必须走引导流程)
 ```
 Usage:
   dws attendance approve templates [flags]
@@ -78,13 +122,15 @@ Example:
   dws attendance approve templates --type leave
   dws attendance approve templates --type REPAIR_CHECK
   dws attendance approve templates --type 加班
+  dws attendance approve templates --type travel    # 外出，等价 --type TRAVEL
+  dws attendance approve templates --type 出差       # 出差，等价 --type OUT
 Flags:
-      --type string      审批类型：repair-check/patch/补卡、leave/请假、overtime/加班，或 REPAIR_CHECK/LEAVE/OVERTIME（必填）
+      --type string      审批类型：repair-check/patch/补卡、leave/请假、overtime/加班、travel/外出、out/trip/出差，或 REPAIR_CHECK/LEAVE/OVERTIME/TRAVEL/OUT（必填）
 ```
 
-当用户提到需要提交补卡、请假或加班时，优先使用该命令查询考勤审批表单模板提交链接，并引导用户点击返回的 `submitUrl` 提交。
+当用户提到需要提交补卡、请假、加班、外出或出差时，优先使用该命令查询考勤审批表单模板提交链接，并引导用户点击返回的 `submitUrl` 提交。
 `corpId` 和 `opUserId` 由系统参数自动注入，无需通过命令参数传入。
-审批类型映射：补卡=`REPAIR_CHECK`，请假=`LEAVE`，加班=`OVERTIME`。返回结果为列表，每条记录包含 `approveType`、`formName`、`processCode`、`submitUrl`。
+审批类型映射：补卡=`REPAIR_CHECK`，请假=`LEAVE`，加班=`OVERTIME`，外出=`TRAVEL`，出差=`OUT`（`trip` / `business_trip` / `business-trip` 亦映射为 `OUT`）。返回结果为列表，每条记录包含 `approveType`、`formName`、`processCode`、`submitUrl`。
 #### 引导用户自主选择合适的表单模板流程
 如果返回多个表单模板，必须将多个可用模板都返回给用户，并引导用户根据实际场景自主选择合适的模板提交：
 - 请假场景：可根据 `formName` 将与用户请假类型更匹配的模板放在前面展示。例如用户明确说年假、事假、病假、调休时，将名称中包含对应假期类型的模板靠前；如果用户只泛化表达“请假”，将名称最通用的请假模板靠前，例如“请假”“员工请假”“通用请假”等，避免把专项或特殊场景模板放在最前。

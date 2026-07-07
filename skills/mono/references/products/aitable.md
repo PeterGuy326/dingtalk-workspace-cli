@@ -73,6 +73,32 @@
 >
 > 不支持 `formInfo`、`requiredFields`、`conditionalRules` 等 FormDesigner 高级配置，这些 key 会被服务端忽略。
 
+### form (表单管理) → 详见 [aitable-form.md](./aitable/aitable-form.md)
+
+| 命令 | 用途 | 必填参数 | 路由提醒 |
+|------|------|----------|----------|
+| `form list` | 列出表单视图 | `--base-id` `--table-id` | 详情见 [aitable-form.md](./aitable/aitable-form.md) |
+| `form get` | 按 viewId 取单个表单详情 | `--base-id` `--table-id` `--view-id` | — |
+| `form create` | 创建表单视图 | `--base-id` `--table-id` `--name` | — |
+| `form update` | 更新表单配置 | `--base-id` `--table-id` `--view-id` | title/name/description 至少一项 |
+| `form delete` | 删除表单 | `--base-id` `--table-id` `--view-id` | 不可逆 |
+| `form field list/update/hide` | 表单字段管理 | — | 详情见子文档 |
+| `form questions create/delete` | 题目管理（=field create/delete） | — | 详情见子文档 |
+| `form share get/update` | 表单分享配置 | — | 详情见子文档 |
+
+> **创建表单**有两种等价方式：`form create --name "..."`（推荐）或 `view create --view-type FormDesigner --name "..."`。
+
+### workflow (自动化工作流) → 详见 [aitable-workflow.md](./aitable/aitable-workflow.md)
+
+| 命令 | 用途 | 必填参数 | 路由提醒 |
+|------|------|----------|----------|
+| `workflow list` | 列出 Base 下所有工作流 | `--base-id` | 支持 `--limit [1,100]` / `--offset >=0`；list 出参字段叫 `flowId` |
+| `workflow get` | 获取单个工作流详情（含 flowSchema） | `--base-id` `--workflow-id` | `--workflow-id` 接受 list 里的 `flowId`（同值） |
+| `workflow enable` | 启用工作流 | `--base-id` `--workflow-id` | 返回 `{enabled: true}` 是动作确认；要确认真启用看 list 的 `status` |
+| `workflow disable` | 禁用工作流（高危） | `--base-id` `--workflow-id` `--yes` | 影响业务自动化，建议二次确认；status 变 STOP |
+
+> **当前不支持通过 CLI 新建/修改/删除工作流**，请去 AI 表格 Web 端（数据表页面 → 自动化）配置。
+
 ### dashboard & chart → 详见 [aitable-dashboard-chart.md](./aitable/aitable-dashboard-chart.md)
 
 | 命令 | 用途 |
@@ -81,6 +107,8 @@
 | `dashboard config-example` | 查看仪表盘配置模板 |
 | `chart get/create/update/delete` | 图表管理 |
 | `chart widgets-example` | 查看图表 widgets 配置模板 |
+
+> ⚠️ 危险：`dashboard update` 当前改名会导致仪表盘丢失，修复前禁用。
 
 ### export & import → 详见 [aitable-export-import.md](./aitable/aitable-export-import.md)
 
@@ -101,6 +129,164 @@
 | 命令 | 用途 | 必填参数 |
 |------|------|----------|
 | `template search` | 搜索模板 | `--query` |
+
+### advperm (高级权限/自定义角色) → 详见 [aitable-advperm.md](./aitable/aitable-advperm.md)
+
+| 命令 | 用途 | 必填参数 | 路由提醒 |
+|------|------|----------|----------|
+| `advperm enable` | 开启 Base 高级权限总开关 | `--base-id` | 不开启时角色规则不生效 |
+| `advperm disable` | 关闭 Base 高级权限总开关（高危） | `--base-id` `--yes` | 关闭后全员回退默认权限 |
+| `advperm role-list` | 列出 Base 下所有角色 | `--base-id` | 同时返回自定义角色和系统角色；`roleType == "custom"` 是自定义，前缀 `system_` 是系统角色 |
+| `advperm role-get` | 获取单角色完整配置 | `--base-id` `--role-id` | 含 subRoles 与字段/行级规则 |
+| `advperm role-create` | 创建自定义角色 | `--base-id` `--name` | 可选 `--sub-roles` 同时指定子角色权限规则 |
+| `advperm role-update` | 增量更新自定义角色（PATCH） | `--base-id` `--role-id` | 未传字段不变；`--sub-roles` 按 (targetId,targetType) 合并 |
+| `advperm role-delete` | 删除自定义角色 | `--base-id` `--role-id` `--yes` | 不可逆；系统角色禁删；**调用者必须是该 AI 表格的管理员/Owner**，非管理员会得到 401 AUTH_ERROR |
+
+> **角色 CRUD 已全支持**：create/get/list/update/delete 都可走 CLI。
+> 所有写命令（enable/disable/role-create/role-update/role-delete）需要 Base 管理员权限；非管理员只能调 `role-list` / `role-get`（只读）。
+> "角色 ↔ 成员"绑定当前 CLI 不支持，仍需在 AI 表格 Web 端 → Base 设置 → 高级权限面板手动完成。
+
+### section (文件夹与节点管理)
+
+> 用于在 Base 的导航树中组织 table / dashboard / 表单视图 / 文档等节点（类似文件夹）。
+> 操作前建议先用 `section list-nodes` 拿到 nodeId / sectionId 与父级关系。
+
+#### 创建文件夹
+```
+Usage:
+  dws aitable section create [flags]
+Example:
+  dws aitable section create --base-id <BASE_ID> --name 我的文件夹
+  dws aitable section create --base-id <BASE_ID> --name 子文件夹 --parent-section-id <SECTION_ID> --index 0
+Flags:
+      --base-id string             Base ID (必填)
+      --name string                文件夹名称 (必填)
+      --parent-section-id string   父文件夹 ID；不传或空字符串表示创建在 Base 根目录下
+      --index int                  在父文件夹下的目标位置（0-based）；不传则追加到末尾
+```
+
+返回 `data.sectionId` 与 `data.name`。
+
+#### 重命名文件夹
+```
+Usage:
+  dws aitable section rename [flags]
+Example:
+  dws aitable section rename --base-id <BASE_ID> --section-id <SECTION_ID> --new-name 新名称
+Flags:
+      --base-id string      Base ID (必填)
+      --section-id string   目标文件夹 ID (必填)
+      --new-name string     新的文件夹名称 (必填)
+```
+
+#### 删除文件夹
+```
+Usage:
+  dws aitable section delete [flags]
+Example:
+  dws aitable section delete --base-id <BASE_ID> --section-id <SECTION_ID>
+Flags:
+      --base-id string      Base ID (必填)
+      --section-id string   目标文件夹 ID (必填)
+```
+
+> **注意**：删除不可逆；删除前可先用 `section list-empty` 确认是否为空文件夹。
+
+#### 调整文件夹顺序
+```
+Usage:
+  dws aitable section reorder [flags]
+Example:
+  dws aitable section reorder --base-id <BASE_ID> --section-id <SECTION_ID> --target-index 0
+Flags:
+      --base-id string      Base ID (必填)
+      --section-id string   目标文件夹 ID (必填)
+      --target-index int    目标位置（0-based）(必填)
+```
+
+> 在**当前父文件夹下**调整展示顺序。跨父级移动请用 `section move-node`。
+
+#### 列出空文件夹
+```
+Usage:
+  dws aitable section list-empty [flags]
+Example:
+  dws aitable section list-empty --base-id <BASE_ID>
+Flags:
+      --base-id string   Base ID (必填)
+```
+
+返回 `data.items: [{sectionId, name, parentSectionId}]` 与 `data.total`，用于清理或诊断导航树（parentSectionId 为空串表示在根目录下）。
+
+#### 列出全部节点
+```
+Usage:
+  dws aitable section list-nodes [flags]
+Example:
+  dws aitable section list-nodes --base-id <BASE_ID>
+Flags:
+      --base-id string   Base ID (必填)
+```
+
+返回 `data.items: [{nodeId, nodeType, parentSectionId, name?}]` 与 `data.total`，涵盖文件夹 / AI 表格 / 表单视图 / 仪表盘 / 文档 / 查询视图。
+
+> **与其他命令的关联**：是 `section move-node` / `section reorder` 的前置定位命令——先用它拿到 nodeId 与 parentSectionId。
+
+#### 移动节点
+```
+Usage:
+  dws aitable section move-node [flags]
+Example:
+  dws aitable section move-node --base-id <BASE_ID> --node-id <NODE_ID> --new-parent-section-id <SECTION_ID>
+  dws aitable section move-node --base-id <BASE_ID> --node-id <NODE_ID> --new-parent-section-id "" --target-index 0
+Flags:
+      --base-id string                 Base ID (必填)
+      --node-id string                 要移动的节点 ID（文件夹/AI表格/表单视图/仪表盘/文档/查询视图）(必填)
+      --new-parent-section-id string   目标父文件夹 ID；空字符串表示移到 Base 根目录 (必填)
+      --target-index int               Base 内节点的全局位置（0-based）；不传则不调整
+```
+
+> 服务端自动识别节点类型，无需区分文件夹与非文件夹。返回 `data.nodeId / newParentSectionId / nodeType`。
+> 对文件夹节点带 `--target-index` 时会先 move 再 reorder，中间失败会返回 `MOVE_OK_REORDER_FAILED`，可用 `section reorder` 重试。
+
+## 复杂操作
+
+### 仪表盘 / 图表（建议顺序）
+
+```bash
+# 1) 先看配置模板（JSONC）
+dws aitable dashboard config-example --format json
+dws aitable chart widgets-example --format json
+
+# 2) 先拿 dashboard，再拿 chart 详情
+dws aitable dashboard get --base-id <BASE_ID> --dashboard-id <DASHBOARD_ID> --format json
+dws aitable chart get --base-id <BASE_ID> --dashboard-id <DASHBOARD_ID> --chart-id <CHART_ID> --format json
+```
+
+要点：
+
+- `dashboard get` 返回的 `charts[].chartId` 可直接给 `chart get` 使用。
+- `dashboard share get` 可能返回 `404`（资源不存在或未开通），需按可重试错误处理，不要误判为参数拼错。
+- `chart share get` 可正常返回 `enabled/shareUrl`，用于分享状态判断。
+- ⚠️ 危险：`dashboard update` 当前改名会导致仪表盘丢失，修复前禁用。
+
+### 导出数据（两阶段轮询）
+
+`export data` 常见为异步任务：首次调用可能只返回 `taskId`，需要继续轮询。
+
+```bash
+# 第一步：创建任务（按 scope 传必要参数）
+dws aitable export data --base-id <BASE_ID> --scope table --table-id <TABLE_ID> --format excel --timeout-ms 1000
+
+# 第二步：拿 taskId 继续轮询，直到返回 downloadUrl
+dws aitable export data --base-id <BASE_ID> --task-id <TASK_ID> --timeout-ms 3000
+```
+
+参数约束
+
+- `scope=all`：只需 `base-id`
+- `scope=table`：必须 `table-id`
+- `scope=view`：必须同时 `table-id + view-id`
 
 ## 意图判断
 

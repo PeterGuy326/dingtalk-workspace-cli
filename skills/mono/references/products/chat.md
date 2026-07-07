@@ -439,6 +439,42 @@ Flags:
   - 发送文字 + 文件混合消息时的完整流程：除了将文件以 Markdown 链接内嵌到文字消息中发送一条 md 消息外，还必须额外逐个发送独立的文件消息（--msg-type file），确保接收方可以直接下载原始文件。即：先发一条包含文字和文件链接的 md 消息，再对每个涉及的文件各发一条 --msg-type file 的文件消息
 ```
 
+### file (会话文件上传)
+
+#### 上传本地文件或 URL 文件到会话文件空间 — 不暴露 spaceId
+
+上传文件到指定会话关联的文件空间。调用方只需要提供会话和文件来源，不需要先调用 conversation-info，也不需要传递 spaceId。若只是发送本地文件，优先使用 `dws chat message send --msg-type file --file-path <本地文件>`。
+```
+Usage:
+  dws chat file upload [flags]
+Example:
+  # 本地文件：CLI 会初始化上传、直传文件内容并提交
+  dws chat file upload --group <openConversationId> --file ./report.pdf --format json
+  dws chat file upload --user <userId> --file ./report.pdf --format json
+  dws chat file upload --open-dingtalk-id <openDingTalkId> --file ./report.pdf --format json
+
+  # URL 文件：服务端拉取 URL 并上传到会话文件空间
+  dws chat file upload --group <openConversationId> --url https://example.com/report.pdf --file-name report.pdf --format json
+Flags:
+      --group string              群聊 openConversationId（群聊时使用）
+      --user string               单聊对方 userId（单聊时使用）
+      --open-dingtalk-id string   单聊对方 openDingTalkId（单聊时使用）
+      --file string               本地文件路径（与 --url 二选一）
+      --url string                远程文件 URL（与 --file 二选一，服务端代传）
+      --file-name string          文件名（可选，本地文件默认取文件名，URL 默认从 URL 推断）
+      --md5 string                文件 MD5（可选，本地文件不传时自动计算）
+      --uuid string               幂等 UUID（可选）
+
+注意:
+  - --group、--user、--open-dingtalk-id 互斥，必须且只能指定其一
+  - --file 和 --url 互斥，必须且只能指定其一
+  - 本地文件由一个命令内部完成：获取上传链接 → CLI 直传文件内容 → 提交上传
+  - URL 文件走服务端代传：服务端自行解析会话空间并上传到会话文件空间
+  - 若只是发送本地文件，直接使用 `dws chat message send --msg-type file --file-path <本地文件>`，CLI 会复用同一套上传逻辑
+  - 发图片/文件优先走 `chat message send --msg-type file --file-path <本地路径>`，无需调用 `chat file upload`；本节只在以下场景使用：(a) URL 文件由服务端代传 (`--url`)；(b) 业务需要先拿到下载链接再以 Markdown 形式内嵌到文字消息中
+  - **文字 + 文件双消息**（仅适用于非图片文件；图片直接 `--msg-type file --file-path` 单条消息即可，不要走双发）：先发一条 Markdown 文字消息引用下载链接，再对每个文件各补发一条 `--msg-type file` 文件消息，确保接收方既看到文字说明又能直接下载原始文件
+```
+
 #### 查询消息发送状态 — 查询以当前用户身份发送的消息的发送状态
 
 查询以当前用户身份发送的消息的发送状态。需要传入发送消息时返回的 openTaskId。
@@ -1128,6 +1164,250 @@ Flags:
   - 支持单聊和群聊，openConversationId 可通过 chat search（群聊）或 chat conversation-info（单聊）获取
 ```
 
+### hide (隐藏会话)
+
+#### 隐藏会话 — 在会话列表中隐藏指定会话（支持单聊/群聊），收到新消息时会重新出现
+```
+Usage:
+  dws chat hide [flags]
+Example:
+  dws chat hide --conversation-id <openConversationId>
+  dws chat hide --id <openConversationId>
+  # 查询群 ID: dws chat search --query "群名"
+  # 查询单聊会话 ID: dws chat conversation-info --user <userId>
+Flags:
+      --conversation-id string   会话 openConversationId (必填，支持单聊/群聊)
+      --id string                --conversation-id 的别名
+      --chat string              --conversation-id 的别名
+
+注意:
+  - 隐藏后会话不再显示在列表中，收到新消息时会重新出现
+  - 支持单聊和群聊，openConversationId 可通过 chat search（群聊）或 chat conversation-info（单聊）获取
+```
+
+### mute-at-all (关闭@所有人通知)
+
+#### 关闭/开启 @所有人消息提醒 — 关闭或开启会话中 @所有人的消息通知
+```
+Usage:
+  dws chat mute-at-all [flags]
+Example:
+  dws chat mute-at-all --conversation-id <openConversationId>
+  dws chat mute-at-all --conversation-id <openConversationId> --off
+  # 查询群 ID: dws chat search --query "群名"
+Flags:
+      --conversation-id string   会话 openConversationId (必填，支持单聊/群聊)
+      --id string                --conversation-id 的别名
+      --chat string              --conversation-id 的别名
+      --off                      恢复接收 @所有人通知（不传则关闭通知）
+
+注意:
+  - 默认行为是关闭 @所有人通知，传 --off 则恢复接收通知
+  - 支持单聊和群聊，openConversationId 可通过 chat search（群聊）或 chat conversation-info（单聊）获取
+```
+
+### mute-red-envelope (关闭红包通知)
+
+#### 关闭/开启红包消息提醒 — 关闭或开启会话中的红包消息通知
+```
+Usage:
+  dws chat mute-red-envelope [flags]
+Example:
+  dws chat mute-red-envelope --conversation-id <openConversationId>
+  dws chat mute-red-envelope --conversation-id <openConversationId> --off
+  # 查询群 ID: dws chat search --query "群名"
+Flags:
+      --conversation-id string   会话 openConversationId (必填，支持单聊/群聊)
+      --id string                --conversation-id 的别名
+      --chat string              --conversation-id 的别名
+      --off                      恢复接收红包通知（不传则关闭通知）
+
+注意:
+  - 默认行为是关闭红包通知，传 --off 则恢复接收通知
+  - 支持单聊和群聊，openConversationId 可通过 chat search（群聊）或 chat conversation-info（单聊）获取
+```
+
+### mark-unread (标记会话为未读)
+
+#### 标记会话为未读 — 将指定会话标记为未读状态
+```
+Usage:
+  dws chat mark-unread [flags]
+Example:
+  dws chat mark-unread --conversation-id <openConversationId>
+  dws chat mark-unread --id <openConversationId>
+Flags:
+      --conversation-id string   会话 openConversationId (必填，支持群聊/单聊)
+      --id string                --conversation-id 的别名
+      --chat string              --conversation-id 的别名
+
+注意:
+  - 支持群聊和单聊，openConversationId 可通过 chat search（群聊）或 chat conversation-info（单聊）获取
+  - 标记未读后会话列表中会显示未读状态
+```
+
+### clear-red-point (清除会话红点)
+
+#### 清除会话红点 — 清除指定会话的未读红点
+```
+Usage:
+  dws chat clear-red-point [flags]
+Example:
+  dws chat clear-red-point --conversation-id <openConversationId>
+  dws chat clear-red-point --id <openConversationId>
+Flags:
+      --conversation-id string   会话 openConversationId (必填，支持群聊/单聊)
+      --id string                --conversation-id 的别名
+      --chat string              --conversation-id 的别名
+
+注意:
+  - 支持群聊和单聊，openConversationId 可通过 chat search（群聊）或 chat conversation-info（单聊）获取
+  - 清除红点后该会话不再显示未读标记
+```
+
+### clear-all-red-point (红点清零)
+
+#### 清除所有会话红点 — 一键全部已读
+```
+Usage:
+  dws chat clear-all-red-point
+Example:
+  dws chat clear-all-red-point
+
+注意:
+  - 无需任何参数，直接清除当前用户所有会话的未读红点
+  - 等效于"全部已读"操作
+```
+
+### list-all-conversations (全部会话列表)
+
+#### 分页获取全部会话列表 — 获取当前用户的所有会话
+```
+Usage:
+  dws chat list-all-conversations [flags]
+Example:
+  dws chat list-all-conversations
+  dws chat list-all-conversations --limit 50
+  dws chat list-all-conversations --limit 100 --cursor <nextCursor>
+  dws chat list-all-conversations --exclude-muted
+Flags:
+      --limit int        每页数量（默认 1000）
+      --cursor int       分页游标（首次不传或传 0，翻页传 nextCursor）
+      --exclude-muted    是否排除已免打扰会话（默认 false）
+
+注意:
+  - 返回结果包含单聊和群聊，不区分会话类型
+  - 翻页: hasMore=true 时用返回的 nextCursor 作为下次 --cursor
+  - 与 list-top-conversations 的区别: 本命令返回全部会话（单聊+群聊），list-top-conversations 仅返回置顶会话
+```
+
+### clear-messages (清空会话聊天记录)
+
+#### 清空会话聊天记录 — 清空当前用户指定会话的消息
+```
+Usage:
+  dws chat clear-messages [flags]
+Example:
+  dws chat clear-messages --conversation-id <openConversationId>
+  dws chat clear-messages --id <openConversationId>
+Flags:
+      --conversation-id string   会话 openConversationId (必填，支持群聊/单聊)
+      --id string                --conversation-id 的别名
+      --chat string              --conversation-id 的别名
+
+注意:
+  - 仅清空当前用户视角的消息，不影响其他成员
+  - openConversationId 可通过 chat search（群聊）或 chat conversation-info（单聊）获取
+```
+
+### mark-read (标记消息已读)
+
+#### 标记消息已读 — 将指定消息及之前的消息标记为已读
+```
+Usage:
+  dws chat mark-read [flags]
+Example:
+  dws chat mark-read --conversation-id <openConversationId> --message-id <openMessageId>
+  dws chat mark-read --id <openConversationId> --message-id <openMessageId>
+Flags:
+      --conversation-id string   会话 openConversationId (必填，支持群聊/单聊)
+      --id string                --conversation-id 的别名
+      --chat string              --conversation-id 的别名
+      --message-id string        消息 openMessageId (必填)
+
+注意:
+  - 标记该消息及之前的所有消息为已读
+  - openConversationId 可通过 chat search（群聊）或 chat conversation-info（单聊）获取
+  - openMessageId 可通过 chat message list 获取
+```
+
+### group list-all (分页拉取所有群)
+
+#### 分页拉取我所有群列表 — 获取当前用户加入的所有群聊
+```
+Usage:
+  dws chat group list-all [flags]
+Example:
+  dws chat group list-all
+  dws chat group list-all --limit 50
+  dws chat group list-all --limit 100 --cursor <nextCursor>
+Flags:
+      --limit int       每页返回数量（默认 100，最大 200）
+      --cursor string   分页游标（首次不传，翻页传返回的 nextCursor）
+
+注意:
+  - 与 `chat group list-my-groups` 区别: list-all 返回用户加入的所有群；list-my-groups 仅返回用户作为群主/管理员的群
+  - 分页: hasMore=true 时用返回的 nextCursor 作为下次 --cursor
+```
+
+### group list-join-validations (分页拉取入群验证记录)
+
+#### 分页拉取入群验证记录 — 获取当前用户的所有入群验证记录
+
+包括自己被拒绝的记录以及作为审批者的记录。
+
+```
+Usage:
+  dws chat group list-join-validations [flags]
+Example:
+  dws chat group list-join-validations
+  dws chat group list-join-validations --limit 30
+  dws chat group list-join-validations --limit 20 --cursor <nextCursor>
+Flags:
+      --limit int       单页数量（默认 20，最大 50）
+      --cursor string   分页游标（首次不传，翻页传返回的 nextCursor）
+
+注意:
+  - 分页: hasMore=true 时用返回的 nextCursor 作为下次 --cursor
+  - cursor 首次拉取不传或传 null 时从当前时间开始拉
+```
+
+### group audit-join-validation (审批入群验证)
+
+#### 审批入群验证 — 通过、拒绝、删除单个审核
+
+支持通过、拒绝、删除、忽略、拒绝并拉黑等操作。
+
+```
+Usage:
+  dws chat group audit-join-validation [flags]
+Example:
+  dws chat group audit-join-validation --group <openConversationId> --record-id 123456 --applicant <openDingTalkId> --inviter <openDingTalkId> --status AuditApprove
+  dws chat group audit-join-validation --group <openConversationId> --record-id 123456 --applicant <openDingTalkId> --inviter <openDingTalkId> --status AuditRefuse --description "不符合入群条件"
+  # 查询入群验证记录: dws chat group list-join-validations
+Flags:
+      --group string        群 openConversationId (必填)
+      --record-id string    申请记录 ID (必填)
+      --applicant string    申请人 openDingTalkId (必填)
+      --inviter string      邀请人 openDingTalkId (必填)
+      --status string       审批动作: AuditApprove/AuditDelete/AuditIgnore/AuditRefuse/AuditBlock (必填)
+      --description string  审批说明（可选）
+
+注意:
+  - status 可选值: AuditApprove(通过), AuditDelete(删除), AuditIgnore(忽略), AuditRefuse(拒绝), AuditBlock(拒绝且拉黑)
+  - record-id、applicant、inviter 可通过 dws chat group list-join-validations 查询获得
+```
+
 ## 意图判断
 
 用户说"我特别关注的人最近发了什么消息/关注的人最近聊了啥/星标联系人最近的动态" → `chat message list-focused`（零参数一行命令）
@@ -1190,6 +1470,20 @@ Flags:
 用户说"取消文字表情回应/移除文字表情" → `chat message remove-text-emotion`
 用户说"创建文字表情/新建文字表情" → `chat message create-text-emotion`
 用户说"免打扰/消息免打扰/静音/开启免打扰/关闭免打扰" → `chat mute`
+用户说"隐藏会话/隐藏群聊/隐藏对话" → `chat hide`
+用户说"关闭@所有人通知/屏蔽@所有人/不接收@all" → `chat mute-at-all`
+用户说"开启@所有人通知/恢复@所有人提醒" → `chat mute-at-all --off`
+用户说"关闭红包通知/屏蔽红包/不接收红包提醒" → `chat mute-red-envelope`
+用户说"开启红包通知/恢复红包提醒" → `chat mute-red-envelope --off`
+用户说"标记会话未读/标为未读" → `chat mark-unread`
+用户说"标记已读/把消息标成已读" → `chat mark-read`
+用户说"清除红点/去掉某个会话的未读红点" → `chat clear-red-point`
+用户说"全部已读/一键清除红点/红点清零" → `chat clear-all-red-point`
+用户说"我的所有会话/全部会话列表" → `chat list-all-conversations`
+用户说"清空聊天记录/清空会话消息" → `chat clear-messages`
+用户说"我加入的所有群/我的全部群列表" → `chat group list-all`
+用户说"入群验证记录/谁申请进群" → `chat group list-join-validations`
+用户说"审批入群/通过入群申请/拒绝入群申请" → `chat group audit-join-validation`
 用户说"引用回复/回复消息/引用消息回复" → `chat message reply`
 用户说"转发消息/转发一条消息/把消息转发到另一个群" → `chat message forward`
 用户说"合并转发/批量转发/合并转发多条消息" → `chat message combine-forward`
@@ -1233,6 +1527,16 @@ Flags:
 - `chat category list` — 获取用户自定义会话分组列表
 - `chat category list-conversations` — 拉取指定分组下的会话列表
 - `chat mute` — 开启/关闭会话消息免打扰（默认开启，--off 关闭）
+- `chat hide` — 在会话列表中隐藏会话（支持单聊/群聊，收到新消息时重新出现）
+- `chat mute-at-all` — 关闭/开启 @所有人消息提醒（默认关闭，--off 恢复）
+- `chat mute-red-envelope` — 关闭/开启红包消息提醒（默认关闭，--off 恢复）
+- `chat mark-unread` / `chat mark-read` — 标记会话未读 / 标记指定消息及之前的消息已读
+- `chat clear-red-point` / `chat clear-all-red-point` — 清除单个会话红点 / 一键清除所有会话红点（全部已读）
+- `chat list-all-conversations` — 分页拉取当前用户全部会话列表（单聊+群聊，与 list-top-conversations 的区别是不限置顶）
+- `chat clear-messages` — 清空当前用户视角下指定会话的聊天记录（不影响其他成员）
+- `chat group list-all` — 分页拉取当前用户加入的所有群（list-my-groups 仅返回群主/管理员的群）
+- `chat group list-join-validations` / `chat group audit-join-validation` — 拉取入群验证记录 / 审批入群验证（通过/拒绝/删除/忽略/拉黑）
+- `chat file upload` — 上传本地文件或 URL 文件到会话文件空间（不暴露 spaceId；纯发文件优先用 `chat message send --msg-type file --file-path`）
 - `chat group transfer-owner` — 转让群主
 - `chat group invite-url` — 获取群邀请链接
 - `chat message reply` — 引用回复消息（在群聊中引用某条消息并回复文字）
@@ -1389,6 +1693,32 @@ dws chat message send --group <openconversation_id> \
   --text "[报告.pdf](下载链接) 这是季度报告" --format json
 ```
 
+### 发送图片 / 文件（统一一条命令）
+
+**`dws chat message send --msg-type file --file-path <本地路径>`** 适用于所有发图片/文件场景，任意扩展名。CLI 内部完成上传与发送，无需任何前置工具调用。
+
+```bash
+# 群聊
+dws chat message send --group <openConversationId> --msg-type file --file-path ./screenshot.png --format json
+dws chat message send --group <openConversationId> --msg-type file --file-path ./report.pdf    --format json
+
+# 单聊（推荐 --open-dingtalk-id）
+dws chat message send --open-dingtalk-id <openDingTalkId> --msg-type file --file-path ./screenshot.png --format json
+```
+
+**带文字说明**：在上一步发完文件后，再补一条文本消息即可。不要尝试把文字塞进 `--msg-type file` 命令（该命令不读 `--text`）。
+
+```bash
+dws chat message send --open-dingtalk-id <openDingTalkId> --msg-type file --file-path ./screenshot.png --format json
+dws chat message send --open-dingtalk-id <openDingTalkId> --text "这是本周数据汇总" --format json
+```
+
+**旧链路（仅当上游已经持有 `dt_media_upload` 返回的 mediaId 时才用）**：
+
+```bash
+dws chat message send --group <openConversationId> --msg-type image --media-id "@lQLPD4JNnliqBq3NBQDNA8Cw" --format json
+```
+
 #### 创建并推送流式卡片 — 向群聊或单聊发送流式卡片消息
 
 群聊传 --group，单聊传 --receiver，二者互斥。
@@ -1444,6 +1774,7 @@ Flags:
 | `chat message search-advanced` | `nextCursor` | 下次 message search-advanced 的 --cursor |
 | `chat search-common` | `openConversationId` | message send/list 等的 --group |
 | `chat conversation-info` | `newCSpaceIdIM` | drive upload 的 --space-id（发送文件消息前获取共享空间） |
+| `chat file upload` | 下载链接字段 | message send 的 Markdown 链接文本（仅文字+非图片文件双发场景；常规发图/发文件用 `--msg-type file --file-path`） |
 | `chat message list` | `openMsgId` | message read-status 的 --message-id |
 | `chat group-role list` | `openRoleId` | group-role update/remove/set-user/remove-user 的 --role-id |
 | `chat message create-text-emotion` | `emotionId` | add-text-emotion 的 --emotion-id |
@@ -1498,6 +1829,9 @@ Flags:
 - `chat message create-text-emotion` 创建文字表情模板，返回 emotionId；--background-id 可选，不传由服务端默认分配
 - `chat category list` 无需参数；`category list-conversations` 需传 --category-id（通过 category list 获取）
 - `chat mute` 默认开启免打扰，传 --off 关闭；--conversation-id / --id / --chat 三个别名均可用于传入会话 ID
+- `chat hide` 隐藏会话，需传 --conversation-id（openConversationId，支持单聊/群聊），隐藏后不显示在列表中，收到新消息时重新出现
+- `chat mute-at-all` 关闭/开启 @所有人消息提醒，需传 --conversation-id（openConversationId），默认关闭通知，传 --off 恢复接收
+- `chat mute-red-envelope` 关闭/开启红包消息提醒，需传 --conversation-id（openConversationId），默认关闭通知，传 --off 恢复接收
 - `chat message reply` 引用回复消息（**单聊/群聊均可**），需传 --conversation-id（openConversationId，单聊与群聊使用同一字段）、--ref-msg-id（被引用消息 openMessageId）、--ref-sender（被引用消息发送者 openDingTalkId）、--text（回复内容）；目前回复类型仅支持 text
 - `chat message forward` 转发单条消息（**源/目标会话均支持单聊/群聊**，常见组合：群→群、群→单、单→群、单→单），需传 --src-conversation-id（源会话 openConversationId）、--msg-id（源消息 openMessageId）、--dest-conversation-id（目标会话 openConversationId）
 - `chat set-top` 设置/取消会话置顶（**单聊/群聊均可**），需传 --conversation-id（openConversationId，单聊与群聊使用同一字段），默认置顶，传 --off 取消
