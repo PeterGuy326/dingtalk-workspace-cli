@@ -6,6 +6,256 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ## [Unreleased]
 
+### Changed
+
+- **`dws pat chmod` defaults to permanent grants** (#584) — running `dws pat chmod <scope>` without `--grant-type` now requests a `permanent` grant instead of `session`, aligning the direct CLI path with the recommend-authorization helper. Session grants remain available by passing `--grant-type session --session-id <id>`.
+
+## [1.0.50] - 2026-07-08
+
+This release fixes a long-standing gap where the global `--jq` / `--fields` output filters were silently ignored on product commands, lands a JSON-mode output path for the sheet batch-style command, and aligns the bundled skill surface with the real command semantics uncovered by the round-2 real-machine QA sweep.
+
+### Fixed
+
+- **Global `--jq` / `--fields` are honored on product commands** (#575) — `Formatter.PrintJSON` / `PrintJSONUnescaped` now route through `output.WriteFiltered` when either flag is set, so product commands accept the same filters that `dws api` has always supported. The tool-caller adapter exposes `Fields()` / `JQ()` so helpers can read the flags without re-parsing.
+- **`skill setup --dry-run` is a no-op preview** (#575) — it now prints what would be written without touching the skill directory, the registry, or the agent config. Help text and docs are updated to match.
+- **Skill docs alignment to the real command surface** (#575) — per-product references and the cross-product intent guide clarify that `--fields` projects top-level / list keys only (use `--jq` for nested paths); `minutes_extract_todos.py`, `calendar_free_slot_finder.py`, `chat_export_messages.py` / `chat_history_with_user.py`, and `contact_dept_members.py` are rewritten against the current response shapes; `aisearch` / `aitable` / `attendance` / `calendar` / `chat` / `contact` / `dev` / `doc` / `doc-comment` / `doc-file-ops` / `doc-list` / `doc-search` / `drive` / `mail` / `minutes` / `oa` / `sheet` / `sheet-export` / `url-patterns` / `best_practices/lite-recipes.md` / `global-reference.md` / `intent-guide.md` are re-synced; the QA voice ("真机" phrasing) and environment-specific quirks stated as absolute rules are removed from the docs.
+
+### Changed
+
+- **`sheet range batch-set-style` emits per-row JSON in JSON mode** (#575) — when `--format json` is set, each update is reported as `{index, sheetId, range, ok, error}` instead of only the final aggregate, so callers can programmatically track partial failures under `--continue-on-error`.
+- **Command-merge helpers exported** — `pkg/cmdutil.LeafMerge*` and the provenance helpers are now public so downstream command trees can reuse the same merge semantics.
+
+## [1.0.49] - 2026-07-08
+
+This release lands a full real-machine QA sweep across the CLI, helper scripts, and skill docs (#572), and hardens the release pipeline so npm publishing can no longer be blocked by Gitee mirror issues (#570).
+
+### Fixed
+
+- **Real-machine QA fixes across CLI commands** (#572) — `aitable chart/dashboard share update --enabled` now takes a string so `--enabled false` disables; `chat conversation-info --user` resolves openDingTalkId and registers `--id/--conversation-id/--chat` aliases; `chat list-all-conversations --limit` is capped at 100 and rejects larger values; custom-robot webhook failures surface `errcode` instead of masquerading as success; `contact` registers `--dept/--depts` as the primary flags so the documented spelling actually works; `sheet media-upload` and `sheet export` emit clean JSON under `--format json` (progress lines no longer leak); `wiki node create --type` enum is corrected (drops unsupported `asheet`, adds `axls/able/appt/adraw/amind`); `ding message list --type` defaults to `ALL` since the server rejects empty type.
+- **Helper script fixes (mono and multi)** (#572) — aitable import/export flag names and the tableId regex (7-char default tables were rejected); mail search `--limit`, contact dept response keys (`deptList`/`deptUserList`) and `userInfo` nesting; `attendance_my_record` whoami compatibility; `calendar_schedule_meeting` event-id unwrapping; `drive_tree_list` recursion via `fileId`; report scripts migrated off the deprecated `report list`/`report detail`.
+- **Skill docs sync (mono and multi)** (#572) — command indexes, flag names, enums, return-structure keys and cross-product intent routing are re-aligned to real-machine behavior across all products. Genuinely server-side limitations (permission gates, org-level restrictions, unregistered tool keys) are annotated instead of code-patched, and the cross-cutting hazards (`success` always true, `--jq`/`--fields` currently no-op) are documented.
+
+### Changed
+
+- **Release pipeline unblocks npm publish from Gitee mirror** (#570) — the Release workflow now publishes to npm before touching the Gitee mirror, so Gitee upload issues cannot block `npm/latest`. GitHub→Gitee attachment upload is disabled by default (unreliable from US runners) and only runs when `ENABLE_GITEE_UPLOAD_FALLBACK=true`; the legacy upload fallback path is guarded with timeout and retry so it fails fast when re-enabled.
+- **Repair modes for release republish** (#570) — the Release workflow gains a repair input and a standalone npm-only repair workflow, used to republish an existing release to npm without re-running the full pipeline.
+
+## [1.0.48] - 2026-07-07
+
+This release promotes the sealed **remove-discovery delivery** from the beta line to the stable `v1.0.48` package. It removes dynamic service discovery from the open-edition runtime, keeps legacy CLI compatibility aliases, syncs the open command/help/skill surface with the dws-wukong baseline, and includes the `dev connect` default-yolo behavior on the stable upgrade track.
+
+### Changed
+
+- **Remove-discovery delivery is now formal/stable** — the beta validation line is ready to cut as `v1.0.48`; normal stable channels (`dws upgrade`, GitHub `releases/latest`, install scripts, and npm `latest`) should receive this release after the official tag is published.
+- **Static endpoint runtime sealed for stable delivery** — the open edition no longer depends on dynamic service discovery at runtime, while preserving legacy command compatibility aliases and the synced help/skill surface from the beta.
+- **`contact label` is restored as real wukong-compatible functionality** — `dws contact label list/get/list-members` now call `get_org_labels`, `search_label_by_name`, and `get_label_members_by_labelId`; `contact role` remains an alias, and the common top-level compatibility entries (`contact search/find/list/get/self/me/whoami/get-self`) now dispatch to real user/dept/label tools where unambiguous.
+- **Skill docs match the sealed command surface** — contact docs again describe the real `contact label` three-step role lookup flow; video-conference start/invite/share flows remain explicitly unsupported and point users to the DingTalk client.
+
+### Fixed
+
+- **`calendar event list --dry-run` no longer executes the real list call** — the sorted event-list wrapper now respects dry-run and prints the `list_calendar_events` preview instead of calling the backend.
+- **`chat file upload` is downlined** — the hidden compatibility entry now returns a clear downline message and never calls `chat/upload_conversation_file_by_url`; the supported file path remains `chat message send --msg-type file --file-path`.
+- **Optional plugin version validation no longer pollutes every command** — incompatible local plugins such as conference are skipped at debug level during command-tree construction instead of printing a WARN on unrelated commands.
+- **PR #45 review follow-ups are folded into the release** — doc version rollback pagination now unwraps nested result/content/data envelopes for `nextCursor`, mail helper scripts handle `{result:{emailAccounts:[...]}}`, and the generated attendance `.xlsx` fixture is removed from the skill scripts.
+
+### Tests
+
+- **Command-surface regression tests** — root-command tests now cover real `contact label`/`role` dry-runs, hidden top-level contact compatibility entries, `chat file upload` downline behavior, and `calendar event list --dry-run`.
+- **Release hygiene tests** — skill markdown policy still blocks unsupported conference routes, plugin loader tests assert optional validation failures stay quiet at WARN level, and doc version cursor extraction has nested-envelope coverage.
+
+## [1.0.47] - 2026-07-05
+
+This release adds **connector supervision & health monitoring** (`dev connect list/status/restart/stop`) and fixes **bot-to-bot @-mention** delivery end-to-end.
+
+### Added
+
+- **`dev connect list`** — PM2-style colored table enumerating all local connectors with state (healthy / degraded / down / not_running), PID, channel, and uptime.
+- **`dev connect status`** — panel view with heartbeat, last recv timestamp, session webhook age, and `--json` for external monitoring.
+- **`dev connect restart`** — restarts a daemon via persisted `daemon-state.json` (unified-app-id credential fetch, no local secret storage).
+- **`dev connect stop`** — graceful SIGTERM shutdown releasing the single-instance lock and Stream connection.
+- **Health watchdog** — background goroutine writes `heartbeat.json`; `status`/`list` derive state from heartbeat freshness + process liveness + pid-reuse detection.
+- **`--alwayson` flag** — opt-in auto-restart: supervisor relaunches the worker on crash (requires `--daemon`).
+- **`--notify-staff-id`** — state-change notifications (start / stop / crash) sent as DingTalk messages to the specified staffId.
+- **`--unified-app-id` credential flow for `dev connect`** — fetches clientId/clientSecret at startup via `dev app credentials get`, keeping secrets off the command line and out of `daemon-state.json`.
+- **API-sent file download** (`feat(connect): download API-sent files via storage v2 API`) — file messages sent via `dws chat message send --msg-type file --dentry-id --space-id` are now downloaded by the connector through the storage v2 `getDownloadInfo` API (dentryId + spaceId → presigned URL → local temp file), so file-based Q&A works regardless of how the file was sent.
+- **`--at-open-dingtalk-ids` for `chat message send-by-bot`** — @-mention bots or cross-org users by openDingTalkId in group messages.
+
+### Fixed
+
+- **Bot-to-bot @-mention send side** — `atOpendingtalkIds` (the server's lowercase spelling) is now used instead of the camelCase `atOpenDingTalkIds` which was silently ignored. The unnecessary `openDingTalkId → userId` reverse lookup (always failed for bots) is removed; the id is forwarded verbatim.
+- **Bot-to-bot @-mention receive side** — `interactiveCard` messages (how DingTalk delivers a bot @-mentioning another bot) are now parsed: `extractInteractiveCardText` flattens `cardContent[].children[].value` leaves and strips the leading @-mention by leaf boundary. The `emotion/reply` reaction (which 500s on bot-sent cards) is skipped for `interactiveCard` turns.
+- **Markdown/richText body extraction** — `extractCallbackText` gains a `cardContent` fallback so structured-text messages are no longer silently dropped.
+- **Send-by-bot @ chip rendering** — `<@id>` placeholders in the markdown body are rewritten to `@id` for both userIds and openDingTalkIds so the mention chip renders in all cases.
+- **Connector retry on transient network errors** — `sendBySession` retries on transient failures instead of dropping the reply.
+- **Orphan worker cleanup & watchdog deadlock** — stale workers from a crashed supervisor are detected and cleaned; a channel-capacity fix prevents the watchdog from blocking.
+- **Idle connector false-down** — heartbeat ticker now advances `updatedUnix` so a connector with no inbound traffic is not marked degraded.
+- **FD limit check** — `checkFDLimit` split into platform files for Windows cross-compilation.
+- **Default agent timeout removed** — no timeout by default (was incorrectly defaulting to a low value).
+- **keepAlive shortened to 30 µs** — aligns with Stream SDK expectations; adds `ulimit` check for multi-agent stability.
+
+## [1.0.46] - 2026-07-01
+
+### Fixed
+
+- **PAT agentCode grants no longer split from follow-up command checks** (`internal/auth/agent_code_detect.go`, `internal/app/runner.go`, `internal/pat/chmod_test.go`) — explicit `DINGTALK_DWS_AGENTCODE` declarations are now forwarded verbatim as the common cross-host contract, and unknown hosts no longer synthesize `custom` into `x-dingtalk-dws-agent-code` / `x-dws-agent-instance-id`. `pat chmod --agentCode` remains the highest-priority grant target and still wins over the env fallback.
+
+## [1.0.45] - 2026-06-29
+
+This release adds **multi-organization (profile) support** (#500): `dws` can stay logged in to several DingTalk organizations at once and switch between them, while staying fully backward/forward compatible with the previous single-org token. A profile is one logged-in organization (corp); the current profile decides which org a command runs against. The release also hardens the new credential store for concurrency and corruption recovery, documents the capability in both the mono and multi skill sets, and flips `--ai-tag` on by default so messages sent through `dws` carry the DingTalk 「通过AI发送」 badge (#524).
+
+### Added
+
+- **Multi-organization login & `profile` management** (`internal/auth/profiles.go`, `internal/app/profile_command.go`) — `dws auth login` against a new organization adds a profile (the first login becomes the primary); `dws profile list` shows logged-in orgs with primary / current markers, status and validity; `dws profile switch <name|corpId|->` persistently switches the default org (`-` toggles back to the previous one, no-arg opens a TUI selector on a terminal); `dws profile use` is an alias of `switch`. `dws auth status [--profile <name>]` reports a specific profile. Credentials are stored per organization in keychain slots keyed by corpId (`auth-token:<corpId>`), with a plaintext `profiles.json` registry holding only metadata and the primary/current/previous pointers (no tokens).
+- **Global `--profile <name|corpId>` flag** — run a single command against a specific organization without changing the default (one-shot; does not move currentProfile). Cross-org reads are orchestrated by the agent (list profiles → query each with `--profile` → merge); there is intentionally no built-in `--all-orgs`.
+- **Backward / forward compatibility with the legacy single token slot** — a pre-existing single-slot token is migrated into `auth-token:<corpId>` and marked primary on first multi-profile use; the current (or primary) profile's token is mirrored back into the legacy slot so older binaries and the embedded host keep working. `profiles.json` is additive and ignored by older versions.
+- **`dingtalk-profile` and `dws-shared` skills + multi-org documentation** (`skills/`) — a standalone `dingtalk-profile` skill plus a new `dws-shared` skill that carries auth, global flags and the multi-org rule, so every multi-mode product skill's PREREQUISITE resolves and all read/search skills inherit cross-org behavior. The mono skill gains a "multi-org / profile" section, trigger conditions, a decision-tree entry and a corrected logout danger note. Multi-mode install now always ships `dws-shared` even when `--skill` / `--exclude` narrows the set.
+
+### Changed
+
+- **`--ai-tag` now defaults on — DingTalk 「通过AI发送」 badge for dws-sent messages** (`internal/helpers/chat.go`, #524) — `chat message send` / `reply` flip the `--ai-tag` default from false to true, attaching the AI `clawType` by default so messages sent through `dws` (and by AI agents) transparently carry the 「通过AI发送」 badge; pass `--ai-tag=false` to send as the user with no badge.
+- **Concurrency-safe, self-healing `profiles.json`** (`internal/auth/profiles.go`, `internal/auth/token.go`) — every read-modify-write on `profiles.json` and the legacy mirror is serialized under the existing dual-layer (process + cross-process) lock, split into public (locking) entry points and lock-free `*Locked` variants so the non-reentrant lock is never re-acquired (the refresh path and the load-path migration use the lock-free savers). `profiles.json` and the token marker are written via per-write random temp names + atomic rename so concurrent writers can no longer corrupt a fixed `.tmp`. An unparseable `profiles.json` is quarantined (`*.corrupt-*`) and rebuilt empty so the CLI self-heals; `auth reset` / `logout` proceed even when it cannot be read and sweep the quarantined files.
+
+### Fixed
+
+- **No silent fallback to a different org's token** (`internal/auth/token.go`) — when the resolved current/primary profile's keychain slot fails to read and no `--profile` was given, the loader now only falls back to the legacy single slot if it belongs to the same organization; otherwise it surfaces the error instead of acting as a different org.
+- **Legacy mirror no longer wiped on a transient keychain read error** (`internal/auth/profiles.go`) — `SyncLegacyTokenMirror` distinguishes "token genuinely absent" from "keychain momentarily unreadable" and keeps the existing mirror in the latter case, so a host app's login state is not dropped by a transient failure.
+
+## [1.0.44] - 2026-06-28
+
+This release hardens the dynamic-command surface and finishes the dws-wukong parity pass for structured input. Phantom override commands whose backing MCP tool isn't deployed are hidden from `--help`; `report entry submit` reads `--contents-file` / stdin natively; structured JSON flags accept `@file` / `@-`; and `sheet range update` / `range read` now accept the same plain shapes wukong does (scalar cells, flat `values`, null-clears-cell, a `--hyperlinks` flag). On the wukong01 sandbox this lifts the full open-edition cli_to_mcp pass rate from 77.6% to 95.5% (sheet 28.5% → 99.8%, report → 100%); the remaining failures are account / org / out-of-scope, not CLI defects.
+
+### Added
+
+- **`dingtalk-dev` skill: image-upload → `mediaId` recipe + per-resource command discovery** (`skills/multi/dingtalk-dev/references/`) — documents how to obtain a `mediaId` for app / robot icons via the DingTalk OpenAPI (`credentials get` → `gettoken` → `/media/upload?type=image` → `--icon-media-id` → read back), since the dev command set has no upload command; and adds a "discovering commands" block to all 10 product refs pointing at each group's `--help` and `dws schema dev.app.<group>.<method>` (`dws schema dev.connect` for connect), so agents inspect commands instead of relying on memory.
+- **`report entry submit --contents-file <path>` / `--contents -` (stdin) read natively** (#514, `internal/compat/report_hooks.go`) — the envelope publishes `entry submit` (MCP `create_report`) with a `--contents` (json_parse, required) flag plus a sibling `--contents-file` that had no transform / mapsTo, so a `--contents-file`-only submit silently sent `contents: [null]` and the report failed (only inline `--contents` worked, which is why `report create` succeeded while `report entry submit --contents-file` did not). A build-time compat hook now resolves the file / stdin natively (10MB cap, UTF-8 check, wukong priority `--contents-file` > `--contents -` > inline) and relaxes the individual `required` on `--contents` into a `contents` / `contents-file` one-of group. No discovery-config change needed.
+- **`@file` / `@-` input for structured JSON flags** (`internal/compat/transform.go`) — `json_parse` / `json_parse_strict` now expand a leading `@` before parsing (`@-` reads stdin, `@<path>` reads a file), so long / complex payloads (many records, big 2D cell ranges, filter criteria) skip shell-quoting hell. A JSON / YAML value never starts with `@`, so the sentinel is unambiguous; the error hint that already advertised `@path/to/file.json` is now truthful. `sheet`'s shared `sheetParseJSONFlag` routes through `cli.ResolveInputSource` so the same support reaches `--values` / `--criteria` / `--sort-keys`.
+- **`sheet range update --hyperlinks`** (`internal/helpers/sheet.go`) — a wukong-shaped 2D hyperlink grid (`[[{"type":"path","link":"...","text":"..."}]]`) overlaid onto the cells grid as each cell's `hyperlink` field; `--values` or `--hyperlinks` is now required (at least one).
+
+### Changed
+
+- **Phantom override commands hidden from `--help`** (#515, `internal/compat/dynamic_commands.go`) — override leaves whose backing MCP tool isn't actually deployed used to render in `dws <svc> --help` and then fail at invocation with *tool not found*. A tool-existence guard now hides them, and command groups left empty by the hidden leaves are collapsed, so `--help` reflects only invokable commands. Skill references are re-aligned to the real CLI surface (phantom commands dropped; role/duty "who is responsible" queries routed to `aisearch`, not `contact`).
+- **`sheet range update` accepts scalar cells; `sheet range read` projects a flat `values`; `--values '[[null]]'` clears a cell** (`internal/helpers/sheet.go`, `internal/helpers/sheet_cell_validation.go`) — dws-wukong parity. `range update` (set_cell_range) auto-wraps a scalar cell (string / number / bool) into `{type:text,text:"..."}` instead of rejecting it, so the plain `[["姓名","部门"]]` shape that `sheet append` and wukong's update_range accept now works; a null cell clears content (matching wukong); `{}` still means keep-original. `range read` (get_cell_infos) now also exposes a flat `values` 2D array next to the rich `cells` payload, matching wukong's get_range shape without dropping cell styles.
+- **report skill aligned to `entry submit` / `inbox list` / `outbox list`** (`skills/multi/dingtalk-report/`, `skills/mono/references/intent-guide.md`) — the multi skill tree was two versions behind and still taught the deprecated flat aliases (`report create` / `sent` / `list` / `detail` / `stats`) and falsely claimed `report inbox` was unimplemented. Re-aligned to the canonical resource.verb commands consistently (old aliases still execute with a stderr deprecation notice).
+
+## [1.0.43] - 2026-06-26
+
+This release aligns the open edition's CLI surface with **dws-wukong** across the communication domain (chat / mail / minutes / todo / calendar / contact / aisearch / live / report / ding) and the structured-office domain (aitable / sheet / drive / wiki / doc), and switches the discovery version code from `bamboo` to `cedar` so the aligned command tree is served from its own discovery config.
+
+### Added
+
+- **`calendar book get|search` and `calendar acl list`** (cedar discovery overrides) — query a specific calendar (primary via `--id primary`), fuzzy-search calendars by name, and list a calendar's access-control entries. Maps to the calendar MCP `get_calendar` / `search_calendar` / `list_acls` tools.
+- **`calendar attendee list|add|delete`** (`internal/helpers/calendar_commands.go`) — manage event participants under the wukong-aligned `attendee` naming (equivalent to the legacy `participant` group; calls `get/add/remove_calendar_participant`).
+- **`minutes tag list` and `minutes tag query --tag-id`** — list a user's AI-minutes tags and query minutes by tag (`query_user_tag_list` / `query_minutes_by_tag_id`).
+- **`minutes list mine|shared|all`** (`internal/helpers/minutes_commands.go`) — list own / shared / all minutes with renamed output fields.
+- **`mail folder create|update|delete`, `mail template create|list|get|update|delete`, `mail contact create|list|update|batch-delete`, and `mail message list`** — full mail folder / message-template / contact CRUD plus folder-scoped message listing.
+- **`chat file upload`** (`internal/helpers/chat_file.go`) — upload a local file (init/PUT/commit) or a remote URL to a conversation's file space.
+- **`todo task add-attachment`** (`internal/helpers/todo_commands.go`) — attach a local file to a todo (multi-step upload).
+- **aitable extensions** (`internal/helpers/aitable_extra.go`) — advanced permission / roles, view sub-commands (lock / duplicate / frozen-cols / row-height / fill-color-rule / card / timebar), section node management, workflow enable/disable, record `upsert` / `share-url` / `history-list` / primary-doc, and field search-options. Helper tools route to the hardcoded `aitable-helper` supplement endpoint.
+- **sheet, drive, wiki, doc helper coverage** synced from dws-wukong (`internal/helpers/sheet.go`, `drive.go`, `wiki.go`, `doc.go`).
+
+### Changed
+
+- **Discovery version code `bamboo` → `cedar`** (`internal/market/registry.go`; `discoveryAPIPath = "/cli/discovery/apis/cedar"`) — version codes step by first letter (bamboo → cedar → …); `cedar` carries the dws-wukong alignment. Older binaries keep reading `bamboo`, so the change is isolated to this release line. All test/mock/generator fixtures updated to the cedar path.
+- **CLI output envelope aligned with wukong for cross-edition parity** (`internal/app/runner.go`, `internal/compat/registry.go`) — dry-run prints a `DRY-RUN Arguments:` line, successful results carry `success: true`, missing-required-flag wording is unified to `missing required flag(s): --x`, and OutputTransform applies to the response content layer.
+- **New flag transforms** (`internal/compat/transform.go`) — `parse_bool` (explicit boolean strings so `--flag false` is honoured) and `attendance_class_check_time` (`HH:mm` → UTC+8 milliseconds for shift check-times).
+- **`--calendar-id` accepted on calendar event / participant / room / attachment commands** so calendars other than the primary can be targeted.
+
+### Fixed
+
+- **Client-side validation** for calendar recurrence completeness and attendance schedule / class / group inputs, surfacing input errors before they reach the server.
+
+## [1.0.42] - 2026-06-25
+
+This release rounds out `dws dev connect` — bridge a DingTalk robot to your local AI (Claude Code / Codex / opencode / Qoder / …): a generic `custom` channel for any headless CLI tool, in-chat `/new` / `/clear` session commands aligned to each agent's real session op, and a fix for long opencode turns being cut at 30 seconds.
+
+### Added
+
+- **`dws devapp robot connect` — generic `custom` channel for self-built / unsupported AI tools** (issue #37; `internal/helpers/devapp_connect.go`, `internal/helpers/connect_stream.go`) — a new `--agent-cmd "<command>"` flag (and `custom` channel) lets the bot forward to any headless AI CLI that takes a question as its trailing argument and prints the answer to stdout, so tools that aren't built-in (e.g. 网易有道龙虾 LobsterAI) or self-built agents can be onboarded without code changes. `--agent-cmd` forces the `custom` channel unless `--channel` is set explicitly; detection also falls back to `custom` when `DWS_AGENT_CMD` is present.
+
+### Changed
+
+- **`robot connect` now hints how to match terminal answer quality** (issue #39; `internal/helpers/devapp_connect.go`) — when neither a work dir nor a knowledge source is configured, the connector prints a one-time note that the bot runs in a clean temp dir without local project context, pointing at `--agent-workdir` / `--knowledge-dir` / `--knowledge-source` / `--agent-model`. The robot quickstart gains matching FAQ entries, plus a clarification that step 3 (`robot connect`) produces no approval ticket (issue #19).
+
+- **`robot connect` session commands `/new` vs `/clear` now use each channel's real session op** (PR #20; `internal/helpers/connect_opencode.go`, `internal/helpers/connect_stream.go`) — `/new` (and `/start`, `/reset`) opens a fresh session and leaves the previous one intact (resumable where the agent supports it); `/clear` actively disposes the current session through the agent's real delete primitive — opencode issues `DELETE /session/:id`. Channels whose agent exposes no delete in the mode DWS drives it (Codex app-server, Qoder stream, Claude-family exec) fall back to a reset, so `/clear` behaves like `/new` there. Previously both commands only dropped the local `conversationId → sessionId` mapping, so the two were indistinguishable and opencode sessions were never disposed (they leaked).
+
+### Fixed
+
+- **`robot connect` no longer aborts long opencode turns at 30 seconds** (PR #19; `internal/helpers/connect_opencode.go`) — the shared opencode HTTP client hard-coded a 30s `Timeout` that covered every request, including `POST /session/{id}/message`, so a long agent turn (e.g. a multi-minute research report) was killed mid-flight with `context deadline exceeded (Client.Timeout exceeded while awaiting headers)` even though the per-turn budget (`DWS_AGENT_TIMEOUT_MS`, default 300s) was far larger. The client-level deadline is removed so the per-request ctx governs the round-trip; only the `/global/health` probe keeps a short 10s timeout so startup detection stays snappy.
+
+## [1.0.41] - 2026-06-24
+
+This release makes the installers work from mainland China out of the box (no env var) and keeps the Gitee mirror in sync automatically.
+
+### Added
+
+- **Auto-fallback to the Gitee mirror when GitHub is unreachable** (#492; `scripts/install.sh`, `scripts/install.ps1`, `scripts/install-skills.sh`) — the installers probe GitHub Releases on startup and, when it is unreachable (typical in mainland China), automatically resolve the version and download every asset (binary, `checksums.txt`, `dws-skills.zip`) from the Gitee mirror instead. A plain `curl … | sh` now works in China with no `DWS_GITEE_REPO` needed. Explicit `DWS_GITEE_REPO` still wins, `DWS_NO_FALLBACK=1` forces GitHub, and local source-checkout installs skip the probe.
+
+### Changed
+
+- **CI mirrors repo code to Gitee automatically** (#493; `.github/workflows/mirror-to-gitee.yml`) — the mirror workflow now pushes `main` + tags to the Gitee mirror over HTTPS using `GITEE_TOKEN` (no SSH key), on every push to `main` and every tag, keeping the Gitee `raw/main` install scripts and tags in sync without any manual `git push`. Gated on `GITEE_TOKEN`; skips cleanly when unset.
+
+## [1.0.40] - 2026-06-24
+
+This release adds China-accessible install mirrors so the CLI installs reliably from mainland China, where GitHub raw + Releases are slow or fail.
+
+### Added
+
+- **China mirror via Gitee + npmmirror** (#486; `scripts/install.sh`, `scripts/install.ps1`, `scripts/install-skills.sh`, `scripts/release/sync-to-gitee.sh`, `.github/workflows/release.yml`, `.github/workflows/mirror-to-gitee.yml`) — an opt-in `DWS_GITEE_REPO` env var makes all three installers resolve the latest version and every release asset (binary, `checksums.txt`, `dws-skills.zip`) from the Gitee OpenAPI v5 instead of GitHub; with it unset, installation defaults to GitHub (fully backward compatible). The release pipeline mirrors release attachments to the matching Gitee release after each tag (gated on `GITEE_TOKEN`/`GITEE_REPO`), and a hub-mirror workflow keeps the repo code in sync (gated on `GITEE_PRIVATE_KEY`). README documents three China install channels: Gitee raw script, Gitee release binaries, and the npm package via `registry.npmmirror.com`.
+- **Skills embedded in the binary** (#488; `skills_embed.go`, `internal/app/skill_setup.go`, `internal/app/skill_setup_embed.go`) — the `skills/` tree (mono + multi) is embedded into the `dws` binary via `go:embed` and `dws skill setup` defaults to the embedded copy, refreshing the installed skill instead of silently reusing a stale copy probed from the current working directory — so skills install offline with no separate download.
+
+## [1.0.39] - 2026-06-18
+
+This release makes the AI-sent indicator opt-in. 1.0.38 unconditionally tagged every user-identity send/reply with the edition claw identity, so the IM server rendered a "Send from AI" badge under every message — and on the open edition a stale hardcoded value even leaked the Wukong-branded label (「悟空AI发送」) to external users. The badge is now off by default and shown only when the caller explicitly asks for it.
+
+### Added
+
+- **`--ai-tag` opt-in flag for `chat message send` / `chat message reply`** (#477; `internal/helpers/chat.go`) — by default no `clawType` tool argument is attached, so delivered messages carry no "Send from AI" badge. Passing `--ai-tag` attaches `edition.ClawType()` so the IM server renders the badge (open edition `openClaw` → 「通过AI发送」; the wukong overlay sets its own value → 「悟空AI发送」). Covers the text/Markdown, rich-media, and `--user`/`--open-dingtalk-id` direct send paths plus `reply`. Bot (`send-by-bot`) and webhook sends are intentionally untouched — they already render as bot messages. The badge is opt-in so dws does not brand every message a user sends.
+
+### Fixed
+
+- **`dws chat message reply` no longer leaks the Wukong AI label on the open edition** (#475, fixes #474; `internal/helpers/chat.go`, `pkg/edition/edition.go`) — the reply path hardcoded `clawType: "wukong"`, so open-source quoted replies were tagged 「悟空AI发送」 by the IM server, leaking Wukong branding to external users (reported by an external customer integrating via openclaw). The value now derives from the edition via the new `edition.ClawType()` accessor (open → `DefaultOSSClawType` = `openClaw`), and — together with #477 — is only attached when `--ai-tag` is passed. The earlier fix existed on a branch (PR #450) but was never merged to main; #475 cherry-picked it.
+
+## [1.0.38] - 2026-06-16
+
+This release adds client-side agent attribution for usage stats, fixes two commands that silently misbehaved (`dws sheet export` hanging, `dws upgrade --dry-run` actually upgrading), hardens the document write path against server-rejected characters, and makes the long-broken `--no-browser` login flag actually work.
+
+### Added
+
+- **Client-side `agent_code` detection + per-channel agent instance id for usage stats** (#467; `internal/auth/agent_code_detect.go`, `internal/auth/identity.go`, `docs/agent-code.md`) — every MCP request now carries `x-dingtalk-dws-agent-code` (which agent host is driving dws — e.g. `claudecode` / `codex` / `qoder` / `cursor` / `hermes` / `openclaw`, falling back to `custom`), `x-dws-agent-instance-id` (a per-machine×channel id, `dwsa_<base62(sha256(machineId|agent_code))>`), the existing machine-level `x-dws-agent-id`, and `X-Cli-Version`. Detection is a confidence ladder, each signature verified on real hosts / official docs (never guessed; anything unrecognized resolves to `custom`): T0 explicit `DINGTALK_DWS_AGENTCODE`, T1 per-agent env signatures, T2 `VSCODE_BRAND` covering the whole VS Code fork family, T3 the macOS `__CFBundleIdentifier` map, T4 `custom`. `identity.json` migrates v1 → v2 transparently and keeps `x-dws-agent-id` machine-level for continuity. **Trust boundary:** `agent_code` and both ids are client self-reported and forgeable — they are for stats / observability only and must not be used for auth, authorization, rate-limiting, billing, or revocation. Server-side gateway work (header passthrough allowlist + logging the fields into the warehouse) is required before the data lands and is tracked separately.
+
+### Fixed
+
+- **`dws sheet export` no longer hangs for the full ~5-minute poll timeout** (#462; `internal/compat/pipeline.go`) — the pipeline poll loop compared the API status against `pollUntilValue` with case-sensitive `==`, but the API returns `"success"` while the pipeline config declares `"SUCCESS"`, so the match never fired and the loop spun until timeout. Switched to `strings.EqualFold`, aligning with the case-insensitive `normalizeAsyncStatus` helper already used for `doc export` / `aitable export`.
+- **`dws upgrade --dry-run` now previews instead of performing a real upgrade** (#416, fixes #364; `internal/app/upgrade.go`) — `newUpgradeCommand` registered no `--dry-run` flag and never read the global persistent one, so `--dry-run` fell through and ran a real, irreversible upgrade (download + binary replace), directly contradicting the flag's documented `预览操作内容，不实际执行` contract. It now resolves the target release and platform asset (so "already latest" / "no build for this platform" is still surfaced), prints the 1–5 steps it *would* perform via the side-effect-free `writeDryRunPlan`, and returns before any backup / download / replace. Covered by `TestWriteDryRunPlan_*` and an updated help test.
+- **`dws doc create` / `dws doc update` strip server-rejected characters instead of failing** (#465; `internal/helpers/doc.go`, `internal/helpers/doc_jsonml.go`) — the Markdown write path sent raw content straight through, and the dangerous-Unicode strip only ran on the JSONML branch, so content carrying C0 control characters (anything `< 0x20` except `\t` / `\n`), DEL (`0x7F`), or zero-width / line-separator codepoints (`U+200D`, `U+2028`, `U+2029`) — common in LLM-generated or copy-pasted text — was rejected by the server-side `RejectControlChars` validator and the command failed. `stripDocDangerousUnicode` is renamed to `stripDocInputUnsafe`, extended to match the authoritative `apiclient.rejectDangerousChars` set, and applied on both the Markdown and JSONML node write paths. Tab and newline are preserved. Ported from dws-wukong.
+- **`dws auth login --no-browser` is now honored** (#365; `internal/app/auth_command.go`, `internal/auth/device_flow.go`, `internal/auth/oauth_provider.go`) — the flag was already defined (and hidden) but never wired to the login providers, so the browser always opened regardless. The value is now passed into `DeviceFlowProvider.NoBrowser` / `OAuthProvider.NoBrowser` and gates the `openBrowser` call; the flag is also unhidden so headless / remote sessions can discover it.
+
+## [1.0.37] - 2026-06-11
+
+This release realigns the npm channel and hardens PAT batch grants. Background on the npm realignment: 1.0.36 was re-cut on GitHub on 2026-06-11 to fold in the canonical-tree poisoned-cache guard (#454), but the npm registry permanently forbids republishing a version number, so the npm package stayed on the original, unguarded cut. 1.0.37 is therefore the first version where **every** distribution channel — GitHub releases, `dws upgrade`, the install scripts, and npm — ships the same guarded build. If you installed 1.0.36 from npm, upgrade to this version.
+
+### Fixed
+
+- **PAT batch grants carry the agent identity and require explicit confirmation** (#455; `internal/pat/chmod.go`, `internal/auth/channel.go`, `internal/app/runner.go`) — an explicit `--agentCode` flag or the `DINGTALK_DWS_AGENTCODE` env var is now carried into PAT batch plan/grant arguments instead of being dropped, and a missing agentCode is forwarded as absent so the PAT core can apply the server-side default rather than failing. Batch grants now refuse to execute without an explicit `--yes` (dry-run and single-scope grants keep their existing behavior), closing the gap where a multi-scope grant could fire without a deliberate confirmation. Only the canonical env name `DINGTALK_DWS_AGENTCODE` is recognized; draft/reversed spellings from earlier iterations are ignored. Verified against prepub: dry-run, single grant, flag-priority grant, and batch grant all resolve the target agentCode, with the granted rows confirmed server-side. Tests: `internal/pat/chmod_test.go`, `internal/pat/browser_policy_test.go`, `test/unit/pat_host_owned_signal_test.go`.
+
+## [1.0.36] - 2026-06-10
+
+This release closes out the poisoned-discovery-cache lock-out for good, with four layers of defense landing together. The lock-out class (seen again on 2026-06-09 as `chat_permission_grant flag redefined: params`): the dynamic command tree is built from cached discovery data **before** Cobra dispatches any command, so a pflag panic fed by a poisoned cache aborted *every* invocation — including `dws cache refresh` and `dws upgrade`, the very commands that could repair it. Now: (1) any panic during the build is recovered instead of crashing (#447), (2) the four known envelope shapes that made pflag panic are skipped at registration so they never fire (#449), (3) when an unknown panic class does fire, the CLI quarantines the poisoned cache and rebuilds itself from a fresh fetch — and `dws upgrade` clears the discovery caches after every binary swap, so simply getting this version onto a machine is enough to escape, no manual cache surgery (#452), and (4) the same guards now also cover the canonical `dws mcp` tree, which is built even earlier and sat outside all three defenses as originally cut (#454 — this release was re-cut on 2026-06-11 to include it; verified against the preserved real poisoned cache from the 2026-05-25 incident). Also in this release: `dws devdoc` gains RAG-backed Open Platform doc search and a new error-diagnosis command (#434), and `dws doc create` stops producing documents with two identical titles (#448).
+
+**Escaping a locked-out older binary**: a binary ≤1.0.35 bricked by a poisoned cache cannot run `dws upgrade`. Either bypass the cache for one invocation with `DWS_CACHE_DIR=$(mktemp -d) dws upgrade`, or delete `~/.dws/cache/<partition>/tools/` by hand, or reinstall via the install script. Once 1.0.36 is on the machine this never needs doing again.
+
+### Added
+
+- **`dws devdoc` — RAG-backed Open Platform doc search and error diagnosis** (#434; `internal/helpers/devdoc.go`, `internal/transport/client.go`) — `dws devdoc article search` now routes to the upstream `search_open_platform_docs_rag` tool, returning structured RAG/reference payloads (the CLI stays a thin invoker; no extra AI analysis layer). New `dws devdoc error diagnose` (alias `troubleshoot`) routes to `search_open_error_code_rag` for diagnosing DingTalk Open Platform API errors, with `--request-id` (hidden `--trace-id` kept for compatibility), `--error-code`, `--error-message`, `--api`, `--context`, `--query`, `--page`, `--size`. Transport-side: query parameters required by DingTalk MCP gateway URLs are preserved on the wire but their values are redacted from debug logs. Default MCP / skill hosts stay on production `https://mcp.dingtalk.com` (prepub remains runtime-configurable). Skill docs (mono + multi `dingtalk-devdoc`) and `docs/command-index.md` updated alongside.
+
+### Fixed
+
+- **CLI no longer bricks when the dynamic command build panics — degrades to built-in commands** (#447; `internal/app/legacy.go`) — `buildEnvelopeCommandsSafe` wraps the envelope-driven build in a local `recover()`. On panic the CLI logs it, prints a stderr hint, and falls back to the hardcoded helper commands, so `auth` / `cache` / `doctor` / `version` / `upgrade` and the helpers stay alive and `dws cache refresh` can rebuild the poisoned cache. Before this, the only recovery from the pre-1.0.32 lock-out class was manually deleting cache files; the duplicate-flag class itself had been fixed at the builder level, but any *future* panic class in the cache-driven build would have bricked the CLI again. Tests: `TestNewLegacyPublicCommandsPanicFallsBackToHelpers`, `TestNewLegacyPublicCommandsNoPanicKeepsDynamicPath`.
+- **Envelope-driven flag registration no longer panics on the four known malformed-envelope shapes** (#449; `internal/compat/registry.go`) — while reproducing the lock-out byte-for-byte, four envelope shapes were found still forwarded to pflag calls that panic, each bricking every invocation: a flag named `params` / `json` colliding with the reserved payload flags (the original `flag redefined: params` — earlier dedup fixes covered the alias list and Detail-schema path but not the primary name); two bindings resolving to the same long flag name across bindings; two flags claiming the same shorthand; and a multi-character shorthand. Two small guards applied at every registration site (`ApplyBindings`, `registerPositionalAliasFlags`): `canRegisterFlag` skips duplicate/reserved long names (the value stays reachable via `--params`), and `safeShorthand` drops an invalid or already-taken shorthand while keeping the long flag. The trailing `--json` / `--params` registration is now idempotent. Defense in depth with #447: the escape hatch should never trigger for these known vectors. Test: `TestBuildDynamicCommandsSurvivesMalformedFlagEnvelope` (5 table-driven vectors).
+- **Poisoned discovery cache now self-heals: quarantine + rebuild on panic, and `dws upgrade` clears discovery caches** (#452; `internal/app/legacy.go`, `internal/app/upgrade.go`, `internal/cache/store.go`) — #447's recovery is upgraded from "degrade and ask the user to run `dws cache refresh`" to a two-stage self-heal: on the first build panic the partition's discovery cache is moved aside to `<partition>.quarantined` (kept on disk for inspection; a previous quarantine is replaced so nothing accumulates — new `Store.QuarantinePartition`) and the build retried once against a fresh fetch. If the retry succeeds the user gets the full dynamic command tree with zero manual steps; only a second panic (remote envelope itself still poisoned, or offline) degrades to helper commands with the `cache refresh` hint. Additionally `dws upgrade` purges discovery-derived caches (`market` / `tools` / `detail` across all partitions — new `Store.PurgeDiscoveryData`) after a successful binary swap, leaving the co-located `downloads/` cache untouched, so an upgraded binary always rebuilds its command tree from fresh data instead of inheriting snapshots written by the old version. Tests: `internal/cache/store_quarantine_test.go`, rewritten `internal/app/legacy_panic_fallback_test.go` (self-heal success, double-panic degradation, no-cache no-op, happy path).
+- **Canonical `dws mcp` tree no longer escapes the poisoned-cache guards** (#454; `internal/cli/canonical.go`, `internal/app/root.go`) — the canonical tree is assembled from cached catalog data *before* the legacy command build, so a pflag panic there — a tool schema property named after the reserved `--params` flag, exactly what the 2026-05-25 incident cache contained — bypassed #447/#449/#452 entirely and still bricked every invocation, including on this release as originally cut. Two layers, mirroring the existing guards: `applyFlagSpecs` skips reserved (`--json`/`--params`), duplicate, and alias-colliding flag names and sanitizes shorthands (`canRegisterToolFlag` / `safeToolShorthand`; a skipped property stays reachable through the reserved JSON payload flags), and `newMCPCommand` wraps the build in the #452 recover → quarantine → retry-once → degrade-to-stub sequence. Verified against the preserved real poisoned cache: the original cut locks out on `--version` / `cache refresh` / `doctor`; this build self-heals on first run and `cache refresh` clears the poison. Tests: `internal/cli/canonical_flag_guard_test.go` (4 cases), `internal/app/canonical_panic_fallback_test.go` (4 cases mirroring the legacy fallback suite).
+- **`dws doc create` no longer produces a document with two identical headings** (#448; `internal/helpers/doc.go`) — the platform renders the document name as the page title, and LLM agents habitually repeat `# <title>` as the markdown body's first line despite the skill docs saying not to, so duplicate-heading documents kept appearing. The `doc create` helper (which wins the envelope merge via `preferLegacyLeaf`) now strips a leading ATX H1 whose text exactly equals `--name` (trimmed, case-insensitive) before forwarding to `create_document`, printing a stderr note so agents learn the convention. Deliberately conservative: only an exact match is removed (`# 背景` stays), ATX closing hashes are handled without over-trimming names ending in `#` (e.g. `C#`), H2+/setext headings are never touched, and a body that is nothing but the duplicate H1 omits the `markdown` param instead of sending an empty string. JSONML bodies are out of scope. Tests: `TestStripLeadingDuplicateTitleHeading` (9 cases) plus three end-to-end cobra tests asserting the exact `markdown` param sent.
+
 ## [1.0.35] - 2026-06-08
 
 ### Fixed

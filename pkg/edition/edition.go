@@ -53,6 +53,10 @@ type ToolCaller interface {
 	Format() string
 	// DryRun returns true when --dry-run is active.
 	DryRun() bool
+	// Fields returns the global --fields output projection ("" if unset).
+	Fields() string
+	// JQ returns the global --jq output filter expression ("" if unset).
+	JQ() string
 }
 
 // RuntimeDefaultFn resolves a single runtimeDefault placeholder (e.g.
@@ -68,6 +72,12 @@ type Hooks struct {
 	Name         string // "open" (default) / overlay identifier
 	ScenarioCode string // injected into x-dingtalk-scenario-code header
 
+	// ClawTypeValue is the claw identity carried in message-send tool
+	// arguments (parameter clawType) so the IM server can render the
+	// "Send from AI" indicator on delivered messages. Empty → falls back
+	// to DefaultOSSClawType; overlays set their own value (e.g. "wukong").
+	ClawTypeValue string
+
 	// --- runtime mode ---
 	IsEmbedded     bool // true when running inside a host application
 	HideAuthLogin  bool // true suppresses the "dws auth login" command
@@ -78,6 +88,9 @@ type Hooks struct {
 
 	// --- HTTP headers ---
 	MergeHeaders func(base map[string]string) map[string]string
+
+	// --- EnterpriseCredential HTTP headers ---
+	EnterpriseCredentialHeaders func(base map[string]string) map[string]string
 
 	// --- auth ---
 	AuthClientID      string // OAuth client ID for device-flow authorisation
@@ -164,4 +177,15 @@ func Override(h *Hooks) {
 	mu.Lock()
 	defer mu.Unlock()
 	current = h
+}
+
+// ClawType returns the claw identity for the active edition, falling back
+// to DefaultOSSClawType when the overlay does not set one. Message-send
+// helpers attach this value as the clawType tool argument so the IM server
+// can label delivered messages as sent via AI.
+func ClawType() string {
+	if v := Get().ClawTypeValue; v != "" {
+		return v
+	}
+	return DefaultOSSClawType
 }

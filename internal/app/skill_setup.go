@@ -21,6 +21,8 @@ var skillSetupAgentHomes = []string{
 	".agents/skills",
 	".claude/skills",
 	".cursor/skills",
+	".qoder/skills",
+	".qoderwork/skills",
 	".gemini/skills",
 	".codex/skills",
 	".github/skills",
@@ -56,7 +58,8 @@ multi 模式支持按产品挑选：
   -x/--exclude 从全装里剔除指定子 skill（可重复，与 --skill 互斥）
   未列出的已有 dingtalk-* skill 会保留（additive 叠加语义）
 
-不带 --mode 时进入交互式询问；不带 --target 时铺到所有检测到的 Agent 目录。`,
+不带 --mode 时进入交互式询问；不带 --target 时铺到所有检测到的 Agent 目录。
+skill 源默认取二进制内嵌的版本（升级二进制即升级 skill）；--source / DWS_SKILL_SOURCE 可显式覆盖。`,
 		Example: `  dws skill setup                                       # 交互式
   dws skill setup --mode mono --yes                     # 非交互装 mono
   dws skill setup --mode multi --target claude          # multi 全装到 ~/.claude/skills/
@@ -68,7 +71,7 @@ multi 模式支持按产品挑选：
 	}
 	cmd.Flags().String("mode", "", "skill 模式：mono | multi（不指定则交互询问）")
 	cmd.Flags().String("target", "all", "目标 Agent：all | "+supportedTargets())
-	cmd.Flags().String("source", "", "skill 源目录（默认自动查找二进制旁边或当前目录）")
+	cmd.Flags().String("source", "", "skill 源目录（默认使用二进制内嵌的 skill 源，与当前版本一致）")
 	cmd.Flags().Bool("yes", false, "跳过所有确认提示")
 	cmd.Flags().StringSliceP("skill", "s", nil, "multi 模式：仅安装指定子 skill（可重复，接受短名 aitable 或全名 dingtalk-aitable）")
 	cmd.Flags().StringSliceP("exclude", "x", nil, "multi 模式：从全装中剔除指定子 skill（可重复，与 --skill 互斥）")
@@ -95,10 +98,11 @@ func runSkillSetup(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("--skill / --exclude 仅在 --mode multi 下有效（mono 只有一个 skill，无需挑选）")
 	}
 
-	skillSrc, err := resolveSkillSetupSource(source, mode)
+	skillSrc, srcCleanup, err := resolveSkillSetupSourceOrEmbedded(source, mode)
 	if err != nil {
 		return err
 	}
+	defer srcCleanup()
 
 	dests, err := resolveSkillSetupTargets(target, mode)
 	if err != nil {
@@ -119,7 +123,22 @@ func runSkillSetup(cmd *cobra.Command, _ []string) error {
 		if filterErr != nil {
 			return filterErr
 		}
-		multiSkillNames = filtered
+		// dws-shared carries the global rules every product skill declares as a
+		// PREREQUISITE; it must ship even when --skill / --exclude narrows the set.
+		multiSkillNames = ensureMandatorySharedSkill(filtered, allMultiSkillNames)
+	}
+
+	// --dry-run：仅预览将安装的内容与目标目录，不写入任何文件、不弹确认。
+	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
+		fmt.Fprintf(out, "[DRY-RUN] 预览（不写入任何文件）：mode=%s，来源 %s\n", mode, skillSrc)
+		fmt.Fprintln(out, "将安装到：")
+		for _, d := range dests {
+			fmt.Fprintf(out, "  - %s\n", d)
+		}
+		if mode == skillSetupModeMulti && len(multiSkillNames) > 0 {
+			fmt.Fprintf(out, "子 skill：%s\n", strings.Join(multiSkillNames, ", "))
+		}
+		return nil
 	}
 
 	if !autoYes {
@@ -155,6 +174,33 @@ func runSkillSetup(cmd *cobra.Command, _ []string) error {
 // multiSkillPrefix is the canonical prefix for every per-product skill
 // bundle in skills/multi/ (e.g. dingtalk-aitable, dingtalk-calendar).
 const multiSkillPrefix = "dingtalk-"
+
+// multiSharedSkill is the shared, non-product skill that every per-product
+// skill declares as a PREREQUISITE. It must always be installed in multi mode
+// regardless of --skill / --exclude, otherwise the product skills reference a
+// dws-shared that was never installed.
+const multiSharedSkill = "dws-shared"
+
+// ensureMandatorySharedSkill guarantees the shared dependency skill is included
+// whenever it exists in the source, even if --skill / --exclude narrowed it out.
+func ensureMandatorySharedSkill(selected, all []string) []string {
+	hasShared := false
+	for _, n := range all {
+		if n == multiSharedSkill {
+			hasShared = true
+			break
+		}
+	}
+	if !hasShared {
+		return selected
+	}
+	for _, n := range selected {
+		if n == multiSharedSkill {
+			return selected
+		}
+	}
+	return append([]string{multiSharedSkill}, selected...)
+}
 
 // normalizeMultiSkillName accepts either the short form (aitable) or the
 // full form (dingtalk-aitable) and returns the canonical full form.
@@ -313,7 +359,31 @@ func resolveSkillSetupMode(mode string, autoYes bool, out io.Writer) (string, er
 func resolveSkillSetupSource(explicit, mode string) (string, error) {
 	subdir := mode // "mono" or "multi"
 
-	candidates := skillSourceCandidates(explicit, subdir)
+	// An explicit override (--source flag or DWS_SKILL_SOURCE) wins, and an
+	// override that does not contain a skill root is an error — never a
+	// silent fallback to another source the user did not ask for.
+	var overrides []string
+	if explicit != "" {
+		overrides = append(overrides, explicit, filepath.Join(explicit, "skills", subdir))
+	}
+	if env := strings.TrimSpace(os.Getenv("DWS_SKILL_SOURCE")); env != "" {
+		overrides = append(overrides, env, filepath.Join(env, "skills", subdir))
+	}
+	if len(overrides) > 0 {
+		for _, c := range overrides {
+			if isSkillSourceRoot(c, mode) {
+				return c, nil
+			}
+		}
+		hint := strings.Join(overrides, "\n  - ")
+		return "", fmt.Errorf("未找到 %s 模式的 skill 源目录（--source / DWS_SKILL_SOURCE 显式指定时不回退到内嵌源），已尝试：\n  - %s", mode, hint)
+	}
+
+	// No explicit override: legacy fallback only — embedded materialization
+	// is handled by resolveSkillSetupSourceOrEmbedded (skill_setup_embed.go),
+	// the wrapper that callers use. This branch is reachable only when the
+	// wrapper passes through with an empty explicit/env (legacy direct call).
+	candidates := skillSourceCandidates("", subdir)
 	for _, c := range candidates {
 		if isSkillSourceRoot(c, mode) {
 			return c, nil
@@ -639,7 +709,14 @@ func copyFileContent(src, dst string, mode os.FileMode) error {
 }
 
 func isInteractiveTerminal() bool {
-	fi, err := os.Stdin.Stat()
+	return isCharDevice(os.Stdin) && isCharDevice(os.Stdout) && isCharDevice(os.Stderr)
+}
+
+func isCharDevice(file *os.File) bool {
+	if file == nil {
+		return false
+	}
+	fi, err := file.Stat()
 	if err != nil {
 		return false
 	}

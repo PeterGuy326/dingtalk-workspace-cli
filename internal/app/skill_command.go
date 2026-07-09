@@ -95,12 +95,13 @@ var agentSkillPaths = map[string]string{
 	// `agents` is the generic-agent sentinel: install scripts and `setup`
 	// special-case ~/.agents/skills as a no-checks-required fallback so a
 	// fresh machine without any IDE/agent registry still gets skills.
-	"agents":   ".agents/skills",
-	"qoder":    ".qoder/skills",
-	"claude":   ".claude/skills",
-	"cursor":   ".cursor/skills",
-	"codex":    ".codex/skills",
-	"opencode": filepath.Join(".config", "opencode", "skills"),
+	"agents":    ".agents/skills",
+	"qoder":     ".qoder/skills",
+	"qoderwork": ".qoderwork/skills",
+	"claude":    ".claude/skills",
+	"cursor":    ".cursor/skills",
+	"codex":     ".codex/skills",
+	"opencode":  filepath.Join(".config", "opencode", "skills"),
 	// IDE / agent registries also probed by `dws skill setup --target all`.
 	"gemini":   ".gemini/skills",
 	"github":   ".github/skills",
@@ -209,7 +210,9 @@ func newSkillSearchCommand() *cobra.Command {
 	}
 	cmd.Flags().String("query", "", "搜索关键词（必填）")
 	_ = cmd.MarkFlagRequired("query")
-	cmd.Flags().String("scopes", "", "查询范围，空格分隔。备选值：DingtalkMarket（钉钉市场）、OrgInternal（企业内部）。为空默认查市场技能")
+	cmd.Flags().String("source", "", "查询范围，空格分隔。备选值：DingtalkMarket（钉钉市场）、OrgInternal（企业内部）")
+	cmd.Flags().String("scopes", "", "查询范围（已废弃，请使用 --source）")
+	_ = cmd.Flags().MarkDeprecated("scopes", "请使用 --source 替代")
 	return cmd
 }
 
@@ -288,15 +291,18 @@ func runSkillGet(cmd *cobra.Command, args []string) error {
 
 func runSkillFind(cmd *cobra.Command, args []string) error {
 	keyword, _ := cmd.Flags().GetString("query")
-	scopes, _ := cmd.Flags().GetString("scopes")
+	source, _ := cmd.Flags().GetString("source")
+	if source == "" {
+		source, _ = cmd.Flags().GetString("scopes")
+	}
 	accessToken, err := loadSkillAccessToken()
 	if err != nil {
 		return err
 	}
 
 	apiURL := fmt.Sprintf("%s/cli/find-skills?keyword=%s", skillAPIHost(), url.QueryEscape(strings.TrimSpace(keyword)))
-	if scopes != "" {
-		apiURL += "&scopes=" + url.QueryEscape(scopes)
+	if source != "" {
+		apiURL += "&source=" + url.QueryEscape(source)
 	}
 	req, err := http.NewRequestWithContext(cmd.Context(), http.MethodGet, apiURL, nil)
 	if err != nil {

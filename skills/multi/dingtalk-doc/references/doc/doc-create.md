@@ -11,8 +11,8 @@
 
 > `dws doc create` 只能创建在线文字文档（adoc），**不要**用它承接所有「新建 xxx」请求。收到「创建/新建」类需求时，必须先按文件类型分流：
 >
-> - 用户说「创建表格 / 新建表格 / 建个电子表格 / 在线表格 / 销售数据表」等 → 走 [`dws sheet create`](../../../dingtalk-sheet/references/sheet.md#创建钉钉表格文档)（钉钉在线电子表格 `axls`），**不要**走 `doc create`
-> - 用户说「创建多维表格 / 新建 AI 表格 / 建个 base / 数据库表」等 → 走 [`dws aitable base create`](../../../dingtalk-aitable/references/aitable.md#创建-ai-表格)（多维表格 `able`），**不要**走 `doc create`
+> - 用户说「创建表格 / 新建表格 / 建个电子表格 / 在线表格 / 销售数据表」等 → 走 [`dws sheet create`](../sheet.md#创建钉钉表格文档)（钉钉在线电子表格 `axls`），**不要**走 `doc create`
+> - 用户说「创建多维表格 / 新建 AI 表格 / 建个 base / 数据库表」等 → 走 [`dws aitable base create`](../aitable.md#创建-ai-表格)（多维表格 `able`），**不要**走 `doc create`
 > - 用户说「创建文档 / 新建文档 / 写篇文档 / 会议纪要 / 周报 / 方案」等文字型内容 → 才走 `dws doc create`
 >
 > 一句话口诀：表格 → sheet/aitable；文档 → doc。
@@ -35,8 +35,7 @@ Flags:
       --content string        文档初始内容（短文本字面量）；传 - 表示从 stdin 读取
       --content-file string   从文件读取文档内容（UTF-8）。推荐长/多行/表格内容使用
       --content-format string         内容格式: 默认为 markdown，可选 jsonml
-      --fix-jsonml              启用全部 JSONML 修复（含 JSON 语法修复 + 结构修复），推荐 agent 调用时使用
-      --no-fix-jsonml           关闭全部 JSONML 修复（跳过 JSON 语法修复和结构修复），用于排查原始错误
+      --fix-jsonml              启用 JSON 语法修复（括号/逗号补全），推荐 agent 调用时使用
 ```
 
 ## 关键说明

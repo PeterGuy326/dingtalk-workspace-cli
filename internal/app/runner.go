@@ -17,6 +17,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -111,7 +112,7 @@ func logHostOwnedPATDecisionOnce() {
 	hostOwnedPATDecisionOnce.Do(func() {
 		slog.Debug("runtime.host_owned_pat",
 			"hostOwned", authpkg.HostOwnsPATFlow(),
-			"agentCodeEnvPresent", os.Getenv(authpkg.AgentCodeEnv) != "",
+			"agentCodeEnvPresent", authpkg.AgentCodeEnvPresent(),
 		)
 	})
 }
@@ -161,6 +162,18 @@ func (r *runtimeRunner) Run(ctx context.Context, invocation executor.Invocation)
 	// invocations within the same process free.
 	logHostOwnedPATDecisionOnce()
 
+	selections, multi, err := resolveMultiProfileSelections(defaultConfigDir(), authpkg.RuntimeProfile())
+	if err != nil {
+		return executor.Result{}, apperrors.NewValidation(err.Error())
+	}
+	if multi {
+		return r.runMultiProfile(ctx, invocation, selections)
+	}
+
+	return r.runSingle(ctx, invocation, true)
+}
+
+func (r *runtimeRunner) runSingle(ctx context.Context, invocation executor.Invocation, prefetchToken bool) (executor.Result, error) {
 	if r.loader == nil || r.transport == nil {
 		return r.fallback.Run(ctx, invocation)
 	}
@@ -178,7 +191,9 @@ func (r *runtimeRunner) Run(ctx context.Context, invocation executor.Invocation)
 	// Prefetch the Keychain token in the background. Keychain access costs
 	// ~70ms on macOS; starting it here lets the load overlap with endpoint
 	// resolution and catalog loading below.
-	go getCachedRuntimeToken(ctx)
+	if prefetchToken {
+		go getCachedRuntimeToken(ctx)
+	}
 
 	if shouldUseDirectRuntime(invocation) {
 		if endpoint, ok := directRuntimeEndpoint(invocation.CanonicalProduct, invocation.Tool); ok {
@@ -238,6 +253,144 @@ func (r *runtimeRunner) Run(ctx context.Context, invocation executor.Invocation)
 	return r.executeInvocation(ctx, endpoint, invocation)
 }
 
+type multiProfileSelection struct {
+	Selector string
+	Profile  authpkg.Profile
+}
+
+func resolveMultiProfileSelections(configDir, rawSelector string) ([]multiProfileSelection, bool, error) {
+	rawSelector = strings.TrimSpace(rawSelector)
+	if rawSelector == "" || !strings.Contains(rawSelector, ",") {
+		return nil, false, nil
+	}
+	if p, err := authpkg.ResolveProfile(configDir, rawSelector); err == nil && p != nil {
+		return nil, false, nil
+	}
+
+	parts := strings.Split(rawSelector, ",")
+	selections := make([]multiProfileSelection, 0, len(parts))
+	seen := make(map[string]bool, len(parts))
+	for _, part := range parts {
+		selector := strings.TrimSpace(part)
+		if selector == "" {
+			return nil, false, fmt.Errorf("--profile contains an empty profile selector: %q", rawSelector)
+		}
+		profile, err := authpkg.ResolveProfile(configDir, selector)
+		if err != nil {
+			return nil, false, err
+		}
+		if profile == nil {
+			return nil, false, fmt.Errorf("profile %q not found", selector)
+		}
+		if seen[profile.CorpID] {
+			continue
+		}
+		seen[profile.CorpID] = true
+		selections = append(selections, multiProfileSelection{
+			Selector: selector,
+			Profile:  *profile,
+		})
+	}
+	if len(selections) == 0 {
+		return nil, false, nil
+	}
+	return selections, true, nil
+}
+
+func (r *runtimeRunner) runMultiProfile(ctx context.Context, invocation executor.Invocation, selections []multiProfileSelection) (executor.Result, error) {
+	previousProfile := authpkg.RuntimeProfile()
+	defer authpkg.SetRuntimeProfile(previousProfile)
+
+	entries := make([]any, 0, len(selections))
+	succeeded := 0
+	failed := 0
+
+	for _, selection := range selections {
+		authpkg.SetRuntimeProfile(selection.Profile.CorpID)
+		result, err := r.runSingle(ctx, cloneInvocation(invocation), false)
+
+		entry := map[string]any{
+			"selector": selection.Selector,
+			"corpId":   selection.Profile.CorpID,
+			"corpName": selection.Profile.CorpName,
+			"ok":       err == nil,
+		}
+		if err != nil {
+			failed++
+			entry["error"] = multiProfileErrorPayload(err)
+		} else {
+			succeeded++
+			if payload := multiProfileResultPayload(result); payload != nil {
+				entry["result"] = payload
+			}
+			if result.Response != nil {
+				if endpoint, ok := result.Response["endpoint"]; ok {
+					entry["endpoint"] = endpoint
+				}
+			}
+		}
+		entries = append(entries, entry)
+	}
+
+	invocation.Implemented = true
+	return executor.Result{
+		Invocation: invocation,
+		Response: map[string]any{
+			"content": map[string]any{
+				"success":      failed == 0,
+				"multiProfile": true,
+				"summary": map[string]any{
+					"total":     len(selections),
+					"succeeded": succeeded,
+					"failed":    failed,
+				},
+				"profiles": entries,
+			},
+		},
+	}, nil
+}
+
+func cloneInvocation(invocation executor.Invocation) executor.Invocation {
+	cloned := invocation
+	if invocation.Params != nil {
+		cloned.Params = make(map[string]any, len(invocation.Params))
+		for key, value := range invocation.Params {
+			cloned.Params[key] = value
+		}
+	}
+	return cloned
+}
+
+func multiProfileResultPayload(result executor.Result) any {
+	if result.Response == nil {
+		return nil
+	}
+	if content, ok := result.Response["content"]; ok {
+		return content
+	}
+	return result.Response
+}
+
+func multiProfileErrorPayload(err error) map[string]any {
+	payload := map[string]any{
+		"message": err.Error(),
+	}
+	var typed *apperrors.Error
+	if errors.As(err, &typed) {
+		payload["category"] = string(typed.Category)
+		if typed.Reason != "" {
+			payload["reason"] = typed.Reason
+		}
+		if typed.Operation != "" {
+			payload["operation"] = typed.Operation
+		}
+		if code := typed.ExitCode(); code != 0 {
+			payload["exitCode"] = code
+		}
+	}
+	return payload
+}
+
 // handleCatalogMiss decides what to do when discovery catalog does not cover the
 // requested product / tool and no `directRuntimeEndpoint` match fired earlier.
 //
@@ -259,13 +412,26 @@ func (r *runtimeRunner) handleCatalogMiss(ctx context.Context, invocation execut
 		invocation.DryRun = true
 		return r.fallback.Run(ctx, invocation)
 	}
+	hint := "当前命令已注册，但静态端点目录中缺少对应 product/server endpoint。这通常是服务发现下线后的同步产物缺口，不是参数错误；请不要通过反复调整 flag 重试。"
+	actions := []string{
+		"确认 internal/syncdata.StaticServers() 是否包含该 product/server",
+		"运行 sync-oss 重新生成静态端点与路由",
+		"若该能力已下线，请在 skill 与 --help 中标记 unavailable 并提供替代命令",
+	}
+	if strings.TrimSpace(invocation.CanonicalProduct) == devappProductID {
+		hint = "dev app（product id: devapp）是 helper-only 产品，命令树不依赖服务发现；真实调用需要通过 StaticServers/SupplementServers 注入 MCP endpoint，或本地调试临时设置 DINGTALK_DEVAPP_MCP_URL。"
+		actions = []string{
+			"检查 StaticServers/SupplementServers 是否包含 devapp endpoint",
+			"本地调试可临时设置 DINGTALK_DEVAPP_MCP_URL 后重试",
+		}
+	}
 	return executor.Result{}, apperrors.NewAPI(
 		fmt.Sprintf("endpoint not resolved for product %q (tool %q): %s", invocation.CanonicalProduct, invocation.Tool, detail),
 		apperrors.WithOperation("discovery.resolve"),
 		apperrors.WithReason("endpoint_not_resolved"),
 		apperrors.WithServerKey(invocation.CanonicalProduct),
-		apperrors.WithHint("产品 envelope 可能未下发到 discovery，或已经被 serverDeps fail-fast 丢弃；可执行 'dws cache refresh' 强制重新 discovery，仍失败请向 Portal 确认 envelope 状态。"),
-		apperrors.WithActions("dws cache refresh"),
+		apperrors.WithHint(hint),
+		apperrors.WithActions(actions...),
 	)
 }
 
@@ -324,6 +490,14 @@ func (r *runtimeRunner) executeInvocation(ctx context.Context, endpoint string, 
 		invocation.CanonicalProduct, invocation.Tool, endpoint, version, authToken != "", timeoutSec)
 
 	if invocation.DryRun {
+		// Emit a wukong-aligned human-readable preview on stderr so the dry-run
+		// surface advertises the resolved MCP arguments without polluting the
+		// stdout payload (which stays valid JSON in --format json mode). Mirrors
+		// wukong's "Arguments: {...}" dry-run line; stderr keeps it out of the
+		// machine-readable channel.
+		if argsJSON, err := json.Marshal(invocation.Params); err == nil {
+			fmt.Fprintf(os.Stderr, "DRY-RUN Arguments: %s\n", argsJSON)
+		}
 		return executor.Result{
 			Invocation: invocation,
 			Response: map[string]any{
@@ -483,6 +657,15 @@ func (r *runtimeRunner) executeInvocation(ctx context.Context, endpoint string, 
 	}
 
 	invocation.Implemented = true
+	// Align with wukong's response envelope: stamp a top-level success=true on
+	// map payloads that don't already carry a success flag. Business errors
+	// (success=false) are intercepted above, so reaching here means the call
+	// succeeded. Additive only — existing keys are never overwritten.
+	if callResult.Content != nil {
+		if _, has := callResult.Content["success"]; !has {
+			callResult.Content["success"] = true
+		}
+	}
 	response := map[string]any{
 		"endpoint": transport.RedactURL(endpoint),
 		"content":  callResult.Content,
@@ -577,28 +760,40 @@ func resolveRuntimeAuthToken(ctx context.Context, explicitToken string) string {
 
 // Cached token state for process lifetime
 var (
-	cachedRuntimeToken     string
-	cachedRuntimeTokenOnce sync.Once
+	cachedRuntimeTokenMu sync.Mutex
+	cachedRuntimeTokens  = map[string]string{}
 )
 
 // getCachedRuntimeToken returns a cached access token, loading it only once per process.
 // This avoids repeated Keychain access which takes ~70ms each time.
 func getCachedRuntimeToken(ctx context.Context) string {
-	cachedRuntimeTokenOnce.Do(func() {
-		loadStart := time.Now()
-		defer func() { RecordTiming(ctx, "auth_keychain", time.Since(loadStart)) }()
+	cacheKey := strings.TrimSpace(authpkg.RuntimeProfile())
+	if cacheKey == "" {
+		cacheKey = "__default__"
+	}
+	cachedRuntimeTokenMu.Lock()
+	if token := cachedRuntimeTokens[cacheKey]; token != "" {
+		cachedRuntimeTokenMu.Unlock()
+		return token
+	}
+	cachedRuntimeTokenMu.Unlock()
 
-		configDir := defaultConfigDir()
-		token, tokenErr := resolveAccessTokenFromDir(ctx, configDir)
-		if tokenErr != nil && errors.Is(tokenErr, authpkg.ErrTokenDecryption) {
-			slog.Error(tokenErr.Error())
-			return
-		}
-		if token != "" {
-			cachedRuntimeToken = token
-		}
-	})
-	return cachedRuntimeToken
+	loadStart := time.Now()
+	defer func() { RecordTiming(ctx, "auth_keychain", time.Since(loadStart)) }()
+
+	configDir := defaultConfigDir()
+	token, tokenErr := resolveAccessTokenFromDir(ctx, configDir)
+	if tokenErr != nil && errors.Is(tokenErr, authpkg.ErrTokenDecryption) {
+		slog.Error(tokenErr.Error())
+		return ""
+	}
+	if token == "" {
+		return ""
+	}
+	cachedRuntimeTokenMu.Lock()
+	cachedRuntimeTokens[cacheKey] = token
+	cachedRuntimeTokenMu.Unlock()
+	return token
 }
 
 // generateExecutionID returns a random 16-char hex string used to correlate
@@ -613,8 +808,9 @@ func generateExecutionID() string {
 // ResetRuntimeTokenCache clears the cached token, forcing a reload on next access.
 // This should be called after login/logout operations.
 func ResetRuntimeTokenCache() {
-	cachedRuntimeTokenOnce = sync.Once{}
-	cachedRuntimeToken = ""
+	cachedRuntimeTokenMu.Lock()
+	defer cachedRuntimeTokenMu.Unlock()
+	cachedRuntimeTokens = map[string]string{}
 }
 
 func newRuntimeContentScanner() safety.Scanner {
@@ -687,9 +883,31 @@ func resolveIdentityHeaders() map[string]string {
 	if sessionID == "" {
 		sessionID = os.Getenv(envRewindSessionID)
 	}
+	// Resolve the agent_code (accuracy-first; unknown hosts stay empty) and the
+	// per-(machine × agent_code) instance id when a code is known. Synthetic
+	// fallbacks must not be sent because PAT authorization checks use the same
+	// header as their grant key.
+	//
+	// Backward-compat by design (additive, not breaking):
+	//   - x-dws-agent-id keeps its v1 meaning = machine-level install UUID
+	//     (set by id.Headers() above), so old/new clients stay comparable.
+	//   - x-dws-agent-instance-id is NEW: the per-(machine × agent_code) id,
+	//     sent only when x-dingtalk-dws-agent-code is non-empty.
+	// Note: x-dws-channel (DWS_CHANNEL) is a separate axis, untouched.
+	agentCode, agentCodeSig := authpkg.DetectAgentCode()
+	if agentInstanceID := id.ResolveAgentID(defaultConfigDir(), agentCode, agentCodeSig); agentInstanceID != "" {
+		headers["x-dws-agent-instance-id"] = agentInstanceID
+	}
+
+	// Emit the CLI version on the wire so the gateway can segment old vs new
+	// clients (and scope agent_code coverage / adoption). The header constant
+	// existed but was never set; wire it here.
+	if version != "" {
+		headers[transport.HeaderVersion] = version
+	}
 	envHeaders := map[string]string{
 		"x-dingtalk-agent":          os.Getenv(envDingtalkAgent),
-		"x-dingtalk-dws-agent-code": strings.TrimSpace(os.Getenv(authpkg.AgentCodeEnv)),
+		"x-dingtalk-dws-agent-code": agentCode,
 		"x-dingtalk-trace-id":       os.Getenv(envDingtalkTraceID),
 		"x-dingtalk-session-id":     sessionID,
 		"x-dingtalk-message-id":     os.Getenv(envDingtalkMessageID),
@@ -709,6 +927,9 @@ func resolveIdentityHeaders() map[string]string {
 	if fn := edition.Get().MergeHeaders; fn != nil {
 		headers = fn(headers)
 	}
+	if fn := edition.Get().EnterpriseCredentialHeaders; fn != nil {
+		headers = fn(headers)
+	}
 	return headers
 }
 
@@ -716,13 +937,23 @@ func resolveIdentityHeaders() map[string]string {
 // errors (success=false + errorCode/errorMsg) that are not flagged at the MCP
 // protocol level. Returns the error message, or "" if the response is OK.
 func detectBusinessError(content map[string]any) string {
+	return detectBusinessErrorAtDepth(content, 0)
+}
+
+func detectBusinessErrorAtDepth(content map[string]any, depth int) string {
+	if content == nil || depth > 8 {
+		return ""
+	}
 	success, ok := content["success"]
 	if !ok {
-		return ""
+		return detectNestedBusinessError(content, depth)
 	}
 	b, ok := success.(bool)
 	if !ok || b {
-		return ""
+		return detectNestedBusinessError(content, depth)
+	}
+	if nested := detectNestedBusinessError(content, depth); nested != "" {
+		return nested
 	}
 	if msg, ok := content["errorMsg"].(string); ok && strings.TrimSpace(msg) != "" {
 		return strings.TrimSpace(msg)
@@ -731,6 +962,28 @@ func detectBusinessError(content map[string]any) string {
 		return "business error: code " + strings.TrimSpace(code)
 	}
 	return "business error: success=false"
+}
+
+func detectNestedBusinessError(content map[string]any, depth int) string {
+	for _, key := range []string{"content", "result", "data"} {
+		switch child := content[key].(type) {
+		case map[string]any:
+			if msg := detectBusinessErrorAtDepth(child, depth+1); msg != "" {
+				return msg
+			}
+		case []any:
+			for _, item := range child {
+				childMap, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				if msg := detectBusinessErrorAtDepth(childMap, depth+1); msg != "" {
+					return msg
+				}
+			}
+		}
+	}
+	return ""
 }
 
 // extractMCPErrorMessage builds an error message from a ToolCallResult with

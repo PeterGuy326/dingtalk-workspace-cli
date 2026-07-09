@@ -21,14 +21,16 @@ import (
 	"time"
 
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cache"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/market"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/keychain"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/tui"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/upgrade"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/config"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
 )
+
+var doctorKeychainDiagnose = keychain.Diagnose
 
 // checkStatus represents the outcome of a single doctor check.
 type checkStatus string
@@ -77,6 +79,9 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 	authResult := doctorCheckAuth(cmd.Context(), w, jsonOut)
 	checks = append(checks, authResult)
 
+	keychainResult := doctorCheckKeychain(w, jsonOut)
+	checks = append(checks, keychainResult)
+
 	networkResult := doctorCheckNetwork(cmd.Context(), w, jsonOut, networkTimeout)
 	checks = append(checks, networkResult)
 
@@ -112,7 +117,8 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 		return output.WriteJSON(w, result)
 	}
 
-	fmt.Fprintf(w, "\n诊断完成: %d 项通过, %d 项警告, %d 项失败\n", pass, warn, fail)
+	fmt.Fprintf(w, "\n%s\n", tui.Header("Doctor", fmt.Sprintf("%d pass · %d warn · %d fail", pass, warn, fail)))
+	fmt.Fprintf(w, "%s 诊断完成: %d 项通过, %d 项警告, %d 项失败\n", tui.StateMark("ok"), pass, warn, fail)
 	if fail > 0 {
 		return fmt.Errorf("诊断发现 %d 项失败", fail)
 	}
@@ -123,7 +129,7 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 
 func doctorCheckAuth(ctx context.Context, w io.Writer, jsonOut bool) checkResult {
 	if !jsonOut {
-		fmt.Fprint(w, "检查登录状态...       ")
+		fmt.Fprint(w, tui.Dim("检查登录状态...       "))
 	}
 
 	configDir := defaultConfigDir()
@@ -132,6 +138,19 @@ func doctorCheckAuth(ctx context.Context, w io.Writer, jsonOut bool) checkResult
 
 	data, err := provider.Status()
 	if err != nil || data == nil {
+		if diagnostic := authStatusDiagnosticFromError(err); diagnostic != nil {
+			r := checkResult{
+				Name:    "auth",
+				Status:  statusFail,
+				Message: diagnostic.Message,
+				Hint:    diagnostic.Hint,
+				Detail:  map[string]string{"reason": diagnostic.Reason},
+			}
+			if !jsonOut {
+				printCheckResult(w, r)
+			}
+			return r
+		}
 		r := checkResult{Name: "auth", Status: statusFail, Message: "未登录"}
 		if !edition.Get().IsEmbedded {
 			r.Hint = "运行 dws auth login 进行登录"
@@ -182,24 +201,55 @@ func doctorCheckAuth(ctx context.Context, w io.Writer, jsonOut bool) checkResult
 	return r
 }
 
+// ── Keychain check ─────────────────────────────────────────────────────
+
+func doctorCheckKeychain(w io.Writer, jsonOut bool) checkResult {
+	if !jsonOut {
+		fmt.Fprint(w, tui.Dim("检查钥匙串状态...     "))
+	}
+
+	diagnostic := doctorKeychainDiagnose()
+	r := checkResult{
+		Name:    "keychain",
+		Status:  statusPass,
+		Message: diagnostic.Message,
+		Detail:  diagnostic.Detail,
+	}
+	if !diagnostic.OK {
+		r.Status = statusFail
+		r.Hint = diagnostic.Hint
+		if diagnostic.Detail == nil {
+			r.Detail = map[string]string{"reason": diagnostic.Reason}
+		} else if diagnostic.Reason != "" {
+			detail := make(map[string]string, len(diagnostic.Detail)+1)
+			for k, v := range diagnostic.Detail {
+				detail[k] = v
+			}
+			detail["reason"] = diagnostic.Reason
+			r.Detail = detail
+		}
+	}
+	if !jsonOut {
+		printCheckResult(w, r)
+	}
+	return r
+}
+
 // ── Network check ───────────────────────────────────────────────────────
 
 func doctorCheckNetwork(ctx context.Context, w io.Writer, jsonOut bool, timeout time.Duration) checkResult {
 	if !jsonOut {
-		fmt.Fprint(w, "检查网络连通性...     ")
+		fmt.Fprint(w, tui.Dim("检查网络连通性...     "))
 	}
 
 	baseURL := config.GetMCPBaseURL()
 	httpClient := &http.Client{Timeout: timeout}
-	client := market.NewClient(baseURL, httpClient)
 
 	start := time.Now()
 	reqCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	_, err := client.FetchServers(reqCtx, 1)
-	latency := time.Since(start)
-
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, baseURL, nil)
 	if err != nil {
 		r := checkResult{
 			Name:    "network",
@@ -212,6 +262,22 @@ func doctorCheckNetwork(ctx context.Context, w io.Writer, jsonOut bool, timeout 
 		}
 		return r
 	}
+
+	resp, err := httpClient.Do(req)
+	latency := time.Since(start)
+	if err != nil {
+		r := checkResult{
+			Name:    "network",
+			Status:  statusFail,
+			Message: fmt.Sprintf("%s 不可达: %v", baseURL, err),
+			Hint:    "请检查网络连接或代理设置",
+		}
+		if !jsonOut {
+			printCheckResult(w, r)
+		}
+		return r
+	}
+	resp.Body.Close()
 
 	r := checkResult{
 		Name:    "network",
@@ -228,67 +294,13 @@ func doctorCheckNetwork(ctx context.Context, w io.Writer, jsonOut bool, timeout 
 
 func doctorCheckCache(w io.Writer, jsonOut bool) checkResult {
 	if !jsonOut {
-		fmt.Fprint(w, "检查缓存状态...       ")
+		fmt.Fprint(w, tui.Dim("检查缓存状态...       "))
 	}
 
-	store := cacheStoreFromEnv()
-	files, _, err := cacheDirectoryStats(store.Root)
-	if err != nil {
-		r := checkResult{
-			Name:    "cache",
-			Status:  statusFail,
-			Message: fmt.Sprintf("缓存目录不可读: %v", err),
-			Hint:    "运行 dws cache clean 清理后重试",
-		}
-		if !jsonOut {
-			printCheckResult(w, r)
-		}
-		return r
-	}
-
-	entries, _ := store.ListToolsCacheEntries(config.DefaultPartition)
-
-	if files == 0 && len(entries) == 0 {
-		r := checkResult{
-			Name:    "cache",
-			Status:  statusWarn,
-			Message: "缓存为空 (首次使用)",
-			Hint:    "运行任意 dws 命令后将自动建立缓存",
-		}
-		if !jsonOut {
-			printCheckResult(w, r)
-		}
-		return r
-	}
-
-	staleCount := 0
-	for _, e := range entries {
-		if e.Freshness == cache.FreshnessStale {
-			staleCount++
-		}
-	}
-
-	if staleCount > 0 {
-		r := checkResult{
-			Name:    "cache",
-			Status:  statusWarn,
-			Message: fmt.Sprintf("%d 个文件, %d 个工具缓存, %d 个已过期", files, len(entries), staleCount),
-			Hint:    "运行 dws cache refresh 刷新缓存",
-		}
-		if !jsonOut {
-			printCheckResult(w, r)
-		}
-		return r
-	}
-
-	msg := fmt.Sprintf("%d 个文件, %d 个工具缓存", files, len(entries))
-	if len(entries) > 0 {
-		msg += ", 全部新鲜"
-	}
 	r := checkResult{
 		Name:    "cache",
 		Status:  statusPass,
-		Message: msg,
+		Message: "静态端点模式, 无需缓存",
 	}
 	if !jsonOut {
 		printCheckResult(w, r)
@@ -300,7 +312,7 @@ func doctorCheckCache(w io.Writer, jsonOut bool) checkResult {
 
 func doctorCheckVersion(w io.Writer, jsonOut bool, timeout time.Duration) checkResult {
 	if !jsonOut {
-		fmt.Fprint(w, "检查版本更新...       ")
+		fmt.Fprint(w, tui.Dim("检查版本更新...       "))
 	}
 
 	currentVer := version
@@ -348,9 +360,18 @@ func doctorCheckVersion(w io.Writer, jsonOut bool, timeout time.Duration) checkR
 
 func printCheckResult(w io.Writer, r checkResult) {
 	icon := statusIcon(r.Status)
-	fmt.Fprintf(w, "%s %s\n", icon, r.Message)
+	message := r.Message
+	switch r.Status {
+	case statusPass:
+		message = tui.Success(message)
+	case statusWarn:
+		message = tui.Warning(message)
+	case statusFail:
+		message = tui.Danger(message)
+	}
+	fmt.Fprintf(w, "%s %s\n", icon, message)
 	if r.Hint != "" {
-		fmt.Fprintf(w, "                      %s\n", r.Hint)
+		fmt.Fprintf(w, "                      %s\n", tui.Dim(r.Hint))
 	}
 }
 
@@ -385,7 +406,7 @@ func countResults(checks []checkResult) (pass, warn, fail int) {
 
 func doctorCheckPerf(w io.Writer, jsonOut bool) checkResult {
 	if !jsonOut {
-		fmt.Fprint(w, "检查性能报告...       ")
+		fmt.Fprint(w, tui.Dim("检查性能报告...       "))
 	}
 
 	report, err := LoadLatestReport()
