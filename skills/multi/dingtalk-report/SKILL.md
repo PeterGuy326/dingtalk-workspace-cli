@@ -18,7 +18,7 @@ metadata:
 
 <!-- SAFETY_PREAMBLE_INJECT -->
 
-> ⚠️ **命令可用性可能因企业服务发现配置而异**。本文档列出的命令基于 dws envelope schema 与本仓库 v1.0.30 实测，但部分命令的 cobra 子命令暴露与否还取决于你的企业 MCP gateway 是否注册了对应 tool。如果跑某条命令报 `unknown command` 或 fall back 到父级 help，说明当前账号企业未开通该能力。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
+> ⚠️ **命令可用性以当前 dws 二进制为准**。服务发现已下线，本文档随内置 skill 发布；如果 `dws <cmd> --help` 不存在，说明当前版本未暴露该命令。若命令存在但调用失败，请按错误中的 endpoint 或 tool 提示确认静态端点目录和后端工具注册。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
 
 
 > 命令参考：[report.md](references/report.md)；剧本：[05-reporting.md](references/05-reporting.md)。
@@ -28,17 +28,21 @@ metadata:
 | 用户说 | 命令 |
 |--------|------|
 | "今天收到的日志" | `python scripts/report_received_today.py` |
-| "看日志模版" | `dws report template list` → `dws report template detail --name "<模版名>"` |
-| "提交日报 / 周报（按模版）" | `dws report create --template-id <id> --contents '[...]' |
-| "我已发送的日志" | `dws report sent --start <ISO> --end <ISO>` |
-| "日志已读统计" | `dws report stats --report-id <id>` |
+| "看日志模版" | `dws report template list` → `dws report template get --name "<模版名>"` |
+| "提交日报 / 周报（按模版）" | `dws report entry submit --template-id <id> --contents-file <CWD 下的 .json>` |
+| "我收到的日志" | `dws report inbox list --start <ISO> --end <ISO> --cursor 0 --size 20` |
+| "我已发送的日志" | `dws report outbox list --cursor 0 --size 20` |
+| "查看某条日志正文" | `dws report entry get --report-id <id>` |
+| "日志已读统计" | `dws report entry stats --report-id <id>` |
 | "生成日报 / 周报 / 月报 / 主题报告" | 见 [05-reporting.md](references/05-reporting.md) recipe |
+
+> 已废弃的旧命令 `report list` / `report detail` / `report sent` / `report stats` / `report create` / `report template detail` 均标 [deprecated]，请一律改用上表的 `inbox list` / `outbox list` / `entry get` / `entry stats` / `entry submit` / `template get`。
 
 ## 日志查询硬约束
 
-- 查“收到的日志”必须用 `dws report list --start "<ISO>" --end "<ISO>" --cursor 0 --size 20 --format json`，并把“今天 / 最近 30 天”等时间词先展开成完整 ISO 起止时间。
-- 列表返回后，后续 `detail` / `stats` 必须复用同一个 `reportId`；不要重新挑选、猜测或改用标题。
-- 用户要正文时用 `dws report detail --report-id <reportId>`；用户要已读/统计时用 `dws report stats --report-id <reportId>`。
+- 查“收到的日志”必须用 `dws report inbox list --start "<ISO>" --end "<ISO>" --cursor 0 --size 20 --format json`，并把“今天 / 最近 30 天”等时间词先展开成完整 ISO 起止时间；查“我发出的日志”用 `dws report outbox list --cursor 0 --size 20 --format json`。
+- 列表返回后，后续 `entry get` / `entry stats` 必须复用同一个 `reportId`（在返回的 `_internalDetailCommands[].command` 里）；不要重新挑选、猜测或改用标题。
+- 用户要正文时用 `dws report entry get --report-id <reportId>`；用户要已读/统计时用 `dws report entry stats --report-id <reportId>`。
 
 ## 跨产品协作
 

@@ -395,7 +395,7 @@ func TestNewUpgradeCommand_Flags(t *testing.T) {
 		t.Errorf("Use = %q, want upgrade", cmd.Use)
 	}
 
-	expectedFlags := []string{"check", "list", "version", "rollback", "force", "skip-skills"}
+	expectedFlags := []string{"check", "list", "version", "beta", "rollback", "force", "skip-skills"}
 	for _, name := range expectedFlags {
 		if cmd.Flags().Lookup(name) == nil {
 			t.Errorf("missing flag: --%s", name)
@@ -429,6 +429,87 @@ func TestNewUpgradeCommand_Help(t *testing.T) {
 	}
 	if !strings.Contains(help, "--rollback") {
 		t.Error("help should contain --rollback")
+	}
+	if !strings.Contains(help, "--beta") {
+		t.Error("help should contain --beta")
+	}
+	// Regression for #364: --dry-run must be discoverable from upgrade help so
+	// users know it is supported (and is now actually honored).
+	if !strings.Contains(help, "--dry-run") {
+		t.Error("help should advertise --dry-run for upgrade")
+	}
+}
+
+func TestNewUpgradeCommand_BetaAndVersionAreMutuallyExclusive(t *testing.T) {
+	cmd := newUpgradeCommand()
+	cmd.SetArgs([]string{"--beta", "--version", "v1.0.8-beta.1"})
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error for --beta with --version")
+	}
+	if !strings.Contains(err.Error(), "--beta") || !strings.Contains(err.Error(), "--version") {
+		t.Fatalf("error = %q, want to mention --beta and --version", err.Error())
+	}
+}
+
+func TestUpgradeTrack(t *testing.T) {
+	if got := upgradeTrack(false); got != "release" {
+		t.Fatalf("upgradeTrack(false) = %q, want release", got)
+	}
+	if got := upgradeTrack(true); got != "beta" {
+		t.Fatalf("upgradeTrack(true) = %q, want beta", got)
+	}
+	if got := upgradeHintForTrack("beta"); !strings.Contains(got, "--beta") {
+		t.Fatalf("upgradeHintForTrack(beta) = %q, want --beta hint", got)
+	}
+}
+
+// --- writeDryRunPlan (#364) ---
+//
+// Regression for #364: `dws upgrade --dry-run` previously performed a real
+// upgrade because the flag was silently ignored. The dry-run path must now be
+// preview-only — it describes the steps without downloading or replacing
+// anything. writeDryRunPlan is the side-effect-free renderer for that preview.
+
+func TestWriteDryRunPlan_PreviewOnly(t *testing.T) {
+	var buf bytes.Buffer
+	writeDryRunPlan(&buf, "v1.0.30", "dws-darwin-arm64.tar.gz", false)
+	out := buf.String()
+
+	if !strings.Contains(out, "dry-run") {
+		t.Errorf("output should be marked as dry-run, got:\n%s", out)
+	}
+	if !strings.Contains(out, "不会下载或修改任何文件") {
+		t.Errorf("output should state nothing is downloaded or modified, got:\n%s", out)
+	}
+	if !strings.Contains(out, "dws-darwin-arm64.tar.gz") {
+		t.Errorf("output should name the resolved platform asset, got:\n%s", out)
+	}
+	// All five steps should be previewed, including the (skipped) replace step.
+	for _, step := range []string{"[1/5]", "[2/5]", "[3/5]", "[4/5]", "[5/5]"} {
+		if !strings.Contains(out, step) {
+			t.Errorf("output missing step %s, got:\n%s", step, out)
+		}
+	}
+}
+
+func TestWriteDryRunPlan_WithSkills(t *testing.T) {
+	var buf bytes.Buffer
+	writeDryRunPlan(&buf, "v1.0.30", "dws-linux-amd64.tar.gz", true)
+	out := buf.String()
+
+	if !strings.Contains(out, "dws-skills.zip") {
+		t.Errorf("with skills, output should mention dws-skills.zip, got:\n%s", out)
+	}
+	if !strings.Contains(out, "安装技能包") {
+		t.Errorf("with skills, replace step should mention installing skills, got:\n%s", out)
+	}
+
+	// Without skills, neither should appear.
+	var buf2 bytes.Buffer
+	writeDryRunPlan(&buf2, "v1.0.30", "dws-linux-amd64.tar.gz", false)
+	if strings.Contains(buf2.String(), "dws-skills.zip") {
+		t.Errorf("without skills, output should not mention dws-skills.zip, got:\n%s", buf2.String())
 	}
 }
 

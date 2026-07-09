@@ -109,9 +109,43 @@ go build -o dws ./cmd       # build to current directory
 cp dws ~/.local/bin/         # install to PATH
 ```
 
+Static endpoint data is generated from the Wukong baseline and committed in this
+repository under `internal/syncdata`, so source builds do not require a sibling
+data checkout.
+
 > Requires Go 1.25+. Use `make package` to cross-compile for all platforms (macOS / Linux / Windows x amd64 / arm64).
 
 </details>
+
+## China mirror
+
+For users in mainland China, the following channels avoid GitHub network issues. By default (without setting these environment variables) the installer pulls from GitHub.
+
+**1. Install script + pre-built binary (Gitee mirror):**
+
+Repository mirror: `https://gitee.com/DingTalk-Real-AI/dingtalk-workspace-cli`
+
+```bash
+DWS_GITEE_REPO=DingTalk-Real-AI/dingtalk-workspace-cli curl -fsSL https://gitee.com/DingTalk-Real-AI/dingtalk-workspace-cli/raw/main/scripts/install.sh | sh
+```
+
+> With `DWS_GITEE_REPO` set, the installer resolves the latest version and every release asset (binary, checksums, skills) from the Gitee API instead of GitHub. If it is unset, installation defaults to GitHub.
+
+**2. npm package (npmmirror mirror):**
+
+```bash
+npm install -g dingtalk-workspace-cli --registry=https://registry.npmmirror.com
+```
+
+> npmmirror automatically syncs public packages from the public npm registry, so this works directly in China.
+
+**3. Skills only (Gitee mirror):**
+
+```bash
+DWS_GITEE_REPO=DingTalk-Real-AI/dingtalk-workspace-cli curl -fsSL https://gitee.com/DingTalk-Real-AI/dingtalk-workspace-cli/raw/main/scripts/install-skills.sh | sh
+```
+
+> With `DWS_GITEE_REPO` set, `install-skills.sh` resolves the version and skills package from Gitee; it also auto-falls back to the Gitee mirror when GitHub is unreachable.
 
 ## Upgrade
 
@@ -122,11 +156,17 @@ dws has built-in self-upgrade capability. Updates are pulled directly from [GitH
 ```bash
 dws upgrade                    # interactive upgrade to latest version
 dws upgrade --check            # check for new versions without installing
-dws upgrade --list             # list all available versions
+dws upgrade --list             # list stable release versions
+dws upgrade --beta             # upgrade to the latest beta pre-release
+dws upgrade --check --beta     # check the beta track without installing
+dws upgrade --list --beta      # list beta pre-release versions
 dws upgrade --version v1.0.7   # upgrade to a specific version
+dws upgrade --version v1.0.8-beta.1  # upgrade to a specific beta version
 dws upgrade --rollback         # rollback to the previous version
 dws upgrade -y                 # skip confirmation prompt
 ```
+
+By default, `dws upgrade` follows the stable release track. Use `--beta` only when you explicitly want the newest GitHub pre-release build.
 
 <details>
 <summary><strong>How it works</strong></summary>
@@ -141,8 +181,9 @@ A backup of the current version is automatically created before each upgrade. Us
 | Flag | Description |
 |------|-------------|
 | `--check` | Check for updates without installing |
-| `--list` | List all available versions with changelogs |
-| `--version` | Upgrade to a specific version (e.g. `v1.0.7`) |
+| `--list` | List available stable release versions with changelogs |
+| `--beta` | Use the beta pre-release track for `upgrade`, `--check`, or `--list` |
+| `--version` | Upgrade to a specific version (e.g. `v1.0.7` or `v1.0.8-beta.1`) |
 | `--rollback` | Rollback to the previous backed-up version |
 | `--force` | Force reinstall even if already on the latest version |
 | `--skip-skills` | Skip skill package update |
@@ -204,6 +245,22 @@ Credentials are securely persisted after first login (Keychain). Subsequent runs
 </details>
 
 <details>
+<summary><strong>Multiple organizations (profiles)</strong></summary>
+
+`dws` can stay logged in to several DingTalk organizations at once. Each organization is one **profile**; the current profile decides which org a command runs against (credentials are stored per organization).
+
+```bash
+dws auth login                              # log in to another org → adds a profile (first login becomes the primary)
+dws profile list                            # list logged-in orgs (primary / current marker, status)
+dws profile switch <name|corpId>            # switch the default org (use - to toggle back to the previous one)
+dws --profile <name|corpId> contact user search --query "..."   # run one command against a specific org, without changing the default
+```
+
+Cross-org reads are orchestrated by the agent rather than a built-in `--all-orgs`: list the profiles, run the query per org with `--profile`, then merge. Writes default to the current org only — confirm the target org before writing across orgs.
+
+</details>
+
+<details>
 <summary><strong>Migrate auth between Linux sandboxes</strong></summary>
 
 Copying only `~/.dws/app.json` does not carry the refresh token; access tokens expire after ~2 hours. Use the official export/import flow:
@@ -254,21 +311,18 @@ dws contact user search --query "engineering" --dry-run
 dws contact user get-self --jq '.result[0].orgEmployeeModel | {name: .orgUserName, dept: .depts[0].deptName, userId}'
 ```
 
-### Schema Discovery
+### Command Help and Schema
 
-Agents don't need pre-built knowledge of every command. Use `dws schema` to dynamically discover capabilities:
+Product commands are compiled into the binary in static endpoint mode. Use `--help` and the bundled Agent Skills as the source of truth; `dws schema` is retained for helper-only schemas such as `dev.*`.
 
 ```bash
-# Step 1: Discover all available products
-dws schema --jq '.products[] | {id, tool_count: (.tools | length)}'
+# Inspect the current compiled command surface
+dws aitable record query --help
 
-# Step 2: Inspect target tool's parameter schema
-dws schema aitable.query_records --jq '.tool.parameters'
+# Helper-only schema introspection
+dws schema "dev app create"
 
-# Optional: inspect DingTalk authorization metadata for PAT planning
-dws schema aitable.query_records --jq '.tool.auth'
-
-# Step 3: Construct the correct call
+# Construct the call
 dws aitable record query --base-id BASE_ID --table-id TABLE_ID --limit 10
 ```
 
@@ -277,7 +331,7 @@ dws aitable record query --base-id BASE_ID --table-id TABLE_ID --limit 10
 The repo ships a complete Agent Skill system under `skills/`, now organized into two layouts:
 
 - `skills/mono/` — single-skill layout (one `SKILL.md` + `references/products/`), recommended default.
-- `skills/multi/` — per-product skills (`dingtalk-aitable/`, `dingtalk-calendar/`, `dingtalk-chat/`, ... 18 products in total), each with its own `SKILL.md`. 🧪 **EXPERIMENTAL / preview — see banner in each multi `SKILL.md` for caveats.**
+- `skills/multi/` — per-product skills (`dingtalk-aitable/`, `dingtalk-calendar/`, `dingtalk-chat/`, ... 20 products in total), each with its own `SKILL.md`. 🧪 **EXPERIMENTAL / preview — see banner in each multi `SKILL.md` for caveats.**
 
 After installing, AI tools like Claude Code / Cursor can operate DingTalk directly through natural language:
 
@@ -287,6 +341,8 @@ curl -fsSL https://raw.githubusercontent.com/DingTalk-Real-AI/dingtalk-workspace
 ```
 
 > `install.sh` installs to `$HOME/.agents/skills/dws` (global); `install-skills.sh` installs to `./.agents/skills/dws` (current project).
+>
+> China users: prefix `DWS_GITEE_REPO` to use the Gitee mirror — see [China mirror](#china-mirror).
 
 **Switching or re-installing with `dws skill setup`:**
 
@@ -431,7 +487,7 @@ dws aitable record query --base-id BASE_ID --tabel-id TABLE_ID       # --tabel-i
 ```bash
 # Built-in jq expressions
 dws aitable record query --base-id BASE_ID --table-id TABLE_ID --jq '.invocation.params'
-dws schema --jq '.products[] | {id, tools: (.tools | length)}'
+dws schema "dev app create" --jq '.tool.required'
 
 # Return only specific fields
 dws aitable record query --base-id BASE_ID --table-id TABLE_ID --fields invocation,response
@@ -440,14 +496,12 @@ dws aitable record query --base-id BASE_ID --table-id TABLE_ID --fields invocati
 </details>
 
 <details>
-<summary><strong>Schema Introspection</strong> — query parameter schemas before making calls</summary>
+<summary><strong>Schema Introspection</strong> — helper-only schemas in static endpoint mode</summary>
 
 ```bash
-dws schema                                              # list all products and tools
-dws schema aitable.query_records                        # view parameter schema
-dws schema aitable.query_records --jq '.tool.required'   # view required fields
-dws schema aitable.query_records --jq '.tool.auth'       # view authorization metadata
-dws schema --jq '.products[].id'                        # extract all product IDs
+dws schema                                              # static endpoint mode note
+dws schema "dev app create"                             # view helper-only schema
+dws schema "dev app create" --jq '.tool.required'        # view required fields
 ```
 
 </details>
@@ -473,31 +527,53 @@ dws chat message send-by-bot --robot-code BOT_CODE --group GROUP_ID \
 
 </details>
 
+## DingTalk bot — connect a robot to your local AI
+
+`dws dev connect` bridges a DingTalk robot to a local AI CLI (Claude Code / Codex / opencode / Qoder / Gemini, or any tool via `--agent-cmd`): @-mention the bot in a chat and it answers using your local agent, keeping per-conversation multi-turn memory.
+
+```bash
+dws dev connect --channel auto --unified-app-id <unifiedAppId>
+```
+
+> `--unified-app-id` resolves `clientSecret` at runtime via `dev app credentials get`,
+> so the secret never appears in argv (`ps` / journald / shell history). The
+> legacy `--robot-client-id <id> --robot-client-secret <secret>` still works but
+> the CLI will warn you.
+
+In-chat **session commands** (send the bare command as the whole message — no agent turn, no tokens):
+
+| Command | Effect |
+|---------|--------|
+| `/new` (aliases `/start`, `/reset`) | Start a fresh session; the previous one is left intact (resumable where the agent supports it) |
+| `/clear` | Wipe the current session — disposed through the agent's real session op (opencode issues `DELETE /session/:id`); channels whose agent exposes no delete primitive fall back to a reset |
+
+See [`docs/robot-quickstart.md`](./docs/robot-quickstart.md) for the full 4-step walkthrough (install → create robot → connect → add to a group).
+
 ## Key Services
 
-| Service | Command | Commands | Subcommands | Description |
-|---------|---------|:--------:|-------------|-------------|
-| Contact | `contact` | 15 | `user` `dept` `label` `relation` | Search users by name / mobile / job-number, batch query, departments, labels & roles, person relations, roster profile & dismissions, current user |
-| Chat / IM | `chat` (alias `im`) | 65 | `message` `group` `bot` `conversation-info` `search` `search-common` `list-top-conversations` `group-mute` `group-mute-member` `mute` `set-top` `list-categories` `list-conversations` | Messages (send / reply / list / list-all / by-sender / mentions / focused / unread / topic replies / search / advanced search / forward / cards / emoji & text-emotion reactions / recall / read & send status queries), group CRUD + member management (members add / remove / list / `add-bot`, member-role CRUD, invite URL, icon, settings, transfer-owner, set-admin, quit), bot-identity messaging (`send-by-bot` / `recall-by-bot` / `send-by-webhook`), conversation info, common-groups lookup, group/member/conversation mute, conversation set-top, conversation categories |
-| Calendar | `calendar` | 17 | `event` `room` `participant` `busy` | Events CRUD + suggested times + attachments, meeting room booking, free-busy query, participant management |
-| Todo | `todo` | 16 | `task` `comment` | Create / list / update / done / get / delete tasks, plus task comments |
-| Approval | `oa` | 15 | `approval` | Approve / reject / revoke / redirect tasks, pending / initiated / submitted / executed / cc instances, process forms, comments, operation records |
-| Attendance | `attendance` | 4 | `record` `shift` `summary` `rules` | Clock-in records, shift schedules, attendance summary, group rules |
-| Ding | `ding` | 2 | `message` | Send / recall DING messages |
-| Report | `report` | 20 | `create` `submit` `list` `detail` `template` `stats` `inbox` `outbox` `entry` | Create / submit reports, sent & received (inbox / outbox) lists, templates (get / list), statistics, single-entry get |
-| AI Tables | `aitable` | 52 | `base` `table` `record` `field` `view` `dashboard` `chart` `import` `export` `attachment` `template` `form` | Full CRUD for Bases / datasheets / records / fields / views; charts & dashboards with public-share configs; data import/export; attachments (prepare-only `upload` + one-shot `upload-file`); datasheet forms; templates |
-| Doc | `doc` | 28 | `search` `list` `info` `read` `create` `update` `upload` `download` `copy` `move` `rename` `file` `folder` `block` `comment` | Search / read / write docs, file & folder create, block-level editing, comments (list / create / reply / create-inline), upload / download |
-| Drive | `drive` | 9 | `list` `list-spaces` `info` `download` `mkdir` `upload` `upload-info` `commit` `delete` | DingTalk drive file ops: list spaces, list / info / download, create folders, one-shot `upload` (three-step composite) or two-phase `upload-info` + `commit`, delete |
-| Minutes | `minutes` | 19 | `list` `get` `update` `mind-graph` `speaker` `hot-word` `upload` | List AI meeting notes (mine / shared), details (info / summary / keywords / transcription / todos / batch), title/summary updates, mind map, speaker replace, hot-word, upload session |
-| Mail | `mail` | 18 | `mailbox` `message` `draft` `folder` `tag` `thread` `attachment` `user` | List mailboxes, KQL message search, read & send messages, drafts, folders, tags, threads, attachments, address-book user search |
-| Sheet | `sheet` | 23 | `range` `filter-view` (top-level: `create` `new` `list` `info` `read` `get` `update` `find` `replace` `append` `merge-cells` `unmerge-cells` `add-dimension` `insert-dimension` `delete-dimension` `move-dimension` `update-dimension` `write-image`) | Online spreadsheet (`contentType=ALIDOC`, `extension=axls`): worksheet CRUD, range read / write / append, dimension ops, cell merge / unmerge, find / replace, named filter views + sheet-level filters, image write |
-| Wiki | `wiki` | 21 | `space` `member` `node` `doc` `file` | Knowledge base management: spaces (`create` / `get` / `list` / `search`), members (`add` / `list` / `update`), node tree, docs & files |
-| DevDoc | `devdoc` | 1 | `article` | Search the DingTalk Open Platform documentation |
-| AI Search | `aisearch` | 3 | `person` | Enterprise people search by name / department / position / duty / supervisor / subordinate / phone / job-number (single command, multi-dimension filter) |
-| Live | `live` | 1 | `stream` | DingTalk live streaming: list my lives |
-| Raw API | `api` | 1 | — | Call any DingTalk OpenAPI directly (api / oapi dual-form), with automatic app-level token management |
+| Service | Command | Capabilities |
+|---------|---------|--------------|
+| Contact | `contact` | Look up users by name / mobile / job-number, departments, labels & roles, roster profiles & dismissals |
+| Chat / IM | `chat` (`im`) | Send / reply / search messages, group & member management, bot & webhook messaging, reactions, recall |
+| Calendar | `calendar` | Events CRUD, attendees, meeting rooms, free/busy & time suggestions |
+| Todo | `todo` | Create / list / update / complete tasks and comments |
+| Approval | `oa` | Approve / reject / revoke / transfer; query pending / initiated / CC instances and forms |
+| Attendance | `attendance` | Clock-in records, shifts, summaries, group rules (read-only) |
+| Ding | `ding` | Send / recall DING messages |
+| Report | `report` | Create / submit logs, inbox & outbox, templates, statistics |
+| AI Tables | `aitable` | Bases / tables / records / fields / views, permissions & roles, automation, charts & dashboards, import / export |
+| Doc | `doc` | Search / read / write docs, block-level editing, comments, permissions, media, up / download |
+| Drive | `drive` | List / search / download, folders, upload, copy / move / rename, permissions |
+| Minutes | `minutes` | AI meeting notes: list, summary / keywords / transcription / todos, mind map, speakers, tags |
+| Mail | `mail` | Mailboxes, KQL search, read / send, drafts, folders, templates, contacts |
+| Sheet | `sheet` | Online spreadsheets: worksheet & range read / write, filters, conditional format, images, CSV |
+| Wiki | `wiki` | Knowledge bases: spaces, members, node tree, docs & files |
+| DevDoc | `devdoc` | Search the Open Platform docs and diagnose API errors |
+| AI Search | `aisearch` | Enterprise people search by name / dept / role / duty / supervisor / phone / job-number |
+| Live | `live` | List my live streams |
+| Raw API | `api` | Call any DingTalk OpenAPI directly, with managed app-level token |
 
-> **330 commands across 18 products.** Full listing with descriptions and usage scenarios: [`docs/command-index.md`](./docs/command-index.md). Run `dws --help` for the top-level tree, or `dws <service> --help` for subcommands.
+> Full command listing with usage scenarios: [`docs/command-index.md`](./docs/command-index.md). Run `dws --help` for the top-level tree, or `dws <service> --help` for any service's subcommands.
 
 > **Note on `chat bot`**: bot capabilities (`send-by-bot` / `recall-by-bot` / `add-bot` / `send-by-webhook` / bot search) are merged into the relevant `chat` subtrees (e.g. `dws chat message send-by-bot`, `dws chat group members add-bot`) so the agent-facing command surface stays flat and discoverable. There is no longer a separate top-level `bot` product.
 
@@ -556,7 +632,8 @@ dws chat message send-by-bot --robot-code BOT_CODE --group GROUP_ID \
 
 - [Command Index](./docs/command-index.md) — every runtime command with description and when-to-use guidance
 - [Reference](./docs/reference.md) — environment variables, exit codes, output formats, shell completion
-- [Architecture](./docs/architecture.md) — discovery-driven pipeline, IR, transport layer
+- [Architecture](./docs/architecture.md) — static endpoint pipeline, command surface, transport layer
+- [Open Platform App Command Routing](./docs/dev-yulan-command-routing.md) — yulan dev app command design, MCP overlay, permission flow, and Agent routing
 - [Changelog](./CHANGELOG.md) — release history and migration notes
 
 ## Contributing

@@ -35,8 +35,7 @@ Flags:
       --content string        文档初始内容（短文本字面量）；传 - 表示从 stdin 读取
       --content-file string   从文件读取文档内容（UTF-8）。推荐长/多行/表格内容使用
       --content-format string         内容格式: 默认为 markdown，可选 jsonml
-      --fix-jsonml              启用全部 JSONML 修复（含 JSON 语法修复 + 结构修复），推荐 agent 调用时使用
-      --no-fix-jsonml           关闭全部 JSONML 修复（跳过 JSON 语法修复和结构修复），用于排查原始错误
+      --fix-jsonml              启用 JSON 语法修复（括号/逗号补全），推荐 agent 调用时使用
 ```
 
 ## 关键说明

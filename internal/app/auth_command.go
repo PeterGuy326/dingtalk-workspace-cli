@@ -30,18 +30,40 @@ import (
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/keychain"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/pat"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/config"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
+	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
 
 type authLoginConfig struct {
-	Token  string
-	Force  bool
-	Device bool
+	Token        string
+	Force        bool
+	Device       bool
+	Recommend    bool
+	Yes          bool
+	TargetCorpID string
 }
 
-func buildAuthCommand() *cobra.Command {
+type authLoginGuideAction string
+
+const (
+	authLoginGuideDirectCLI         authLoginGuideAction = "direct_cli"
+	authLoginGuideConfigureAgentApp authLoginGuideAction = "configure_agent_app"
+	authLoginGuideManualCredentials authLoginGuideAction = "manual_credentials"
+)
+
+var (
+	authLoginBrandBlue = lipgloss.AdaptiveColor{Light: "#1677FF", Dark: "#69B1FF"}
+	authLoginInk       = lipgloss.AdaptiveColor{Light: "#1F2937", Dark: "#EAF2FF"}
+	authLoginMuted     = lipgloss.AdaptiveColor{Light: "#667085", Dark: "#8A96A8"}
+	authLoginLine      = lipgloss.AdaptiveColor{Light: "#D6E4FF", Dark: "#2F3B52"}
+	authLoginDanger    = lipgloss.AdaptiveColor{Light: "#D92D20", Dark: "#FF6B6B"}
+)
+
+func buildAuthCommand(patCaller edition.ToolCaller) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "auth",
 		Short:             "认证管理",
@@ -55,7 +77,7 @@ func buildAuthCommand() *cobra.Command {
 	}
 
 	if !edition.Get().HideAuthLogin {
-		cmd.AddCommand(newAuthLoginCommand())
+		cmd.AddCommand(newAuthLoginCommand(patCaller))
 	}
 	cmd.AddCommand(
 		newAuthLogoutCommand(),
@@ -68,7 +90,7 @@ func buildAuthCommand() *cobra.Command {
 	return cmd
 }
 
-func newAuthLoginCommand() *cobra.Command {
+func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "登录钉钉（自动刷新 token，必要时扫码）",
@@ -88,9 +110,11 @@ func newAuthLoginCommand() *cobra.Command {
       否则 OAuth 回调会跳到本机不可达的 127.0.0.1 链接，授权完成后无法回写 token。
 
 示例:
-  dws auth login              # 本机扫码登录 (loopback 流)
+  dws auth login              # 本机登录并新增/刷新一个组织 profile
+  dws auth login --profile <corpId>  # 指定本次授权目标组织，不持久切换当前组织
+  dws auth login --recommend  # 无交互批量授权服务端推荐权限
   dws auth login --device     # SSH 远程 / 无头环境登录 (设备流)
-  dws auth login --force      # 强制重新登录 (忽略缓存 token)
+  dws auth login --force      # 兼容保留；login 默认已忽略缓存并进入授权流程
   dws auth login --token xxx  # 使用指定 token`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -100,6 +124,10 @@ func newAuthLoginCommand() *cobra.Command {
 			}
 			configDir := defaultConfigDir()
 			var tokenData *authpkg.TokenData
+			format, _ := cmd.Root().PersistentFlags().GetString("format")
+			postLoginTUIMode := !cfg.Yes && authLoginShouldUsePostLoginTUIMode(cmd, format, cfg.Recommend)
+			recommendAuthMode := cfg.Recommend || postLoginTUIMode
+			humanAuthMode := !cfg.Yes && authLoginShouldUseHumanAuthorizationMode(cmd, format, recommendAuthMode)
 
 			switch {
 			case strings.TrimSpace(cfg.Token) != "":
@@ -116,6 +144,7 @@ func newAuthLoginCommand() *cobra.Command {
 
 				provider := authpkg.NewDeviceFlowProvider(configDir, nil)
 				provider.Output = cmd.ErrOrStderr()
+				provider.NoBrowser, _ = cmd.Flags().GetBool("no-browser")
 				tokenData, err = provider.Login(loginCtx)
 				if err != nil {
 					return apperrors.NewAuth(fmt.Sprintf("device authorization failed: %v", err))
@@ -126,8 +155,10 @@ func newAuthLoginCommand() *cobra.Command {
 
 				provider := authpkg.NewOAuthProvider(configDir, nil)
 				provider.Output = cmd.ErrOrStderr()
+				provider.NoBrowser, _ = cmd.Flags().GetBool("no-browser")
+				provider.TargetCorpID = cfg.TargetCorpID
 				configureOAuthProviderCompatibility(provider, configDir)
-				tokenData, err = provider.Login(loginCtx, cfg.Force)
+				tokenData, err = provider.Login(loginCtx, authLoginForcesAuthorization(cfg))
 				if err != nil {
 					return apperrors.NewAuth(fmt.Sprintf("dingtalk login failed: %v", err))
 				}
@@ -135,43 +166,100 @@ func newAuthLoginCommand() *cobra.Command {
 
 			ResetRuntimeTokenCache()
 			clearCompatCache()
+			if tokenData != nil && strings.TrimSpace(tokenData.CorpID) != "" {
+				_ = enrichAuthLoginProfileFromContact(cmd.Context(), configDir, patCaller, tokenData)
+				ResetRuntimeTokenCache()
+				clearCompatCache()
+			}
 
 			w := cmd.OutOrStdout()
+			runPostLoginAuthorization := func() error {
+				if !recommendAuthMode {
+					return nil
+				}
+				recommendScopeMode := pat.LoginRecommendScopeRecommended
+				var initialPlan *pat.LoginRecommendPlan
+				if postLoginTUIMode {
+					var planErr error
+					initialPlan, planErr = pat.PlanLoginRecommendAuthorization(cmd.Context(), patCaller)
+					if planErr != nil {
+						return planErr
+					}
+					if authLoginRecommendPlanSkipsInteractiveAuthorization(initialPlan) {
+						fmt.Fprintln(cmd.ErrOrStderr(), "推荐权限已全部授权或没有可授权项")
+						return nil
+					}
+					var err error
+					recommendScopeMode, err = loginRecommendScopeModeSelector()
+					if err != nil {
+						return err
+					}
+				}
+				opts := pat.LoginRecommendOptions{Confirmed: cfg.Yes, ScopeMode: recommendScopeMode, InitialPlan: initialPlan}
+				if postLoginTUIMode {
+					opts.ProductSelector = func(products []pat.LoginRecommendProduct) ([]string, error) {
+						return loginRecommendProductSelector(products)
+					}
+				}
+				retryFormat := format
+				if humanAuthMode {
+					retryFormat = "table"
+				}
+				run := func(ctx context.Context) error {
+					return pat.RunLoginRecommendAuthorizationWithOptions(ctx, patCaller, cmd.ErrOrStderr(), opts)
+				}
+				err := run(cmd.Context())
+				if patErr := apperrors.AsPatAuthCheckError(err); patErr != nil {
+					return runDirectPATAuthCheckWaitOnly(
+						cmd.Context(),
+						&GlobalFlags{Format: retryFormat},
+						patErr,
+						cmd.ErrOrStderr(),
+					)
+				}
+				return err
+			}
 
 			// Check if JSON output is requested
-			format, _ := cmd.Root().PersistentFlags().GetString("format")
-			if strings.EqualFold(strings.TrimSpace(format), "json") {
-				return writeAuthLoginJSON(w, tokenData, cfg.Force)
+			if strings.EqualFold(strings.TrimSpace(format), "json") && !humanAuthMode {
+				if err := runPostLoginAuthorization(); err != nil {
+					return err
+				}
+				return writeAuthLoginJSON(w, tokenData, authLoginForcesAuthorization(cfg))
 			}
 
 			// Default table output
+			if err := runPostLoginAuthorization(); err != nil {
+				return err
+			}
 			fmt.Fprintln(w)
-			if !cfg.Device && tokenData != nil && tokenData.IsAccessTokenValid() && !cfg.Force {
-				fmt.Fprintf(w, "[OK] Token 有效，无需重新登录\n")
+			if !cfg.Device && tokenData != nil && tokenData.IsAccessTokenValid() && !authLoginForcesAuthorization(cfg) {
+				fmt.Fprintln(w, authLoginStatusLine("Token 有效，无需重新登录"))
 			} else {
-				fmt.Fprintf(w, "[OK] 登录成功！\n")
+				fmt.Fprintln(w, authLoginStatusLine("登录成功！"))
 			}
 			if tokenData != nil {
 				if tokenData.CorpName != "" {
-					fmt.Fprintf(w, "%-16s%s\n", "企业:", tokenData.CorpName)
+					fmt.Fprintln(w, authLoginInfoLine("企业", tokenData.CorpName))
 				}
 				if tokenData.CorpID != "" {
-					fmt.Fprintf(w, "%-16s%s\n", "企业 ID:", tokenData.CorpID)
+					fmt.Fprintln(w, authLoginInfoLine("企业 ID", tokenData.CorpID))
 				}
 				if tokenData.UserName != "" {
-					fmt.Fprintf(w, "%-16s%s\n", "用户:", tokenData.UserName)
+					fmt.Fprintln(w, authLoginInfoLine("用户", tokenData.UserName))
 				}
 				if expiry := authLoginDisplayExpiry(tokenData); expiry != "" {
-					fmt.Fprintf(w, "%-16s%s\n", "有效期:", expiry)
+					fmt.Fprintln(w, authLoginInfoLine("有效期", expiry))
 				}
 			}
-			fmt.Fprintf(w, "Token 将自动刷新，无需重复登录\n")
+			fmt.Fprintln(w, authLoginMutedStyle().Render("Token 将自动刷新，无需重复登录"))
 			return nil
 		},
 	}
 	cmd.Flags().String("token", "", "Access token")
 	cmd.Flags().Bool("device", false, "Use device authorization flow")
-	cmd.Flags().Bool("force", false, "Force interactive login (ignore cached token)")
+	cmd.Flags().Bool("force", false, "兼容保留；login 默认已忽略缓存并进入授权流程")
+	cmd.Flags().Bool("recommend", false, "登录成功后无交互批量授权服务端推荐权限")
 	// Hidden compatibility flags
 	cmd.Flags().String("redirect-url", "", "Loopback redirect URL")
 	cmd.Flags().String("scopes", "", "Space-separated DingTalk OAuth scopes")
@@ -186,67 +274,179 @@ func newAuthLoginCommand() *cobra.Command {
 	_ = cmd.Flags().MarkHidden("token-url")
 	_ = cmd.Flags().MarkHidden("refresh-url")
 	_ = cmd.Flags().MarkHidden("login-timeout")
-	_ = cmd.Flags().MarkHidden("no-browser")
 	return cmd
 }
 
+var (
+	authLoginGuideActionSelector    = selectAuthLoginGuideAction
+	authLoginGuideActionApplier     = applyAuthLoginGuideAction
+	loginRecommendScopeModeSelector = selectLoginRecommendScopeMode
+	loginRecommendProductSelector   = selectLoginRecommendProducts
+	authLoginInteractiveTerminal    = isInteractiveTerminal
+)
+
+func selectAuthLoginGuideAction() (authLoginGuideAction, error) {
+	choice := authLoginGuideDirectCLI
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[authLoginGuideAction]().
+				Title("选择操作").
+				Options(
+					huh.NewOption("直接使用CLI", authLoginGuideDirectCLI),
+					huh.NewOption("一键配置智能体应用", authLoginGuideConfigureAgentApp),
+					huh.NewOption("手动输入应用凭证", authLoginGuideManualCredentials),
+				).
+				Value(&choice),
+		),
+	).WithTheme(authLoginHuhTheme())
+	if err := form.Run(); err != nil {
+		return "", fmt.Errorf("使用引导选择中止: %w", err)
+	}
+	return choice, nil
+}
+
+func applyAuthLoginGuideAction(cmd *cobra.Command, configDir string, action authLoginGuideAction) error {
+	switch action {
+	case authLoginGuideDirectCLI:
+		return nil
+	case authLoginGuideConfigureAgentApp:
+		fmt.Fprintln(cmd.ErrOrStderr(), "一键配置智能体应用暂未开放，已继续使用 CLI 登录")
+		return nil
+	case authLoginGuideManualCredentials:
+		clientID, clientSecret, err := promptAuthLoginManualCredentials()
+		if err != nil {
+			return err
+		}
+		authpkg.SetClientID(clientID)
+		authpkg.SetClientSecret(clientSecret)
+		if err := authpkg.SaveAppConfig(configDir, &authpkg.AppConfig{
+			ClientID:     clientID,
+			ClientSecret: authpkg.PlainSecret(clientSecret),
+		}); err != nil {
+			return apperrors.NewInternal(fmt.Sprintf("failed to persist app credentials: %v", err))
+		}
+		return nil
+	default:
+		return fmt.Errorf("未知操作: %s", action)
+	}
+}
+
+func promptAuthLoginManualCredentials() (string, string, error) {
+	var clientID, clientSecret string
+	nonEmpty := func(label string) func(string) error {
+		return func(value string) error {
+			if strings.TrimSpace(value) == "" {
+				return fmt.Errorf("%s 不能为空", label)
+			}
+			return nil
+		}
+	}
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().
+				Title("输入 AppKey").
+				Value(&clientID).
+				Validate(nonEmpty("AppKey")),
+			huh.NewInput().
+				Title("输入 AppSecret").
+				EchoMode(huh.EchoModePassword).
+				Value(&clientSecret).
+				Validate(nonEmpty("AppSecret")),
+		),
+	).WithTheme(authLoginHuhTheme())
+	if err := form.Run(); err != nil {
+		return "", "", fmt.Errorf("应用凭证输入中止: %w", err)
+	}
+	return strings.TrimSpace(clientID), strings.TrimSpace(clientSecret), nil
+}
+
+func selectLoginRecommendScopeMode() (pat.LoginRecommendScopeMode, error) {
+	choice := pat.LoginRecommendScopeRecommended
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[pat.LoginRecommendScopeMode]().
+				Title("选择授权范围").
+				Description("空格选择 回车确认").
+				Options(
+					huh.NewOption("推荐授权", pat.LoginRecommendScopeRecommended),
+					huh.NewOption("全部授权", pat.LoginRecommendScopeAll),
+				).
+				Value(&choice),
+		),
+	).WithTheme(authLoginHuhTheme())
+	if err := form.Run(); err != nil {
+		return "", fmt.Errorf("授权范围选择中止: %w", err)
+	}
+	return choice, nil
+}
+
 func newAuthLogoutCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:               "logout",
-		Short:             "清除认证信息",
+	cmd := &cobra.Command{
+		Use:   "logout",
+		Short: "清除认证信息（默认退出所有组织）",
+		Long: `清除本机钉钉登录态。
+
+默认退出所有已登录组织 profile；指定 --profile 时只退出该组织，不影响其他组织。`,
+		Example: `  dws auth logout
+  dws auth logout --profile <corpId>
+  dws auth logout --profile "钉钉"`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			configDir := defaultConfigDir()
+			profileSelector, err := cmd.Flags().GetString("profile")
+			if err != nil {
+				return apperrors.NewInternal("failed to read --profile")
+			}
 			revokeCtx, cancel := context.WithTimeout(cmd.Context(), 15*time.Second)
 			defer cancel()
-			_ = authpkg.RevokeTokenRemote(revokeCtx)
-
-			// Load token data to get associated clientId before deletion
-			var storedClientID string
-			if tokenData, err := authpkg.LoadTokenData(configDir); err == nil && tokenData != nil {
-				storedClientID = tokenData.ClientID
+			if strings.TrimSpace(profileSelector) != "" {
+				if err := logoutOneProfile(cmd, revokeCtx, configDir, profileSelector); err != nil {
+					return err
+				}
+			} else {
+				if err := logoutAllProfiles(cmd, revokeCtx, configDir); err != nil {
+					return err
+				}
 			}
-
-			if err := authpkg.DeleteTokenData(configDir); err != nil {
-				return apperrors.NewInternal(fmt.Sprintf("failed to clear token data: %v", err))
-			}
-			// Clean up associated client secret and app token from keychain
-			if storedClientID != "" {
-				_ = authpkg.DeleteClientSecret(storedClientID)
-				_ = authpkg.DeleteAppTokenData(storedClientID)
-			}
-			// Also try cleaning app token using appKey from app config
-			if appKey, _ := authpkg.ResolveAppCredentials(configDir); appKey != "" && appKey != storedClientID {
-				_ = authpkg.DeleteAppTokenData(appKey)
-			}
-			// Clean up app credentials (app.json + keychain secret)
-			_ = authpkg.DeleteAppConfig(configDir)
-			_ = os.Remove(filepath.Join(configDir, "mcp_url"))
-			_ = os.Remove(filepath.Join(configDir, "token"))
-			_ = os.Remove(filepath.Join(configDir, "token.json"))
 			ResetRuntimeTokenCache()
 			clearCompatCache()
 			w := cmd.OutOrStdout()
-			fmt.Fprintln(w, "[OK] 已清除所有认证信息")
+			fmt.Fprintln(w, "[OK] 已清除认证信息")
 			if !edition.Get().IsEmbedded {
-				fmt.Fprintln(w, "请运行 dws auth login 重新登录")
+				fmt.Fprintln(w, "请运行 dws auth login --recommend 重新登录")
 			}
 			return nil
 		},
 	}
+	cmd.Flags().String("profile", "", "指定要退出的 profile 名或 corpId")
+	return cmd
 }
 
 func newAuthStatusCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:               "status",
-		Short:             "查看认证状态",
+	cmd := &cobra.Command{
+		Use:   "status",
+		Short: "查看认证状态",
+		Long: `查看当前或指定组织 profile 的认证状态。
+
+指定 --profile 时只读取并刷新被选中的 token slot，不会修改 currentProfile。`,
+		Example: `  dws auth status
+  dws auth status --profile <corpId>
+  dws auth status --profile "钉钉"
+  dws auth status --profile <corpId> --format json`,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			configDir := defaultConfigDir()
+			profileSelector, err := cmd.Flags().GetString("profile")
+			if err != nil {
+				return apperrors.NewInternal("failed to read --profile")
+			}
+			restoreProfile := pushRuntimeProfile(profileSelector)
+			defer restoreProfile()
 
 			authenticated := false
 			refreshed := false
 			var tokenData *authpkg.TokenData
+			var statusErr error
 			provider := authpkg.NewOAuthProvider(configDir, nil)
 			configureOAuthProviderCompatibility(provider, configDir)
 			if data, err := provider.Status(); err == nil {
@@ -262,17 +462,22 @@ func newAuthStatusCommand() *cobra.Command {
 						}
 					} else if edition.Get().AutoPurgeToken {
 						_ = authpkg.DeleteTokenData(configDir)
+					} else if tokenData != nil {
+						_ = authpkg.MarkProfileStatus(configDir, tokenData.CorpID, authpkg.ProfileStatusExpired)
 					}
 				}
 				if authStatusAuthenticated(tokenData) {
 					authenticated = true
 				}
+			} else {
+				statusErr = err
 			}
+			diagnostic := authStatusDiagnosticFromError(statusErr)
 
 			// Check if JSON output is requested
 			format, _ := cmd.Root().PersistentFlags().GetString("format")
 			if strings.EqualFold(strings.TrimSpace(format), "json") {
-				return writeAuthStatusJSON(cmd.OutOrStdout(), authenticated, refreshed, tokenData)
+				return writeAuthStatusJSON(cmd.OutOrStdout(), authenticated, refreshed, tokenData, diagnostic)
 			}
 
 			// Default table output
@@ -285,6 +490,12 @@ func newAuthStatusCommand() *cobra.Command {
 					fmt.Fprintf(w, "%-16s%s\n", "状态:", "已登录 ✅")
 				}
 				if tokenData != nil {
+					if tokenData.CorpName != "" {
+						fmt.Fprintf(w, "%-16s%s\n", "企业:", tokenData.CorpName)
+					}
+					if tokenData.CorpID != "" {
+						fmt.Fprintf(w, "%-16s%s\n", "企业 ID:", tokenData.CorpID)
+					}
 					if tokenData.IsRefreshTokenValid() {
 						fmt.Fprintf(w, "%-16s%s\n", "Refresh Token:", "有效 ✅")
 					} else {
@@ -296,12 +507,65 @@ func newAuthStatusCommand() *cobra.Command {
 				}
 			} else {
 				fmt.Fprintf(w, "%-16s%s\n", "状态:", "未登录")
-				if !edition.Get().IsEmbedded {
-					fmt.Fprintln(w, "运行 dws auth login 进行登录")
+				if diagnostic != nil {
+					fmt.Fprintf(w, "%-16s%s\n", "原因:", diagnostic.Message)
+					fmt.Fprintf(w, "%-16s%s\n", "提示:", diagnostic.Hint)
+				} else if !edition.Get().IsEmbedded {
+					fmt.Fprintln(w, "运行 dws auth login --recommend 进行登录")
 				}
 			}
 			return nil
 		},
+	}
+	cmd.Flags().String("profile", "", "指定要查看的 profile 名或 corpId")
+	return cmd
+}
+
+func logoutOneProfile(_ *cobra.Command, ctx context.Context, configDir, selector string) error {
+	if _, err := authpkg.ResolveProfile(configDir, selector); err != nil {
+		return apperrors.NewValidation(err.Error())
+	}
+	restoreProfile := pushRuntimeProfile(selector)
+	defer restoreProfile()
+	_ = authpkg.RevokeTokenRemote(ctx)
+	if err := authpkg.DeleteTokenDataForProfile(configDir, selector); err != nil {
+		return apperrors.NewInternal(fmt.Sprintf("failed to clear token data: %v", err))
+	}
+	return nil
+}
+
+func logoutAllProfiles(_ *cobra.Command, ctx context.Context, configDir string) error {
+	if err := authpkg.EnsureProfilesMigration(configDir); err != nil {
+		return apperrors.NewInternal(fmt.Sprintf("failed to migrate profiles: %v", err))
+	}
+	cfg, err := authpkg.LoadProfiles(configDir)
+	if err != nil {
+		return apperrors.NewInternal(fmt.Sprintf("failed to load profiles: %v", err))
+	}
+	if cfg == nil || len(cfg.Profiles) == 0 {
+		_ = authpkg.RevokeTokenRemote(ctx)
+	} else {
+		for _, profile := range cfg.Profiles {
+			restoreProfile := pushRuntimeProfile(profile.CorpID)
+			_ = authpkg.RevokeTokenRemote(ctx)
+			restoreProfile()
+		}
+	}
+	if err := authpkg.DeleteAllTokenData(configDir); err != nil {
+		return apperrors.NewInternal(fmt.Sprintf("failed to clear token data: %v", err))
+	}
+	return nil
+}
+
+func pushRuntimeProfile(selector string) func() {
+	selector = strings.TrimSpace(selector)
+	if selector == "" {
+		return func() {}
+	}
+	previous := authpkg.RuntimeProfile()
+	authpkg.SetRuntimeProfile(selector)
+	return func() {
+		authpkg.SetRuntimeProfile(previous)
 	}
 }
 
@@ -337,7 +601,7 @@ func newAuthExportCommand() *cobra.Command {
 				))
 			}
 			if !authpkg.PortableAuthSourceReady() {
-				return apperrors.NewValidation("尚未登录，请先运行 dws auth login")
+				return apperrors.NewValidation("尚未登录，请先运行 dws auth login --recommend")
 			}
 
 			var bundle bytes.Buffer
@@ -501,17 +765,18 @@ func newAuthResetCommand() *cobra.Command {
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			configDir := defaultConfigDir()
-			if err := authpkg.DeleteTokenData(configDir); err != nil {
+			if err := authpkg.DeleteAllTokenData(configDir); err != nil {
 				return apperrors.NewInternal(fmt.Sprintf("failed to reset token data: %v", err))
 			}
 			_ = os.Remove(filepath.Join(configDir, "mcp_url"))
 			_ = os.Remove(filepath.Join(configDir, "token"))
+			_ = authpkg.DeleteAppConfig(configDir)
 			ResetRuntimeTokenCache()
 			clearCompatCache()
 			w := cmd.OutOrStdout()
 			fmt.Fprintln(w, "[OK] 认证信息已重置")
 			if !edition.Get().IsEmbedded {
-				fmt.Fprintln(w, "请运行 dws auth login 重新登录")
+				fmt.Fprintln(w, "请运行 dws auth login --recommend 重新登录")
 			}
 			return nil
 		},
@@ -552,11 +817,203 @@ func authLoginDisplayExpiry(data *authpkg.TokenData) string {
 	return ""
 }
 
-func clearCompatCache() {
-	store := cacheStoreFromEnv()
-	if store != nil {
-		_ = os.RemoveAll(store.Root)
+func selectLoginRecommendProducts(products []pat.LoginRecommendProduct) ([]string, error) {
+	if len(products) == 0 {
+		return nil, nil
 	}
+	selected := make([]string, 0, len(products))
+	options := make([]huh.Option[string], 0, len(products))
+	for _, product := range products {
+		code := strings.TrimSpace(product.ProductCode)
+		if code == "" {
+			continue
+		}
+		selected = append(selected, code)
+		options = append(options, huh.NewOption(loginRecommendProductLabel(product), code).Selected(true))
+	}
+	if len(options) == 0 {
+		return nil, nil
+	}
+	height := len(options)
+	if height > 15 {
+		height = 15
+	}
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewMultiSelect[string]().
+				Title("选择要授权的业务域").
+				Description("空格选择 回车确认").
+				Options(options...).
+				Height(height).
+				Value(&selected).
+				Validate(func(values []string) error {
+					if len(values) == 0 {
+						return fmt.Errorf("至少选择一个授权业务域")
+					}
+					return nil
+				}),
+		),
+	).WithTheme(authLoginHuhTheme())
+	if err := form.Run(); err != nil {
+		return nil, fmt.Errorf("授权业务域选择中止: %w", err)
+	}
+	return selected, nil
+}
+
+func authLoginHuhTheme() *huh.Theme {
+	t := huh.ThemeBase()
+
+	t.Form.Base = lipgloss.NewStyle().Foreground(authLoginInk)
+	t.FieldSeparator = lipgloss.NewStyle().SetString("\n")
+
+	t.Focused.Base = t.Focused.Base.BorderForeground(authLoginBrandBlue)
+	t.Focused.Card = t.Focused.Base
+	t.Focused.Title = lipgloss.NewStyle().Foreground(authLoginBrandBlue).Bold(true)
+	t.Focused.NoteTitle = t.Focused.Title.MarginBottom(1)
+	t.Focused.Description = authLoginMutedStyle()
+	t.Focused.ErrorIndicator = lipgloss.NewStyle().SetString(" *").Foreground(authLoginDanger)
+	t.Focused.ErrorMessage = lipgloss.NewStyle().SetString(" *").Foreground(authLoginDanger)
+	t.Focused.SelectSelector = lipgloss.NewStyle().SetString("› ").Foreground(authLoginBrandBlue).Bold(true)
+	t.Focused.MultiSelectSelector = t.Focused.SelectSelector
+	t.Focused.Option = lipgloss.NewStyle().Foreground(authLoginInk)
+	t.Focused.SelectedOption = lipgloss.NewStyle().Foreground(authLoginBrandBlue).Bold(true)
+	t.Focused.SelectedPrefix = lipgloss.NewStyle().SetString("● ").Foreground(authLoginBrandBlue)
+	t.Focused.UnselectedOption = lipgloss.NewStyle().Foreground(authLoginInk)
+	t.Focused.UnselectedPrefix = lipgloss.NewStyle().SetString("○ ").Foreground(authLoginMuted)
+	t.Focused.NextIndicator = lipgloss.NewStyle().SetString("→").Foreground(authLoginBrandBlue)
+	t.Focused.PrevIndicator = lipgloss.NewStyle().SetString("←").Foreground(authLoginMuted)
+	t.Focused.FocusedButton = lipgloss.NewStyle().
+		Foreground(lipgloss.AdaptiveColor{Light: "#FFFFFF", Dark: "#0B1220"}).
+		Background(authLoginBrandBlue).
+		Padding(0, 2).
+		Bold(true)
+	t.Focused.BlurredButton = lipgloss.NewStyle().
+		Foreground(authLoginInk).
+		Background(authLoginLine).
+		Padding(0, 2)
+	t.Focused.Next = t.Focused.FocusedButton
+	t.Focused.TextInput.Cursor = lipgloss.NewStyle().Foreground(authLoginBrandBlue)
+	t.Focused.TextInput.CursorText = lipgloss.NewStyle().Foreground(authLoginInk)
+	t.Focused.TextInput.Placeholder = authLoginMutedStyle()
+	t.Focused.TextInput.Prompt = lipgloss.NewStyle().Foreground(authLoginBrandBlue)
+	t.Focused.TextInput.Text = lipgloss.NewStyle().Foreground(authLoginInk)
+
+	t.Blurred = t.Focused
+	t.Blurred.Base = t.Focused.Base.BorderStyle(lipgloss.HiddenBorder()).BorderForeground(authLoginLine)
+	t.Blurred.Card = t.Blurred.Base
+	t.Blurred.Title = lipgloss.NewStyle().Foreground(authLoginInk)
+	t.Blurred.NoteTitle = t.Blurred.Title.MarginBottom(1)
+	t.Blurred.Description = authLoginMutedStyle()
+	t.Blurred.SelectSelector = lipgloss.NewStyle().SetString("  ")
+	t.Blurred.MultiSelectSelector = t.Blurred.SelectSelector
+	t.Blurred.SelectedOption = lipgloss.NewStyle().Foreground(authLoginInk)
+	t.Blurred.SelectedPrefix = lipgloss.NewStyle().SetString("● ").Foreground(authLoginBrandBlue)
+	t.Blurred.UnselectedOption = lipgloss.NewStyle().Foreground(authLoginMuted)
+	t.Blurred.UnselectedPrefix = lipgloss.NewStyle().SetString("○ ").Foreground(authLoginMuted)
+	t.Blurred.NextIndicator = lipgloss.NewStyle()
+	t.Blurred.PrevIndicator = lipgloss.NewStyle()
+	t.Blurred.TextInput.Prompt = lipgloss.NewStyle().Foreground(authLoginMuted)
+	t.Blurred.TextInput.Text = lipgloss.NewStyle().Foreground(authLoginInk)
+
+	t.Group.Title = t.Focused.Title
+	t.Group.Description = t.Focused.Description
+
+	t.Help.ShortKey = authLoginMutedStyle()
+	t.Help.ShortDesc = authLoginMutedStyle()
+	t.Help.ShortSeparator = authLoginMutedStyle()
+	t.Help.FullKey = authLoginMutedStyle()
+	t.Help.FullDesc = authLoginMutedStyle()
+	t.Help.FullSeparator = authLoginMutedStyle()
+	t.Help.Ellipsis = authLoginMutedStyle()
+
+	return t
+}
+
+func authLoginStatusLine(message string) string {
+	return fmt.Sprintf("%s %s",
+		lipgloss.NewStyle().Foreground(authLoginBrandBlue).Bold(true).Render("[OK]"),
+		lipgloss.NewStyle().Foreground(authLoginInk).Bold(true).Render(message),
+	)
+}
+
+func authLoginInfoLine(key, value string) string {
+	label := authLoginMutedStyle().Width(14).Render(key + ":")
+	return fmt.Sprintf("%s %s", label, value)
+}
+
+func authLoginMutedStyle() lipgloss.Style {
+	return lipgloss.NewStyle().Foreground(authLoginMuted)
+}
+
+func authLoginShouldShowPostLoginTUIForTerminal(cmd *cobra.Command, format string, recommend bool, interactive bool) bool {
+	return authLoginShouldUsePostLoginTUIModeForTerminal(cmd, format, recommend, interactive)
+}
+
+func authLoginShouldUsePostLoginTUIMode(cmd *cobra.Command, format string, recommend bool) bool {
+	return authLoginShouldUsePostLoginTUIModeForTerminal(cmd, format, recommend, authLoginInteractiveTerminal())
+}
+
+func authLoginShouldUsePostLoginTUIModeForTerminal(cmd *cobra.Command, format string, recommend bool, interactive bool) bool {
+	if recommend || !interactive {
+		return false
+	}
+	return authLoginAllowsInteractiveDefault(cmd, format)
+}
+
+func authLoginShouldUseHumanAuthorizationMode(cmd *cobra.Command, format string, hasAuthorizationFlow bool) bool {
+	return authLoginShouldUseHumanAuthorizationModeForTerminal(cmd, format, hasAuthorizationFlow, authLoginInteractiveTerminal())
+}
+
+func authLoginShouldUseHumanAuthorizationModeForTerminal(cmd *cobra.Command, format string, hasAuthorizationFlow bool, interactive bool) bool {
+	if !hasAuthorizationFlow || !interactive {
+		return false
+	}
+	return authLoginAllowsInteractiveDefault(cmd, format)
+}
+
+func authLoginRecommendPlanSkipsInteractiveAuthorization(plan *pat.LoginRecommendPlan) bool {
+	if plan == nil {
+		return false
+	}
+	return plan.AllGranted || len(plan.Scopes) == 0
+}
+
+func authLoginAllowsInteractiveDefault(cmd *cobra.Command, format string) bool {
+	if cmd == nil || cmd.Root() == nil {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(format), "json") {
+		return true
+	}
+	flags := cmd.Root().PersistentFlags()
+	return !flags.Changed("format")
+}
+
+func loginRecommendProductLabel(product pat.LoginRecommendProduct) string {
+	name := strings.TrimSpace(product.ProductName)
+	if name == "" || name == product.ProductCode {
+		name = product.ProductCode
+	}
+	summary := strings.TrimSpace(product.Summary)
+	if summary != "" {
+		summary = " - " + clipRunes(summary, 42)
+	}
+	return fmt.Sprintf("%-10s %s%s", product.ProductCode, name, summary)
+}
+
+func clipRunes(value string, limit int) string {
+	if limit <= 0 {
+		return ""
+	}
+	runes := []rune(value)
+	if len(runes) <= limit {
+		return value
+	}
+	return string(runes[:limit]) + "..."
+}
+
+func clearCompatCache() {
+	// Cache store removed; no-op in static endpoint mode.
 }
 
 func resolveAuthLoginConfig(cmd *cobra.Command) (authLoginConfig, error) {
@@ -572,11 +1029,156 @@ func resolveAuthLoginConfig(cmd *cobra.Command) (authLoginConfig, error) {
 	if err != nil {
 		return authLoginConfig{}, apperrors.NewInternal("failed to read --force")
 	}
+	recommend, err := cmd.Flags().GetBool("recommend")
+	if err != nil {
+		return authLoginConfig{}, apperrors.NewInternal("failed to read --recommend")
+	}
+	yes := false
+	profileSelector := ""
+	if cmd.Root() != nil {
+		yes, _ = cmd.Root().PersistentFlags().GetBool("yes")
+		profileSelector, _ = cmd.Root().PersistentFlags().GetString("profile")
+	}
+	targetCorpID, err := resolveAuthLoginTargetCorpID(defaultConfigDir(), profileSelector)
+	if err != nil {
+		return authLoginConfig{}, err
+	}
 	return authLoginConfig{
-		Token:  strings.TrimSpace(token),
-		Force:  force,
-		Device: device,
+		Token:        strings.TrimSpace(token),
+		Force:        force,
+		Device:       device,
+		Recommend:    recommend,
+		Yes:          yes,
+		TargetCorpID: targetCorpID,
 	}, nil
+}
+
+func authLoginForcesAuthorization(_ authLoginConfig) bool {
+	return true
+}
+
+func resolveAuthLoginTargetCorpID(configDir, selector string) (string, error) {
+	selector = strings.TrimSpace(selector)
+	if selector == "" {
+		return "", nil
+	}
+	if profile, err := authpkg.ResolveProfile(configDir, selector); err == nil && profile != nil {
+		return strings.TrimSpace(profile.CorpID), nil
+	}
+	if strings.HasPrefix(selector, "ding") {
+		return selector, nil
+	}
+	return "", apperrors.NewValidation(fmt.Sprintf("profile %q not found", selector))
+}
+
+type contactProfileIdentity struct {
+	CorpID   string
+	CorpName string
+	UserID   string
+	UserName string
+}
+
+func enrichAuthLoginProfileFromContact(ctx context.Context, configDir string, caller edition.ToolCaller, data *authpkg.TokenData) error {
+	if caller == nil || data == nil {
+		return nil
+	}
+	corpID := strings.TrimSpace(data.CorpID)
+	if corpID == "" {
+		return nil
+	}
+	if strings.TrimSpace(data.CorpName) != "" && strings.TrimSpace(data.UserID) != "" && strings.TrimSpace(data.UserName) != "" {
+		return nil
+	}
+
+	restoreProfile := pushRuntimeProfile(corpID)
+	defer restoreProfile()
+	ResetRuntimeTokenCache()
+
+	result, err := caller.CallTool(ctx, "contact", "get_current_user_profile", map[string]any{
+		"profile": corpID,
+	})
+	if err != nil {
+		return err
+	}
+	identity, ok := contactProfileIdentityFromToolResult(result)
+	if !ok {
+		return nil
+	}
+	if identity.CorpID != "" && identity.CorpID != corpID {
+		return fmt.Errorf("contact profile corpId %q does not match login corpId %q", identity.CorpID, corpID)
+	}
+
+	updated := *data
+	if identity.CorpName != "" {
+		updated.CorpName = identity.CorpName
+	}
+	if identity.UserID != "" {
+		updated.UserID = identity.UserID
+	}
+	if identity.UserName != "" {
+		updated.UserName = identity.UserName
+	}
+	if updated.CorpName == data.CorpName && updated.UserID == data.UserID && updated.UserName == data.UserName {
+		return nil
+	}
+	if err := authpkg.SaveTokenData(configDir, &updated); err != nil {
+		return err
+	}
+	*data = updated
+	return nil
+}
+
+func contactProfileIdentityFromToolResult(result *edition.ToolResult) (contactProfileIdentity, bool) {
+	if result == nil {
+		return contactProfileIdentity{}, false
+	}
+	for _, block := range result.Content {
+		if strings.TrimSpace(block.Text) == "" {
+			continue
+		}
+		if identity, ok := contactProfileIdentityFromJSON([]byte(block.Text)); ok {
+			return identity, true
+		}
+	}
+	return contactProfileIdentity{}, false
+}
+
+func contactProfileIdentityFromJSON(data []byte) (contactProfileIdentity, bool) {
+	var payload struct {
+		Result []struct {
+			OrgEmployeeModel struct {
+				CorpID      string `json:"corpId"`
+				OrgName     string `json:"orgName"`
+				UserID      string `json:"userId"`
+				UserIDLower string `json:"userid"`
+				OrgUserName string `json:"orgUserName"`
+				Name        string `json:"name"`
+			} `json:"orgEmployeeModel"`
+		} `json:"result"`
+	}
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return contactProfileIdentity{}, false
+	}
+	if len(payload.Result) == 0 {
+		return contactProfileIdentity{}, false
+	}
+	org := payload.Result[0].OrgEmployeeModel
+	identity := contactProfileIdentity{
+		CorpID:   strings.TrimSpace(org.CorpID),
+		CorpName: strings.TrimSpace(org.OrgName),
+		UserID:   firstNonEmptyString(org.UserID, org.UserIDLower),
+		UserName: firstNonEmptyString(org.OrgUserName, org.Name),
+	}
+	return identity, identity.CorpID != "" || identity.CorpName != "" || identity.UserID != "" || identity.UserName != ""
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }
 
 func authStatusAuthenticated(data *authpkg.TokenData) bool {
@@ -604,6 +1206,8 @@ type authStatusResponse struct {
 	Success           bool   `json:"success"`
 	Authenticated     bool   `json:"authenticated"`
 	Message           string `json:"message,omitempty"`
+	Reason            string `json:"reason,omitempty"`
+	Hint              string `json:"hint,omitempty"`
 	Refreshed         bool   `json:"refreshed,omitempty"`
 	TokenValid        bool   `json:"token_valid,omitempty"`
 	RefreshTokenValid bool   `json:"refresh_token_valid,omitempty"`
@@ -615,14 +1219,47 @@ type authStatusResponse struct {
 	UserName          string `json:"user_name,omitempty"`
 }
 
-func writeAuthStatusJSON(w io.Writer, authenticated, refreshed bool, data *authpkg.TokenData) error {
+type authStatusDiagnostic struct {
+	Reason  string
+	Message string
+	Hint    string
+}
+
+func authStatusDiagnosticFromError(err error) *authStatusDiagnostic {
+	if err == nil {
+		return nil
+	}
+	if keychain.IsDEKMissing(err) {
+		return &authStatusDiagnostic{
+			Reason:  "dek_missing",
+			Message: "本地登录密钥缺失，无法解密已保存的登录态",
+			Hint:    "重新登录以生成新的本地登录密钥；如仍异常，可先清理本地登录态后再登录。",
+		}
+	}
+	if !keychain.IsUnavailable(err) {
+		return nil
+	}
+	return &authStatusDiagnostic{
+		Reason:  "keychain_unavailable",
+		Message: "无法读取 macOS Keychain 中的登录密钥，无法判断登录状态",
+		Hint:    "检查 macOS 默认钥匙串是否存在且已解锁；修复后重试，或在测试环境设置 DWS_DISABLE_KEYCHAIN=1 后重新登录。",
+	}
+}
+
+func writeAuthStatusJSON(w io.Writer, authenticated, refreshed bool, data *authpkg.TokenData, diagnostic *authStatusDiagnostic) error {
 	resp := authStatusResponse{
 		Success:       true,
 		Authenticated: authenticated,
 	}
 
 	if !authenticated {
-		resp.Message = "未登录"
+		if diagnostic != nil {
+			resp.Message = diagnostic.Message
+			resp.Reason = diagnostic.Reason
+			resp.Hint = diagnostic.Hint
+		} else {
+			resp.Message = "未登录"
+		}
 	} else if data != nil {
 		resp.Refreshed = refreshed
 		resp.TokenValid = data.IsAccessTokenValid()

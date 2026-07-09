@@ -494,8 +494,7 @@ func (c *Client) callJSONRPC(ctx context.Context, endpoint string, request reque
 }
 
 func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte) (*http.Response, error) {
-	// Strip any query/fragment from the endpoint to prevent parameter injection.
-	endpoint = validate.StripQueryFragment(endpoint)
+	endpoint = sanitizeJSONRPCEndpoint(endpoint)
 	var lastErr error
 	for attempt := 0; attempt <= c.MaxRetries; attempt++ {
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
@@ -533,7 +532,7 @@ func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte) 
 		// Diagnostic: log identity-related headers on first attempt.
 		if attempt == 0 && c.FileLogger != nil {
 			c.FileLogger.LogAttrs(context.Background(), slog.LevelDebug, "http_request_headers",
-				slog.String("endpoint", endpoint),
+				slog.String("endpoint", RedactURL(endpoint)),
 				slog.String("x-user-access-token-present", fmt.Sprintf("%t", req.Header.Get("x-user-access-token") != "")),
 				slog.Int("extra_headers_count", len(c.ExtraHeaders)),
 			)
@@ -591,6 +590,31 @@ func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte) 
 			Cause: lastErr,
 		}),
 	)
+}
+
+func sanitizeJSONRPCEndpoint(endpoint string) string {
+	parsed, err := url.Parse(strings.TrimSpace(endpoint))
+	if err != nil || parsed.Host == "" {
+		return validate.StripQueryFragment(endpoint)
+	}
+	parsed.Fragment = ""
+	if shouldPreserveEndpointQuery(parsed) {
+		return parsed.String()
+	}
+	parsed.RawQuery = ""
+	return parsed.String()
+}
+
+func shouldPreserveEndpointQuery(parsed *url.URL) bool {
+	if parsed == nil || !strings.EqualFold(parsed.Scheme, "https") {
+		return false
+	}
+	switch strings.ToLower(parsed.Hostname()) {
+	case "mcp-gw.dingtalk.com", "pre-mcp-gw.dingtalk.com":
+		return true
+	default:
+		return false
+	}
 }
 
 func retryable(statusCode int) bool {
@@ -911,7 +935,7 @@ func jsonrpcEnvelopeError(method string, rpcErr *RPCError, snapshotPath, headerT
 	if method == "tools/call" {
 		if rpcErr.Code == -32600 || rpcErr.Code == -32601 {
 			opts = append(opts,
-				apperrors.WithHint(i18n.T("工具协议不兼容；请检查服务版本、工具名或刷新发现缓存。")),
+				apperrors.WithHint(i18n.T("工具协议不兼容；请检查服务版本、工具名或升级到包含最新静态端点的 dws 版本。")),
 				apperrors.WithActions(discoveryActions(snapshotPath)...),
 			)
 			return apperrors.NewDiscovery(message, opts...)
@@ -924,7 +948,7 @@ func jsonrpcEnvelopeError(method string, rpcErr *RPCError, snapshotPath, headerT
 	}
 
 	opts = append(opts,
-		apperrors.WithHint(i18n.T("服务发现/协商失败；请检查网络、服务版本或执行缓存刷新。")),
+		apperrors.WithHint(i18n.T("静态端点/协商失败；请检查网络、服务版本或升级到包含最新静态端点的 dws 版本。")),
 		apperrors.WithActions(discoveryActions(snapshotPath)...),
 	)
 	return apperrors.NewDiscovery(message, opts...)
@@ -1048,7 +1072,8 @@ func validateCallArguments(args map[string]any) error {
 
 func discoveryActions(snapshotPath string) []string {
 	actions := []string{
-		"dws cache refresh",
+		i18n.T("检查 internal/syncdata 静态端点生成物是否包含目标 server"),
+		i18n.T("运行 sync-oss 重新生成静态端点与路由后重试"),
 		i18n.T("检查服务连通性和协议版本后重试"),
 	}
 	if snapshotPath != "" {
