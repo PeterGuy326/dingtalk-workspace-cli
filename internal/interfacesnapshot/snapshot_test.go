@@ -105,13 +105,15 @@ func TestReadRejectsUnknownSnapshotFields(t *testing.T) {
 	}
 }
 
-func TestValidateRejectsSiblingAliasCollision(t *testing.T) {
-	snapshot := testSnapshot(
+func TestCompareBlocksCandidateSiblingAliasCollision(t *testing.T) {
+	base := testSnapshot(testCommand("dws"))
+	current := testSnapshot(
 		testCommand("dws"),
 		testCommandWithAliases("dws search", []string{"find"}),
 		testCommand("dws find"),
 	)
-	if err := snapshot.Validate(); err == nil {
-		t.Fatal("Validate accepted sibling canonical/alias collision")
+	comparison := Compare(current, base, "base")
+	if comparison.Compatible || !hasChangeKind(comparison.Blocking, "command_alias_collision") {
+		t.Fatalf("candidate sibling alias collision was not blocked: %#v", comparison)
 	}
 }

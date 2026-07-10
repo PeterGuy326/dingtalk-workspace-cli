@@ -182,6 +182,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch official release tags
+        run: |
+          git fetch --force --no-tags \
+            https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git \
+            '+refs/tags/v*:refs/tags/v*'
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:

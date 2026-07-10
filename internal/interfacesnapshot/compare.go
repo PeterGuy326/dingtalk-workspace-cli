@@ -93,6 +93,7 @@ func Compare(current, baseline Snapshot, reference string) Comparison {
 			After:  fmt.Sprintf("%v", current.Rules),
 		})
 	}
+	result.Blocking = append(result.Blocking, aliasCollisionChanges(current)...)
 
 	currentCommands := commandIndex(current)
 	baselineCommands := commandIndex(baseline)
@@ -263,6 +264,32 @@ func commandIndex(snapshot Snapshot) map[string]Command {
 		out[command.Path] = command
 	}
 	return out
+}
+
+func aliasCollisionChanges(snapshot Snapshot) []Change {
+	acceptedSiblings := make(map[string]string)
+	changes := []Change{}
+	for _, command := range snapshot.Commands {
+		parent, name := splitParent(command.Path)
+		for _, acceptedName := range append([]string{name}, command.Aliases...) {
+			acceptedName = strings.TrimSpace(acceptedName)
+			if acceptedName == "" {
+				continue
+			}
+			key := parent + "\x00" + acceptedName
+			if previous, exists := acceptedSiblings[key]; exists && previous != command.Path {
+				changes = append(changes, Change{
+					Kind:   "command_alias_collision",
+					Path:   strings.TrimSpace(parent + " " + acceptedName),
+					Before: previous,
+					After:  command.Path,
+				})
+				continue
+			}
+			acceptedSiblings[key] = command.Path
+		}
+	}
+	return changes
 }
 
 // acceptedPathIndex expands aliases at every path segment. For example, if

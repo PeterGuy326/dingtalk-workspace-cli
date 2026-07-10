@@ -179,7 +179,6 @@ func (s Snapshot) Validate() error {
 		return fmt.Errorf("unsupported interface snapshot schema_version %d (want %d)", s.SchemaVersion, SchemaVersion)
 	}
 	seenCommands := make(map[string]bool, len(s.Commands))
-	acceptedSiblings := make(map[string]string)
 	for _, command := range s.Commands {
 		if command.Path == "" {
 			return fmt.Errorf("interface snapshot contains an empty command path")
@@ -188,19 +187,6 @@ func (s Snapshot) Validate() error {
 			return fmt.Errorf("interface snapshot contains duplicate command path %q", command.Path)
 		}
 		seenCommands[command.Path] = true
-
-		parent, name := splitParent(command.Path)
-		for _, acceptedName := range append([]string{name}, command.Aliases...) {
-			acceptedName = strings.TrimSpace(acceptedName)
-			if acceptedName == "" {
-				continue
-			}
-			key := parent + "\x00" + acceptedName
-			if previous, exists := acceptedSiblings[key]; exists && previous != command.Path {
-				return fmt.Errorf("commands %q and %q both accept sibling name or alias %q", previous, command.Path, acceptedName)
-			}
-			acceptedSiblings[key] = command.Path
-		}
 		if err := validateFlags(command.Path, "local", command.LocalFlags); err != nil {
 			return err
 		}
