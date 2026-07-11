@@ -99,6 +99,9 @@ jobs:
           go test -v -count=1 -timeout=5m \
             ./test/cli/...
 
+      - name: Test engineering scripts
+        run: go test -v -count=1 -timeout=5m ./test/scripts/...
+
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
@@ -176,6 +179,9 @@ jobs:
     name: Command Compatibility
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -195,6 +201,7 @@ jobs:
 
       - name: Check command compatibility
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE_SHA: ${{ github.event.before }}
         run: |
@@ -206,6 +213,8 @@ jobs:
           stable_ref="$(git tag --merged HEAD --list 'v*' --sort=-version:refname | awk '/^v[0-9]+\.[0-9]+\.[0-9]+$/ { print; exit }')"
           test -n "$base_ref"
           test -n "$stable_ref"
+          stable_commit="$(git rev-parse "$stable_ref^{commit}")"
+          ./scripts/release/verify-delivered-stable.sh "$stable_ref" "$stable_commit"
           ./scripts/policy/check-command-compatibility.sh \
             --base-ref "$base_ref" \
             --stable-ref "$stable_ref"
