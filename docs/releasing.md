@@ -4,6 +4,22 @@
 
 发布前必须完成平台治理：目标 GitHub 仓库已启用 immutable releases，`main` 要求 `CI Gate`，操作机已安装并登录 `gh`。本地脚本会在封 tag 前通过 API 检查 immutable releases、当前 SHA 的 `CI Gate` 和在途 Release；`v*` tag ruleset 仍需仓库管理员预先配置并由操作人确认。
 
+## 日常只用一个入口
+
+安装发布 Skill 后直接运行：
+
+```bash
+dws-release
+```
+
+零参数会进入引导模式。仓库内的等价入口是 `./scripts/release/dws-release.sh`。第一次使用只需配置一次生产发布远端，命令会把远端名及其规范化仓库身份一起保存在当前 Git 仓库中：
+
+```bash
+dws-release config --remote origin
+```
+
+之后命令按仓库状态自动走到正确步骤：缺少精确 CHANGELOG 章节时只生成模板并停止；补全、提交并合入 `main` 后，再运行同一条命令就会安全快进本地 `main` 并执行完整预检。若同名 remote 后续被改指向其他仓库会直接拒绝。只有显式增加 `--publish` 才会进入 tag 发布，且底层仍要求最终版本确认。
+
 ## 发布模型
 
 ```text
@@ -17,49 +33,39 @@ main 上的候选代码 + beta CHANGELOG
 
 ## 预发发布
 
-先生成 CHANGELOG 模板：
+运行统一入口：
 
 ```bash
-make changelog-pre VERSION=v1.2.3-beta.1
+dws-release v1.2.3-beta.1
 ```
 
-补全内容并删除所有 `TODO`，提交后通过 PR 合入 `main`。本地 `main` 与发布远端同步后，先跑完整预检：
+如果 CHANGELOG 尚不存在，该命令只生成模板并停止。补全内容、删除所有 `TODO`，提交后通过 PR 合入 `main`；然后重新运行完全相同的命令，它会执行完整预检：
 
 ```bash
-make release-pre VERSION=v1.2.3-beta.1 REMOTE=origin
+dws-release v1.2.3-beta.1
 ```
 
 预检包含测试、策略检查、旧正式版命令树兼容检查、全平台打包、npm 安装验证，以及 macOS 环境下的 Homebrew 安装验证。通过后发布：
 
 ```bash
-make release-pre VERSION=v1.2.3-beta.1 REMOTE=origin PUBLISH=1
+dws-release v1.2.3-beta.1 --publish
 ```
 
-命令会要求再次输入版本号；已在外层完成确认的自动化可加 `YES=1`。
+命令会在所有预检完成后要求再次输入完整版本号。统一入口不提供跳过确认的参数。
 
 ## 正式发布
 
-beta 验证通过后，从 `main` 只新增正式版 CHANGELOG：
+beta 验证通过后，运行正式版入口：
 
 ```bash
-make changelog-stable \
-  VERSION=v1.2.3 \
-  FROM_BETA=v1.2.3-beta.1
+dws-release v1.2.3 --from-beta v1.2.3-beta.1
 ```
 
-补全内容、删除 `TODO`，提交后通过 PR 合入 `main`。然后执行：
+首次运行只生成正式版 CHANGELOG 并停止。补全内容、删除 `TODO`，提交后通过 PR 合入 `main`；重新运行同一条命令做完整预检，确认后增加 `--publish`：
 
 ```bash
-make release-stable \
-  VERSION=v1.2.3 \
-  FROM_BETA=v1.2.3-beta.1 \
-  REMOTE=origin
-
-make release-stable \
-  VERSION=v1.2.3 \
-  FROM_BETA=v1.2.3-beta.1 \
-  REMOTE=origin \
-  PUBLISH=1
+dws-release v1.2.3 --from-beta v1.2.3-beta.1
+dws-release v1.2.3 --from-beta v1.2.3-beta.1 --publish
 ```
 
 `FROM_BETA` 不会自动推断，并会写入 stable annotated tag 的 `From-Beta` 元数据，CI 会再次读取和验证。
