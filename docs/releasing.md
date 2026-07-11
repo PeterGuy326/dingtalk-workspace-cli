@@ -1,113 +1,113 @@
-# 发布手册（预发 / 正式）
+# Release Guide (Prerelease / Stable)
 
-发布只走一条链路：本地脚本负责封板、验证并推送 annotated tag；GitHub Actions 负责构建和发布最终产物。不要直接运行 `goreleaser release`，也不要手工补打或移动 tag。
+All releases follow one path: the local script seals the release candidate, verifies it, and pushes an annotated tag; GitHub Actions builds and publishes the final artifacts. Do not run `goreleaser release` directly, and never create, replace, or move tags by hand.
 
-发布前必须完成平台治理：目标 GitHub 仓库已启用 immutable releases，`main` 要求 `CI Gate`，操作机已安装并登录 `gh`。本地脚本会在封 tag 前通过 API 检查 immutable releases、当前 SHA 的 `CI Gate` 和在途 Release；`v*` tag ruleset 仍需仓库管理员预先配置并由操作人确认。
+Before releasing, complete the platform governance prerequisites: immutable releases must be enabled in the target GitHub repository, `main` must require `CI Gate`, and the release machine must have `gh` installed and authenticated. Before it creates a tag, the local script calls the API to check immutable releases, the `CI Gate` status for the current SHA, and any in-progress Release workflow. A `v*` tag ruleset must still be configured in advance by a repository administrator and confirmed by the operator.
 
-## 日常只用一个入口
+## One entry point for everyday use
 
-安装发布 Skill 后直接运行：
+After installing the release Skill, run:
 
 ```bash
 dws-release
 ```
 
-零参数会进入引导模式。仓库内的等价入口是 `./scripts/release/dws-release.sh`。第一次使用只需配置一次生产发布远端，命令会把远端名及其规范化仓库身份一起保存在当前 Git 仓库中：
+With no arguments, it starts in guided mode. The equivalent in-repository command is `./scripts/release/dws-release.sh`. The first use requires a one-time configuration of the production publishing remote. The command stores both the remote name and its canonical repository identity in the current Git repository:
 
 ```bash
 dws-release config --remote origin
 ```
 
-之后命令按仓库状态自动走到正确步骤：缺少精确 CHANGELOG 章节时只生成模板并停止；补全、提交并合入 `main` 后，再运行同一条命令就会安全快进本地 `main` 并执行完整预检。若同名 remote 后续被改指向其他仓库会直接拒绝。只有显式增加 `--publish` 才会进入 tag 发布，且底层仍要求最终版本确认。
+After that, the command chooses the right step from repository state: if the exact CHANGELOG section is missing, it only creates a template and stops; after the section is completed, committed, and merged to `main`, rerunning the same command safely fast-forwards local `main` and completes the full preflight. It rejects a configured remote if it is later retargeted to a different repository. Publishing requires an explicit `--publish`, and the underlying command still requires final version confirmation.
 
-## 发布模型
+## Release model
 
 ```text
-main 上的候选代码 + beta CHANGELOG
-  → vX.Y.Z-beta.N（预发验证）
-  → 只允许补正式 CHANGELOG，源码不得再变化
-  → vX.Y.Z（正式发布）
+Release candidate on main + beta CHANGELOG
+  → vX.Y.Z-beta.N (prerelease validation)
+  → only the stable CHANGELOG may be added; source code must not change
+  → vX.Y.Z (stable release)
 ```
 
-正式版必须显式指定本次验证过的 beta。脚本会比较两者：除 `CHANGELOG.md` 外只要有任何文件变化，就拒绝正式发布。这样预发测过的代码、命令树和正式发布的代码是同一份。
+The stable release must explicitly name the beta that was validated. The script compares them and refuses the stable release if any file other than `CHANGELOG.md` has changed. The code and command tree tested in prerelease are therefore exactly the code and command tree delivered in the stable release.
 
-## 预发发布
+## Prerelease
 
-运行统一入口：
+Run the common entry point:
 
 ```bash
 dws-release v1.2.3-beta.1
 ```
 
-如果 CHANGELOG 尚不存在，该命令只生成模板并停止。补全内容、删除所有 `TODO`，提交后通过 PR 合入 `main`；然后重新运行完全相同的命令，它会执行完整预检：
+If the CHANGELOG section does not exist, this command only creates a template and stops. Complete it, remove every `TODO`, commit it, and merge it to `main` through a PR. Then run the exact same command again; it performs the complete preflight:
 
 ```bash
 dws-release v1.2.3-beta.1
 ```
 
-预检包含测试、策略检查、旧正式版命令树兼容检查、全平台打包、npm 安装验证，以及 macOS 环境下的 Homebrew 安装验证。通过后发布：
+The preflight includes tests, policy checks, command-tree compatibility against the previous stable release, packaging for all target platforms, npm installation verification, and Homebrew installation verification on macOS. When it passes, publish with:
 
 ```bash
 dws-release v1.2.3-beta.1 --publish
 ```
 
-命令会在所有预检完成后要求再次输入完整版本号。统一入口不提供跳过确认的参数。
+After all preflight steps pass, the command asks again for the complete version. The common entry point does not support bypassing this confirmation.
 
-## 正式发布
+## Stable release
 
-beta 验证通过后，运行正式版入口：
+After validating the beta, run the stable entry point:
 
 ```bash
 dws-release v1.2.3 --from-beta v1.2.3-beta.1
 ```
 
-首次运行只生成正式版 CHANGELOG 并停止。补全内容、删除 `TODO`，提交后通过 PR 合入 `main`；重新运行同一条命令做完整预检，确认后增加 `--publish`：
+The first run only creates the stable CHANGELOG template and stops. Complete it, remove `TODO`, commit it, and merge it to `main` through a PR. Rerun the same command for the full preflight, then add `--publish` after confirmation:
 
 ```bash
 dws-release v1.2.3 --from-beta v1.2.3-beta.1
 dws-release v1.2.3 --from-beta v1.2.3-beta.1 --publish
 ```
 
-`FROM_BETA` 不会自动推断，并会写入 stable annotated tag 的 `From-Beta` 元数据，CI 会再次读取和验证。
+`FROM_BETA` is never inferred automatically. It is written as `From-Beta` metadata on the stable annotated tag, then read and verified again by CI.
 
-## CHANGELOG 契约
+## CHANGELOG contract
 
-每个 tag 必须有唯一、非空且不含 `TODO/TBD` 的精确章节：
+Each tag requires one exact section that is unique, non-empty, and contains no `TODO` or `TBD`:
 
 ```markdown
 ## [1.2.3-beta.1] - 2026-07-11
 
 ### Changed
 
-- 本次 beta 验证的用户可见变化。
+- User-visible changes validated by this beta.
 ```
 
-正式版使用 `## [1.2.3] - YYYY-MM-DD`。该章节会直接成为 GitHub Release Notes。
+For stable releases, use `## [1.2.3] - YYYY-MM-DD`. This section becomes the GitHub Release notes verbatim.
 
-## CI/CD 保证
+## CI/CD guarantees
 
-- 只接受 `vX.Y.Z-beta.N` 和 `vX.Y.Z`，且新版本必须高于上一正式版。这里的“上一正式版”必须同时具备公开非草稿 GitHub Release 和同 tag/commit 的成功 Release workflow；只有 tag、没有交付成功的孤儿版本会阻断后续发布，要求先重跑补齐。
-- tag 必须是 annotated tag；本地脚本在推送前重新确认 HEAD 与远端 `main` 完全一致，CI 允许其后 `main` 前进，但要求封板提交仍位于 `main` 历史中。
-- 日常 CI 和发布前都会对比“最新已交付正式版”的完整命令树；若长时间预检期间该 baseline 发生变化，会针对新的 baseline 重新比较。
-- GoReleaser 只构建；Darwin 重签、checksums 重算和 npm 安装验证通过后，才统一上传 GitHub Release 的最终产物。
-- 六个平台归档会逐个解包并核验二进制内嵌版本；公开资产集合、checksums 集合和 npm tarball integrity 都必须精确一致。npm tarball 固定由 npm `10.9.2` 打包，避免重跑时因 runner 自带 npm 漂移产生不同字节。
-- stable 发布到 npm `latest`，更新 OSS `latest.txt` 和共享安装脚本；prerelease 发布到 npm `beta`，只更新 OSS `beta.txt`，不会覆盖稳定入口。
-- Release workflow 使用一个最多容纳 100 个 pending run 的串行 publication queue；本地入口仍要求上一条 Release 完成后才能封下一个 tag。
-- 本地 tag push 失败时会删除本次新建的本地 tag。tag 一旦成功推送，后续发布归 CI 所有，禁止改 tag 指向或复用版本号。
+- Only `vX.Y.Z-beta.N` and `vX.Y.Z` are accepted, and a new version must be greater than the preceding stable version. That preceding stable version must have both a public, non-draft GitHub Release and a successful Release workflow for the same tag and commit. An orphaned version with only a tag, but no successful delivery, blocks later releases until it is rerun and completed.
+- Tags must be annotated. Before pushing, the local script rechecks that `HEAD` exactly matches remote `main`. CI allows `main` to advance afterward, but requires the sealed commit to remain in `main` history.
+- Both ordinary CI and the release preflight compare the full command tree with the latest delivered stable release. If that baseline changes during a long preflight, the comparison runs again against the new baseline.
+- GoReleaser only builds. Final GitHub Release artifacts are uploaded only after Darwin re-signing, checksum regeneration, and npm installation verification pass.
+- Each of the six platform archives is unpacked and checked for its embedded binary version. The public asset set, checksum set, and npm tarball integrity must match exactly. The npm tarball is always packed with npm `10.9.2`, avoiding byte drift if a workflow is rerun on a runner with a different bundled npm version.
+- Stable releases publish to npm `latest` and update OSS `latest.txt` plus the shared install script. Prereleases publish to npm `beta` and update only OSS `beta.txt`; they never overwrite the stable entry point.
+- The Release workflow has a serial publication queue that can hold at most 100 pending runs. The local entry point still requires the preceding Release workflow to finish before it can seal the next tag.
+- If a local tag push fails, the newly created local tag is removed. Once a tag push succeeds, release delivery belongs exclusively to CI: do not move the tag or reuse its version.
 
-npm 补发只允许从默认分支触发 Release workflow 的 `repair_npm_version`。它只支持启用 immutable releases 后、由本流水线成功产出的公开 immutable release：目标必须是 `main` 历史中的 annotated tag，并且同 commit 的 `Build immutable GitHub Release` job 已成功。即使后续 npm 分发失败，这个独立的产物封存边界仍可作为补发依据。补发会用目标 commit 的 npm 模板重组包，逐平台核验资产和二进制版本，再发布到隔离的 `backfill` dist-tag，不会回滚 `latest` / `beta`。历史 mutable release 不进入自动补发路径，避免把可被替换的资产带入 npm。
+An npm repair is allowed only through the Release workflow's `repair_npm_version`, triggered from the default branch. It supports only public immutable releases produced successfully by this pipeline after immutable releases were enabled: the target must be an annotated tag in `main` history, and the `Build immutable GitHub Release` job for the same commit must have succeeded. This immutable artifact boundary remains valid even if later npm distribution fails. Repair reconstructs the package from the target commit's npm template, verifies all platform assets and binary versions, then publishes to the isolated `backfill` dist-tag. It does not roll back `latest` or `beta`. Historical mutable releases are intentionally excluded from automatic repair so replaceable assets cannot enter npm.
 
-OSS/Gitee 分发失败时直接重跑该 tag 的 `Publish npm and mirrors` failed job；各步会复用 immutable GitHub 资产并保持 channel 单调。独立 Gitee release workflow 和本地直发脚本已停用，避免绕开 publication queue 或用重新构建的不同字节覆盖镜像。
+If OSS or Gitee distribution fails, rerun the failed `Publish npm and mirrors` job for that tag. Each step reuses the immutable GitHub artifacts and preserves channel monotonicity. The separate Gitee release workflow and local direct-publish script are retired; neither may bypass the publication queue or overwrite a mirror with different bytes from a rebuild.
 
-OSS 的 `latest.txt` / `beta.txt` 当前是镜像频道元数据；仓库内安装器仍从 GitHub/Gitee 解析版本，不能把 OSS pointer 当成已接入的安装通道。
+OSS `latest.txt` and `beta.txt` are currently mirror-channel metadata. The repository installer still resolves versions from GitHub/Gitee, so an OSS pointer must not be treated as an enabled installation channel.
 
-Homebrew 当前只属于本机预检/手工公式通道：预检会在当前 macOS 架构真实安装，但 Release workflow 不发布 tap，CI 生成的单主机公式也不应当作 Darwin 双架构正式交付。正式自动交付范围是 GitHub Release、npm、OSS，以及显式开启时的 Gitee fallback；Homebrew 双架构 tap 发布需另立需求。
+Homebrew is currently only a local preflight and manual-formula path: the preflight performs a real install for the current macOS architecture, but the Release workflow does not publish a tap. A single-host formula generated in CI must not be treated as a formal two-architecture Darwin delivery. The automatic stable delivery scope is GitHub Release, npm, OSS, and the Gitee fallback when explicitly enabled. Publishing a dual-architecture Homebrew tap requires a separate request.
 
-## 平台治理前置
+## Platform governance prerequisites
 
-仓库管理员还需要在 GitHub 平台配置两项不可由脚本替代的规则：
+Repository administrators must configure two platform rules that the script cannot replace:
 
-- `main` 必须要求精确的 `CI Gate`；tag workflow 也会通过 Checks API 再确认该封板 SHA 已通过。
-- 必须启用 immutable releases；它只保护启用后发布的 release，因此应在第一次使用新流水线前配置。为 `v*` 增加 tag ruleset，限制创建权限，并在 release 发布前保护 tag 的短暂窗口。
+- `main` must require the exact `CI Gate`; the tag workflow also verifies through the Checks API that this sealed SHA passed it.
+- Immutable releases must be enabled. They protect only releases created after activation, so enable them before the first release through this pipeline. Add a `v*` tag ruleset to restrict creation permission and protect the short interval before a release is published.
 
-immutable releases 或 `CI Gate` 缺失时，发布脚本会自动拒绝封 tag。tag ruleset 可能来自组织层，脚本不自动推断其最终作用范围；管理员确认不能省略，脚本约定也不能替代平台强制。
+When immutable releases or `CI Gate` is missing, the release script refuses to create a tag. A tag ruleset can be inherited from the organization, so the script does not infer its effective scope. Administrator confirmation remains required; a script convention cannot replace platform enforcement.
