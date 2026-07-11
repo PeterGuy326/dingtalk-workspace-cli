@@ -6,6 +6,10 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ## [Unreleased]
 
+### Changed
+
+- **Guarded prerelease and stable automation** — adds one-command CHANGELOG preparation, validation-only and annotated-tag publication flows; promotes only an explicitly validated beta; verifies command-tree compatibility and all six packaged binaries; and serializes immutable GitHub Release, npm channel, OSS, and optional Gitee delivery with fail-closed recovery checks.
+
 ## [1.0.51] - 2026-07-10
 
 This release promotes the sealed `v1.0.51-beta.1` contents to stable. It syncs the hardcoded Wukong command surface, prevents `dev connect` conversations from blocking on messages received mid-turn, and makes local credential failures diagnosable without mutating key material.
