@@ -39,6 +39,7 @@ fmt:
 policy:
 	@./scripts/policy/check-open-source-assets.sh
 	@./scripts/policy/check-command-surface.sh --strict
+	@$(GO) test -count=1 ./test/scripts -run 'Test(DocumentationLinksResolve|EveryDocumentationPageIsIndexed)$$'
 
 edition-test:
 	$(GO) test -v -count=1 ./pkg/editiontest/...

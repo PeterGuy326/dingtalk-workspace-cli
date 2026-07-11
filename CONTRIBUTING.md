@@ -10,13 +10,12 @@ under the project [Apache License 2.0](./LICENSE).
 ## Before You Start
 
 1. Read `README.md`.
-2. Read the relevant docs under `docs/`.
+2. Use the [documentation index](./docs/README.md) to find the relevant guide or contract.
 3. Inspect the code and tests for the area you will change.
 4. Decide the smallest safe change that satisfies the request.
 
-Maintainers and automation authors should also read
-`docs/automation.md` for repo-local release and agent workflow
-notes that are intentionally kept out of the repository root.
+Release operators must follow the guarded process in
+[`docs/maintainers/releasing.md`](./docs/maintainers/releasing.md).
 
 ## Working Rules
 

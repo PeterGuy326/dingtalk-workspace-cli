@@ -62,6 +62,7 @@ need_file "CODE_OF_CONDUCT.md"
 need_file ".env.example"
 need_file ".github/workflows/ci.yml"
 need_file ".github/PULL_REQUEST_TEMPLATE.md"
+need_file "docs/README.md"
 need_file "docs/architecture.md"
 need_file "scripts/policy/open-source-audit.sh"
 

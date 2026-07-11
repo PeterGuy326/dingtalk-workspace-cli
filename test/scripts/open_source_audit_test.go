@@ -20,6 +20,7 @@ func TestPublicRepositoryAssetsExist(t *testing.T) {
 		".github/workflows/ci.yml",
 		".github/PULL_REQUEST_TEMPLATE.md",
 		".env.example",
+		"docs/README.md",
 		"docs/architecture.md",
 		"scripts/policy/open-source-audit.sh",
 	} {
