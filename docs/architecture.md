@@ -1,22 +1,23 @@
 # Architecture
 
-`dws` is a Go CLI that turns DingTalk MCP metadata into a command-line surface for both humans and AI agents.
+`dws` is a Go CLI that exposes DingTalk capabilities to humans and AI agents through a compiled Cobra command tree. Product commands use generated static endpoint metadata; helper-owned surfaces such as `dev` are implemented directly in Go. Optional plugins can add commands without changing the core binary.
 
 ## High-Level Flow
 
 1. `cmd` is the CLI entrypoint, invoking `internal/app` to build the root Cobra command tree.
-2. `internal/app` wires static utility commands (`auth`, `audit`, `schema`, `completion`), product helper commands, and plugin commands.
-3. `internal/helpers` contains the main command handlers for all product surfaces (`dev`, `chat`, `calendar`, `contact`, `aitable`, etc.).
-4. `internal/executor` and `internal/transport` execute MCP JSON-RPC calls; `internal/output` formats responses.
-5. `internal/auth` manages login state, PAT tokens, and agent-code detection.
+2. `internal/app` wires utility commands, generated product commands, helper-owned command groups, and optional plugins.
+3. `internal/syncdata` supplies the generated static endpoint and routing data used to build product commands.
+4. `internal/helpers` implements helper-owned and customized product behavior such as `dev`, `chat`, `sheet`, and connector workflows.
+5. `internal/executor` and `internal/transport` execute MCP JSON-RPC calls; `internal/output` formats responses.
+6. `internal/auth` manages login state, PAT tokens, and agent-code detection.
 
 ## Repository Structure
 
 - `cmd`: CLI entrypoint
 - `internal/app`: root command wiring, static utility commands, and plugin loading
 - `internal/helpers`: product command handlers (dev, chat, calendar, contact, etc.)
-- `internal/plugin`: plugin-based dynamic command loader
-- `internal/cli`: catalog types and endpoint loader (static endpoint mode)
+- `internal/plugin`: optional plugin discovery and command conversion
+- `internal/cli`: catalog types and static endpoint loading
 - `internal/executor`: invocation dispatch and result handling
 - `internal/transport`: MCP HTTP client and request signing
 - `internal/auth`: login, token management, agent-code detection, identity

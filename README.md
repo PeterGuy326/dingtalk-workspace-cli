@@ -292,7 +292,7 @@ dws todo task create --title "Quarterly report" --executors "<your-userId>"   # 
 dws todo task list --dry-run                       # preview without executing
 ```
 
-> **Full command list**: [`docs/command-index.md`](./docs/command-index.md) — all commands with descriptions and when-to-use guidance.
+> Discover the command surface installed on your machine with `dws --help` and `dws <service> --help`.
 
 ## Using with Agents
 
@@ -592,7 +592,7 @@ In-chat **session commands** (send the bare command as the whole message — no 
 | `/new` (aliases `/start`, `/reset`) | Start a fresh session; the previous one is left intact (resumable where the agent supports it) |
 | `/clear` | Wipe the current session — disposed through the agent's real session op (opencode issues `DELETE /session/:id`); channels whose agent exposes no delete primitive fall back to a reset |
 
-See [`docs/robot-quickstart.md`](./docs/robot-quickstart.md) for the full 4-step walkthrough (install → create robot → connect → add to a group).
+See the [robot quickstart](./docs/guides/robot-quickstart.md) for the full 4-step walkthrough (install → create robot → connect → add to a group).
 
 ## Key Services
 
@@ -613,12 +613,13 @@ See [`docs/robot-quickstart.md`](./docs/robot-quickstart.md) for the full 4-step
 | Mail | `mail` | Mailboxes, KQL search, read / send, drafts, folders, templates, contacts |
 | Sheet | `sheet` | Online spreadsheets: worksheet & range read / write, filters, conditional format, images, CSV |
 | Wiki | `wiki` | Knowledge bases: spaces, members, node tree, docs & files |
+| Open Platform | `dev` | Manage internal apps and robots, inspect credentials and permissions, publish versions, connect robots to local agents |
 | DevDoc | `devdoc` | Search the Open Platform docs and diagnose API errors |
 | AI Search | `aisearch` | Enterprise people search by name / dept / role / duty / supervisor / phone / job-number |
 | Live | `live` | List my live streams |
 | Raw API | `api` | Call any DingTalk OpenAPI directly, with managed app-level token |
 
-> Full command listing with usage scenarios: [`docs/command-index.md`](./docs/command-index.md). Run `dws --help` for the top-level tree, or `dws <service> --help` for any service's subcommands.
+> Run `dws --help` for the current top-level command tree, or `dws <service> --help` for a service's subcommands and flags.
 
 > **Note on `chat bot`**: bot capabilities (`send-by-bot` / `recall-by-bot` / `add-bot` / `send-by-webhook` / bot search) are merged into the relevant `chat` subtrees (e.g. `dws chat message send-by-bot`, `dws chat group members add-bot`) so the agent-facing command surface stays flat and discoverable. There is no longer a separate top-level `bot` product.
 
@@ -675,10 +676,7 @@ See [`docs/robot-quickstart.md`](./docs/robot-quickstart.md) for the full 4-step
 
 ## Reference & Docs
 
-- [Command Index](./docs/command-index.md) — every runtime command with description and when-to-use guidance
-- [Reference](./docs/reference.md) — environment variables, exit codes, output formats, shell completion
-- [Architecture](./docs/architecture.md) — static endpoint pipeline, command surface, transport layer
-- [Open Platform App Command Routing](./docs/dev-yulan-command-routing.md) — yulan dev app command design, MCP overlay, permission flow, and Agent routing
+- [Documentation index](./docs/README.md) — user guides, architecture, integrations, and maintainer runbooks
 - [Changelog](./CHANGELOG.md) — release history and migration notes
 
 ## Contributing

@@ -289,7 +289,7 @@ dws todo task create --title "季度汇报" --executors "<your-userId>"   # 创�
 dws todo task list --dry-run                       # 预览操作但不执行
 ```
 
-> **完整命令列表**：[`docs/command-index.md`](./docs/command-index.md) — 全部命令，带描述和使用场景。
+> 使用 `dws --help` 和 `dws <service> --help` 查看当前安装版本的真实命令面。
 
 ## 在 Agent 中使用
 
@@ -574,8 +574,12 @@ dws chat message send-by-bot --robot-code BOT_CODE --group GROUP_ID \
 `dws dev connect` 把一个钉钉机器人接到本地 AI CLI（Claude Code / Codex / opencode / Qoder / Gemini，或用 `--agent-cmd` 接任意工具）：群里 @ 机器人提问，它用你本地的 agent 回答，按会话保留多轮上下文。
 
 ```bash
-dws dev connect --channel auto --robot-client-id <id> --robot-client-secret <secret>
+dws dev connect --channel auto --unified-app-id <unifiedAppId>
 ```
+
+> `--unified-app-id` 会通过 `dev app credentials get` 在运行时读取密钥，
+> `clientSecret` 不会出现在进程参数、系统日志或 shell 历史中。旧的
+> `--robot-client-id <id> --robot-client-secret <secret>` 仍兼容，但 CLI 会提示安全风险。
 
 聊天里的**会话指令**（整条消息就是指令时生效，不消耗一次 AI 调用）：
 
@@ -584,7 +588,7 @@ dws dev connect --channel auto --robot-client-id <id> --robot-client-secret <sec
 | `/new`（别名 `/start`、`/reset`） | 开启新会话；旧会话保留（agent 支持的话仍可回溯） |
 | `/clear` | 清空当前会话 —— 调 agent 真实会话原语真删（opencode 走 `DELETE /session/:id`）；驱动接口没有删除原语的渠道退化为重置 |
 
-完整四步教程见 [`docs/robot-quickstart.md`](./docs/robot-quickstart.md)（装工具 → 建机器人 → 接上 AI → 拉进群）。
+完整四步教程见[机器人快速上手](./docs/guides/robot-quickstart.md)（装工具 → 建机器人 → 接上 AI → 拉进群）。
 
 ## 核心服务
 
@@ -605,12 +609,13 @@ dws dev connect --channel auto --robot-client-id <id> --robot-client-secret <sec
 | 邮箱 | `mail` | 邮箱、KQL 搜索、读 / 发、草稿、文件夹、模版、联系人 |
 | 在线电子表格 | `sheet` | 在线表格：工作表与区域读写、筛选、条件格式、图片、CSV |
 | 知识库 | `wiki` | 知识库：空间、成员、节点树、文档与文件 |
+| 开放平台 | `dev` | 管理内部应用与机器人、查询凭证和权限、发布版本、把机器人接到本地 Agent |
 | 开发者文档 | `devdoc` | 搜索开放平台文档并排查 API 错误 |
 | AI 搜问 | `aisearch` | 企业人员搜索：按姓名 / 部门 / 角色 / 职责 / 上下级 / 手机号 / 工号 |
 | 直播 | `live` | 查看我的直播列表 |
 | Raw API | `api` | 直接调用任意钉钉 OpenAPI，自动管理应用级 Token |
 
-> 完整命令清单（带描述与使用场景）：[`docs/command-index.md`](./docs/command-index.md)。运行 `dws --help` 查看顶层命令树，或 `dws <service> --help` 查看任一服务的子命令。
+> 运行 `dws --help` 查看当前版本的顶层命令树，或运行 `dws <service> --help` 查看子命令和参数。
 
 > **关于 `chat bot`**：机器人能力（`send-by-bot` / `recall-by-bot` / `add-bot` / `send-by-webhook` / bot 搜索）已合并到对应的 `chat` 子树下（例如 `dws chat message send-by-bot`、`dws chat group members add-bot`），保持 agent 视角下的命令面扁平易发现。不再有独立的顶层 `bot` 产品。
 
@@ -669,10 +674,7 @@ dws dev connect --channel auto --robot-client-id <id> --robot-client-secret <sec
 
 ## 参考与文档
 
-- [命令索引](./docs/command-index.md) — 全部运行时命令，带描述与使用场景
-- [参考手册](./docs/reference.md) — 环境变量、退出码、输出格式、Shell 补全
-- [架构设计](./docs/architecture.md) — 静态端点管道、命令面、Transport 层
-- [开放平台应用指令设计](./docs/dev-yulan-command-routing.md) — yulan dev app 应用侧命令、MCP overlay、权限流程与 Agent 路由
+- [文档索引](./docs/README.md) — 用户指南、架构、集成契约和维护者手册
 - [更新日志](./CHANGELOG.md) — 版本历史与迁移说明
 
 ## 贡献指南

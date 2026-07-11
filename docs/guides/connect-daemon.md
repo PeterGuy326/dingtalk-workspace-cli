@@ -1,10 +1,10 @@
-# Running the connector as a 7x24 service
+# Run the Connector as a Service
 
 `dws dev connect` keeps a DingTalk robot wired to a local agent over a
 Stream long-connection. By default it runs in the foreground and dies when the
 terminal closes. For an unattended "digital employee" you have two options.
 
-> **Security**: prefer `--unified-app-id <uappid>` over
+> **Security**: prefer `--unified-app-id UNIFIED_APP_ID` over
 > `--robot-client-id/--robot-client-secret`. With `--unified-app-id` the CLI
 > resolves clientId/clientSecret at runtime through `dev app credentials get`,
 > so the secret never appears in `ps` / journald / shell history. Pasting
@@ -14,21 +14,23 @@ terminal closes. For an unattended "digital employee" you have two options.
 ## Option A: built-in daemon (recommended for a quick start)
 
 ```bash
-# Detach into a background supervisor that restarts the connector if it crashes.
+# Detach and restart the worker after crashes.
 dws dev connect --daemon \
+  --alwayson \
   --channel claudecode \
-  --unified-app-id <unifiedAppId>
+  --unified-app-id UNIFIED_APP_ID
 
 # Inspect / stop / restart it (locate the daemon by unifiedAppId).
-dws dev connect status  --unified-app-id <unifiedAppId>
-dws dev connect stop    --unified-app-id <unifiedAppId>
-dws dev connect restart --unified-app-id <unifiedAppId>
+dws dev connect status  --unified-app-id UNIFIED_APP_ID
+dws dev connect stop    --unified-app-id UNIFIED_APP_ID
+dws dev connect restart --unified-app-id UNIFIED_APP_ID
 ```
 
 - The parent prints the daemon pid and the log path, then exits.
-- A supervisor process (POSIX `setsid`, detached from the terminal) keeps a
-  worker connector alive, restarting it with exponential backoff (1s..60s, up to
-  10 consecutive fast failures) when it exits abnormally.
+- With `--alwayson`, a supervisor process (POSIX `setsid`, detached from the
+  terminal) restarts the worker with exponential backoff (1s..60s, up to 10
+  consecutive fast failures). Without `--alwayson`, `--daemon` only detaches;
+  the supervisor exits when the worker exits.
 - The single-instance lock (one connector per robot per machine) is reused, so a
   duplicate daemon refuses to start.
 - Logs go to `~/.dws/connect/<key>/daemon.log` with size-based rotation
@@ -47,7 +49,7 @@ restart it. This is the most robust way to get boot-time auto-start.
 ### macOS — launchd
 
 Save as `~/Library/LaunchAgents/com.dingtalk.dws.connect.plist`, edit the paths
-and `REPLACE_UNIFIED_APP_ID`, then `launchctl load -w <path>`.
+and `REPLACE_UNIFIED_APP_ID`, then run `launchctl load -w PATH_TO_PLIST`.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -129,7 +131,7 @@ stderr into the journal (`journalctl --user -u dws-connect -f`).
 
 If you truly must pass credentials on the command line (e.g. one-off local
 debugging without a unifiedAppId), the CLI still accepts
-`--robot-client-id <id> --robot-client-secret <secret>` and will print a
+`--robot-client-id ROBOT_CLIENT_ID --robot-client-secret ROBOT_CLIENT_SECRET` and will print a
 security warning to stderr. This form:
 
 - exposes `clientSecret` to every user on the box via `ps -ef`;
@@ -143,6 +145,6 @@ trade-off.
 
 ## Which to choose
 
-- Just need it to outlive the terminal and self-heal on crash → `--daemon`.
+- Need it to outlive the terminal and self-heal on crash → `--daemon --alwayson`.
 - Need it to come back after a reboot, with the OS owning the lifecycle → use
   launchd / systemd with the foreground command.

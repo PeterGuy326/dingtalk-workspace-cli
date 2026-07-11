@@ -16,5 +16,5 @@ Script groups:
 - Product convenience installers: `./scripts/install-devapp.sh`, `./scripts/install-devapp.ps1`, `./scripts/install-event.sh`
 - Dev helpers: `./scripts/dev/build.sh`, `./scripts/dev/lint.sh`, `./scripts/dev/ci-local.sh`, `./scripts/dev/run-mock-e2e.sh`, `./scripts/dev/coverage.sh`
 - Policy checks: `./scripts/policy/check-generated-drift.sh`, `./scripts/policy/check-command-surface.sh`, `./scripts/policy/check-command-compatibility.sh --base-ref <main-ref> --stable-ref <latest-GA-tag>`, `./scripts/policy/check-open-source-assets.sh`
-- Release entrypoint and contract: `./scripts/release/release.sh`, `./scripts/release/release-contract.sh`; operator guide: [`docs/releasing.md`](../docs/releasing.md)
+- Release entrypoint and contract: `./scripts/release/release.sh`, `./scripts/release/release-contract.sh`; operator guide: [`docs/maintainers/releasing.md`](../docs/maintainers/releasing.md)
 - Release packaging helpers: `./scripts/release/post-goreleaser.sh`, `./scripts/release/stage-npm-package.sh`, `./scripts/release/pack-npm-package.sh`, `./scripts/release/verify-delivered-stable.sh`, `./scripts/release/verify-release-artifacts.sh`, `./scripts/release/verify-github-release-assets.sh`, `./scripts/release/verify-github-tag-authority.sh`, `./scripts/release/verify-package-managers.sh`, `./scripts/release/publish-homebrew-formula.sh`
