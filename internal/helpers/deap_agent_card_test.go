@@ -134,8 +134,12 @@ func TestCrossPlatformCoverageEmployeeCardLifecycle(t *testing.T) {
 				if args[0] != "update-a2ui-card" || args[2] != "server-real-biz" || ledger.Status != "card_updating" || ledger.SurfaceID != surface || strings.Contains(string(body), "createSurface") || !strings.Contains(string(body), surface) {
 					t.Fatalf("invalid update identity or ledger: %v %v", args, ledger)
 				}
+				var metadata EmployeeChatContext
+				if len(args) < 7 || args[5] != "--employee-context" || json.Unmarshal([]byte(args[6]), &metadata) != nil || metadata.ConversationID != e.ConversationID || metadata.MessageID != e.MessageID {
+					t.Fatal("update context does not match its accepted source")
+				}
 				if strings.Contains(string(body), `"id":"answer"`) {
-					if len(args) != 7 || args[5] != "--a2ui-annotations" || !strings.Contains(args[6], `"type":"artifact"`) || !strings.Contains(args[6], `"componentId":"answer"`) || !strings.Contains(args[6], surface) {
+					if len(args) != 9 || args[7] != "--a2ui-annotations" || !strings.Contains(args[8], `"type":"artifact"`) || !strings.Contains(args[8], `"componentId":"answer"`) || !strings.Contains(args[8], surface) {
 						t.Fatalf("answer component must be annotated as an artifact: %v", args)
 					}
 				}

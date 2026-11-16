@@ -190,6 +190,7 @@ func TestCrossPlatformCoverageCodexIsolationLaunchNeverUsesLegacySandbox(t *test
 }
 
 func TestCrossPlatformCoverageCodexIsolationPathsAndEnvironment(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
 	home := t.TempDir()
 	t.Setenv("CODEX_HOME", home)
 	t.Setenv("PRIVATE_TOKEN", "not-in-child")
@@ -220,6 +221,11 @@ func TestCrossPlatformCoverageCodexIsolationPathsAndEnvironment(t *testing.T) {
 		t.Fatal("symlink accepted")
 	}
 	opts := connectAgentOptions{WorkDir: root, Memory: true, CodexPermissionProfile: "strict"}
+	first := newCodexAppServerForwarder("fixture", nil, 0, opts, "employee-a").(*codexAppServerForwarder)
+	second := newCodexAppServerForwarder("fixture", nil, 0, opts, "employee-b").(*codexAppServerForwarder)
+	if first.isolationScope == second.isolationScope {
+		t.Fatal("different employees share a workspace scope")
+	}
 	path := codexIsolatedStorePath("codex-threads.json", opts)
 	if path == "codex-threads.json" || !strings.Contains(path, "isolated-v1") {
 		t.Fatal("legacy namespace reused")

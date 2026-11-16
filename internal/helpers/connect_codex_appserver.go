@@ -55,11 +55,17 @@ type codexAppServerForwarder struct {
 	yolo                  bool
 	initialPermissionMode string
 	permissionProfile     string
+	isolationScope        string
 	developerInstructions string
 	sessions              *codexThreadSessions
 }
 
 func newCodexAppServerForwarder(bin string, env []string, timeout time.Duration, opts connectAgentOptions, clientID string) forwarder {
+	isolationScope := ""
+	if opts.CodexPermissionProfile != "" {
+		home, _ := filepath.EvalSymlinks(os.Getenv("CODEX_HOME"))
+		isolationScope = clientID + "\x00" + opts.CodexPermissionProfile + "\x00" + home
+	}
 	var sessions *codexThreadSessions
 	if opts.Memory {
 		// Scope the on-disk thread store by clientId so multiple bots on one
@@ -78,6 +84,7 @@ func newCodexAppServerForwarder(bin string, env []string, timeout time.Duration,
 		timeout:            timeout,
 		workDir:            opts.WorkDir,
 		permissionProfile:  opts.CodexPermissionProfile,
+		isolationScope:     isolationScope,
 		model:              opts.Model,
 		yolo:               opts.Yolo,
 		sessions:           sessions,
@@ -149,7 +156,11 @@ func (f *codexAppServerForwarder) forwardAppServer(ctx context.Context, convID, 
 	env := f.env
 	if f.permissionProfile != "" {
 		var err error
-		cwd, err = codexIsolatedConversationDir(f.workDir, convID)
+		identity := convID
+		if f.isolationScope != "" {
+			identity = f.isolationScope + "\x00" + convID
+		}
+		cwd, err = codexIsolatedConversationDir(f.workDir, identity)
 		if err != nil {
 			return "", err
 		}
