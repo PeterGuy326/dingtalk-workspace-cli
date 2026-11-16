@@ -41,6 +41,16 @@ type employeeApprovalOrigin struct {
 
 type employeeApprovalOriginKey struct{}
 
+type employeeTurnIdentity struct {
+	DWSProfile string `json:"dwsProfile,omitempty"`
+	SenderID string `json:"senderOpenDingTalkId,omitempty"`
+	ConversationID string `json:"conversationId,omitempty"`
+	MessageID string `json:"messageId,omitempty"`
+	SupervisorID string `json:"supervisorOpenDingTalkId,omitempty"`
+	SupervisorStatus string `json:"supervisorStatus"`
+}
+type employeeTurnIdentityKey struct{}
+
 func employeeApprovalsEnabled(cfg digitalEmployeeAdapterConfig) bool {
 	// 当前会话随时可能由主管切回人工审批，不能按启动时的 Yolo 布尔值停掉监听。
 	return cfg.Binding.Channel == "codex"
@@ -51,6 +61,7 @@ func (r *employeeRuntime) turnContext(events ...employeeEvent) context.Context {
 		return r.ctx
 	}
 	ctx := context.WithValue(r.ctx, codexApprovalKey{}, codexApprovalHandler(r.requestApproval))
+	identity := employeeTurnIdentity{DWSProfile:r.cfg.Binding.DWSProfile, SupervisorStatus:"unknown"}
 	if len(events) != 0 {
 		e := events[0]
 		kind := "私聊"
@@ -59,8 +70,16 @@ func (r *employeeRuntime) turnContext(events ...employeeEvent) context.Context {
 		}
 		// 来源来自已接收事件，禁止模型通过审批参数冒充其他发起人。
 		ctx = context.WithValue(ctx, employeeApprovalOriginKey{}, &employeeApprovalOrigin{SenderName: e.SenderName, SenderID: e.SenderID, ConversationID: e.ConversationID, ConversationType: kind, MessageID: e.MessageID})
+		if validMachineString(e.SenderID) && validMachineString(e.ConversationID) && validMachineString(e.MessageID) {
+			identity.SenderID, identity.ConversationID, identity.MessageID = e.SenderID, e.ConversationID, e.MessageID
+			if validMachineString(r.cfg.Binding.OperatorOpenDingTalkID) {
+				identity.SupervisorID = r.cfg.Binding.OperatorOpenDingTalkID
+				identity.SupervisorStatus = "not_supervisor"
+				if e.SenderID == identity.SupervisorID { identity.SupervisorStatus = "verified_supervisor" }
+			}
+		}
 	}
-	return ctx
+	return context.WithValue(ctx, employeeTurnIdentityKey{}, identity)
 }
 
 func employeeApprovalSource(origin *employeeApprovalOrigin) string {

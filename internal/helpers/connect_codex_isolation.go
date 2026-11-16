@@ -48,7 +48,7 @@ func codexIsolatedEnvironment(extra []string) ([]string, error) {
 	}
 	env := []string{"CODEX_HOME=" + canonical, "DWS_CODEX_ISOLATION=1"}
 	// Credentials, proxy injection, desktop sockets and tool configuration are not inherited.
-	for _, key := range []string{"PATH", "HOME", "TMPDIR", "TMP", "TEMP", "LANG", "LC_ALL", "SYSTEMROOT", "SystemRoot", "WINDIR"} {
+	for _, key := range []string{"PATH", "HOME", "TMPDIR", "TMP", "TEMP", "LANG", "LC_ALL", "SYSTEMROOT", "SystemRoot", "WINDIR", "DWS_CONFIG_DIR"} {
 		if value := values[key]; value != "" {
 			env = append(env, key+"="+value)
 		}
@@ -129,6 +129,11 @@ func (c *codexAppServerClient) isolatedProfileFilesystem(ctx context.Context, na
 				return nil, fmt.Errorf("isolated Codex configuration must not enable MCP servers or plugins")
 			}
 		}
+	}
+	var apps map[string]struct { Enabled bool `json:"enabled"` }
+	if value := response.Config["apps"]; len(value) > 0 && string(value) != "null" {
+		if json.Unmarshal(value, &apps) != nil { return nil, errCodexSavedPermissions }
+		for _, app := range apps { if app.Enabled { return nil, errCodexSavedPermissions } }
 	}
 	var profiles map[string]struct {
 		Extends *string `json:"extends"`

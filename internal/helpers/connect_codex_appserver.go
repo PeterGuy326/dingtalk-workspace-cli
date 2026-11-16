@@ -485,7 +485,7 @@ func newCodexAppServerClient(ctx context.Context, bin string, env []string, cwd 
 		}
 	}
 	if isolated {
-		args = []string{"app-server", "--stdio", "-c", "apps.enabled=false"}
+		args = []string{"app-server", "--stdio", "-c", "apps._default.enabled=false"}
 	}
 	cmd := codexExecCommandContext(ctx, bin, args...)
 	cmd.Dir = cwd
@@ -630,9 +630,7 @@ func (c *codexAppServerClient) runTurnWithContext(ctx context.Context, threadID,
 	}
 	if instructions != "" {
 		// resume 不会重写已存历史中的开发者指令；通过本轮应用上下文更新员工策略，保留 thread。
-		params["additionalContext"] = map[string]any{
-			"dws.digital_employee_policy": map[string]string{"kind": "application", "value": instructions},
-		}
+		params["additionalContext"] = employeeCodexAdditionalContext(ctx, instructions)
 	}
 	if err := c.send(map[string]any{
 		"id":     id,

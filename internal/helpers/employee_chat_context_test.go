@@ -14,6 +14,7 @@ import (
 )
 
 func TestCrossPlatformCoverageEmployeeChatContext(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
 	for _, scenario := range []string{"reply", "operator", "no-context", "bad-json", "unknown-field", "extra-json", "oversize", "missing-id", "missing-stdin", "missing-wait", "missing-key", "missing-profile", "load-error", "wrong-profile", "wrong-agent", "wrong-channel", "stale", "unbound", "stopped", "wrong-operator", "missing-message", "unsupported"} {
 		t.Run(scenario, func(t *testing.T) {
 			old := auth.RuntimeProfile()

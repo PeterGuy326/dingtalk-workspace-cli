@@ -30,7 +30,7 @@ func isolatedSavedFixture(cwd string) codexSavedSettings {
 }
 
 func TestCrossPlatformCoverageCodexNativeIsolationForward(t *testing.T) {
-	for _, scenario := range []string{"start", "resume", "unknown-profile", "unsupported", "wrong-start-profile", "wider-saved", "wrong-cwd", "resume-error", "wrong-resumed-thread"} {
+	for _, scenario := range []string{"start", "resume", "unknown-profile", "unsupported", "network-enabled", "missing-temp-deny", "extra-write", "mcp-config", "plugin-config", "connector-config", "wrong-start-profile", "wider-saved", "wrong-cwd", "resume-error", "wrong-resumed-thread"} {
 		t.Run(scenario, func(t *testing.T) {
 			home := t.TempDir()
 			t.Setenv("CODEX_HOME",home)
@@ -41,7 +41,14 @@ func TestCrossPlatformCoverageCodexNativeIsolationForward(t *testing.T) {
 			profileConfig := map[string]any{"filesystem":fs,"network":map[string]bool{"enabled":false}}
 			profiles := map[string]any{"strict":profileConfig}
 			if scenario == "unknown-profile" { profiles = map[string]any{} }
-			config, _ := json.Marshal(map[string]any{"config":map[string]any{"permissions":profiles}})
+			if scenario == "network-enabled" { profileConfig["network"] = map[string]bool{"enabled":true} }
+			if scenario == "missing-temp-deny" { delete(fs,":tmpdir") }
+			if scenario == "extra-write" { fs[root]="write" }
+			configuration:=map[string]any{"permissions":profiles}
+			if scenario == "mcp-config" { configuration["mcp_servers"]=map[string]any{"external":map[string]bool{"enabled":true}} }
+			if scenario == "plugin-config" { configuration["plugins"]=map[string]any{"external":map[string]bool{"enabled":true}} }
+			if scenario == "connector-config" { configuration["apps"]=map[string]any{"external":map[string]bool{"enabled":true}} }
+			config, _ := json.Marshal(map[string]any{"config":configuration})
 			writer := &bufferWriteCloser{}
 			messages := []codexRPCMessage{{ID:codexIntPtr(1),Result:json.RawMessage(`{}`)}, {ID:codexIntPtr(2),Result:config}}
 			if scenario == "unsupported" { messages[1].Error = &codexRPCError{Code:-32601,Message:"unsupported"} }
@@ -86,6 +93,21 @@ func TestCrossPlatformCoverageCodexNativeIsolationForward(t *testing.T) {
 			if !wantOK && turns!=0 { t.Fatal("model called after isolation failure") }
 			if resume && !wantOK && f.sessions.threadID("conversation")!="thread" { t.Fatal("failed resume discarded history") }
 		})
+	}
+}
+
+func TestCrossPlatformCoverageCodexIsolationOptions(t *testing.T) {
+	t.Setenv("CODEX_HOME",t.TempDir())
+	for _,scenario:=range []string{"valid","missing-workdir","memory-off","legacy-bypass","builtin-profile"} {
+		opts:=connectAgentOptions{WorkDir:t.TempDir(),Memory:true,CodexPermissionProfile:"strict"}
+		switch scenario {
+		case "missing-workdir":opts.WorkDir=""
+		case "memory-off":opts.Memory=false
+		case "legacy-bypass":opts.CodexInitialPermissionMode="bypass"
+		case "builtin-profile":opts.CodexPermissionProfile=":danger-full-access"
+		}
+		err:=validateCodexIsolationOptions(opts)
+		if (err==nil)!=(scenario=="valid") { t.Fatalf("%s: %v",scenario,err) }
 	}
 }
 

@@ -323,7 +323,7 @@ func forwardCodexDesktopTurn(ctx context.Context, thread, text string, attachmen
 	}
 	// 一旦开始写请求，失败也不重发；即便应答丢失，持有者可能已经执行。
 	submitted = true
-	request := map[string]any{"threadId": thread, "input": input, "clientUserMessageId": uuid.NewString(), "additionalContext": map[string]any{"dws.digital_employee_policy": map[string]string{"kind": "application", "value": instructions}}}
+	request := map[string]any{"threadId": thread, "input": input, "clientUserMessageId": uuid.NewString(), "additionalContext": employeeCodexAdditionalContext(ctx, instructions)}
 	m, err = c.request(ctx, "thread-follower-start-turn", 2, map[string]any{"conversationId": thread, "turnStart": map[string]any{"request": request, "context": map[string]bool{"inheritThreadSettings": true}}})
 	if err != nil {
 		return "", err
