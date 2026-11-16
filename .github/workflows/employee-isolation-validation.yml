@@ -43,6 +43,8 @@ jobs:
           ./scripts/policy/check-schema-catalog.sh
           ./scripts/policy/check-command-surface.sh --strict
           ./scripts/policy/check-runtime-confirmation-truth.sh
+          ./scripts/policy/check-open-source-assets.sh
+          ./scripts/policy/check-release-fragments.sh 4cc7767c70a874b189463ebfb07ad8a3c424389c HEAD
           git diff --check
       - name: Build Darwin arm64 executable
         env:
@@ -53,7 +55,7 @@ jobs:
           mkdir -p /tmp/dws-isolation-artifact
           go build -o /tmp/dws-isolation-artifact/dws ./cmd
           git rev-parse HEAD > /tmp/dws-isolation-artifact/commit.txt
-          shasum -a 256 /tmp/dws-isolation-artifact/dws > /tmp/dws-isolation-artifact/sha256.txt
+          (cd /tmp/dws-isolation-artifact && shasum -a 256 dws > sha256.txt)
       - uses: actions/upload-artifact@v4
         with:
           name: dws-darwin-arm64-${{ github.sha }}
