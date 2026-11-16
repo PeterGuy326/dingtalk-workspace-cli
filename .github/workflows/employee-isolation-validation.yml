@@ -30,7 +30,7 @@ jobs:
       - name: Test isolation regressions first
         run: >-
           go test -count=1
-          -run 'CodexNativeIsolation|CodexIsolation|EmployeeChatContext|EmployeeCommonSendGuard|EmployeeNativeCardSource|EmployeeOwnedFeedback|EmployeeDefaultAndAliasProfile|EmployeeTrustedTurnIdentity|EmployeeSendGuardCoversAssembledChatTree|EmployeeRawCallsStopAtPublicPreflight|EmployeeCardLifecycle|DingTalkTagConnectReachesFinalSchema|ChatEmployeeBindingAtPublicLeaf'
+          -run 'CodexNativeIsolation|CodexIsolation|EmployeeCodexRestartPreservesPermissions|EmployeeLifecycleDryRunDoesNotControlHost|EmployeeChatContext|EmployeeCommonSendGuard|EmployeeNativeCardSource|EmployeeOwnedFeedback|EmployeeDefaultAndAliasProfile|EmployeeTrustedTurnIdentity|EmployeeSendGuardCoversAssembledChatTree|EmployeeRawCallsStopAtPublicPreflight|EmployeeCardLifecycle|DingTalkTagConnectReachesFinalSchema|ChatEmployeeBindingAtPublicLeaf'
           ./internal/helpers ./internal/shortcut/chat ./internal/app
       - name: Test changed packages first
         run: go test -count=1 ./internal/helpers ./internal/shortcut/chat ./internal/app
