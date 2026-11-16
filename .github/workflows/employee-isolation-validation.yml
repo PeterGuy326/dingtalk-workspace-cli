@@ -1,0 +1,59 @@
+name: Employee isolation validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [fix/employee-native-permissions]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.repository == 'PeterGuy326/dingtalk-workspace-cli'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      DWS_PACKAGE_VERSION: 0.0.0-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Capture formatting patch
+        run: |
+          git diff --name-only 4cc7767c70a874b189463ebfb07ad8a3c424389c HEAD -- '*.go' | xargs -r gofmt -w
+          git diff > /tmp/formatting.patch
+      - name: Test changed packages first
+        run: go test -count=1 ./internal/helpers ./internal/shortcut/chat ./internal/app
+      - name: Full race suite
+        run: go test -race -count=1 ./...
+      - name: Schema and declaration checks
+        run: |
+          make generate-schema
+          ./scripts/policy/check-generated-drift.sh
+          ./scripts/policy/check-schema-catalog.sh
+          ./scripts/policy/check-command-surface.sh --strict
+          ./scripts/policy/check-runtime-confirmation-truth.sh
+          git diff --check
+      - name: Build Darwin arm64 executable
+        env:
+          GOOS: darwin
+          GOARCH: arm64
+          CGO_ENABLED: '0'
+        run: |
+          mkdir -p /tmp/dws-isolation-artifact
+          go build -o /tmp/dws-isolation-artifact/dws ./cmd
+          git rev-parse HEAD > /tmp/dws-isolation-artifact/commit.txt
+          shasum -a 256 /tmp/dws-isolation-artifact/dws > /tmp/dws-isolation-artifact/sha256.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: formatting-${{ github.sha }}
+          path: /tmp/formatting.patch
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dws-darwin-arm64-${{ github.sha }}
+          path: /tmp/dws-isolation-artifact

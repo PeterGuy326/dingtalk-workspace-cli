@@ -137,6 +137,7 @@ func newDeapConnectCommand() *cobra.Command {
 				{Name: "agent-cmd", Property: "agentCommand"},
 				{Name: "agent-model", Property: "agentModel"},
 				{Name: "agent-workdir", Property: "agentWorkdir"},
+				{Name: "agent-permissions-profile", Property: "agentPermissionsProfile"},
 				{Name: "agent-memory", Property: "agentMemory"},
 				{Name: "agent-timeout", Property: "agentTimeout"},
 				{Name: "agent-permission-mode", Property: "agentPermissionMode"},

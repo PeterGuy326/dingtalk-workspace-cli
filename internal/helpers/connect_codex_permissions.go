@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 )
 
 var errCodexSavedPermissions = errors.New("cannot safely restore saved Codex permissions")
@@ -31,25 +32,34 @@ type codexSavedSettings struct {
 // thread/resume 省略 sandbox 时会采用新进程的默认配置。先只读定位原会话，
 // 再恢复最新持久化权限；不能拿连接配置或第一次连接的缓存替代人工修改。
 func (c *codexAppServerClient) employeeResumeParams(ctx context.Context, threadID string) (map[string]any, error) {
+	saved, err := c.employeeSavedSettings(ctx, threadID)
+	if err != nil {
+		return nil, err
+	}
+	return saved.resumeParams(threadID)
+}
+
+func (c *codexAppServerClient) employeeSavedSettings(ctx context.Context, threadID string) (codexSavedSettings, error) {
 	id := c.requestID()
 	if err := c.send(map[string]any{"id": id, "method": "thread/read", "params": map[string]any{"threadId": threadID}}); err != nil {
-		return nil, err
+		return codexSavedSettings{}, err
 	}
 	raw, err := c.waitResponse(ctx, id)
 	if err != nil {
-		return nil, err
+		return codexSavedSettings{}, err
 	}
 	var result struct {
 		Thread struct{ ID, Path string } `json:"thread"`
 	}
 	if json.Unmarshal(raw, &result) != nil || result.Thread.ID != threadID || !filepath.IsAbs(result.Thread.Path) {
-		return nil, errCodexSavedPermissions
+		return codexSavedSettings{}, errCodexSavedPermissions
 	}
-	saved, err := readCodexSavedSettings(result.Thread.Path, threadID)
-	if err != nil {
-		return nil, err
+	if c.isolatedHome != "" {
+		path, err := filepath.EvalSymlinks(result.Thread.Path)
+		rel, relErr := filepath.Rel(c.isolatedHome, path)
+		if err != nil || relErr != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) { return codexSavedSettings{}, errCodexSavedPermissions }
 	}
-	return saved.resumeParams(threadID)
+	return readCodexSavedSettings(result.Thread.Path, threadID)
 }
 
 func readCodexSavedSettings(path, threadID string) (codexSavedSettings, error) {

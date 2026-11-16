@@ -171,7 +171,7 @@ func validateDigitalEmployeeAdapter(cmd *cobra.Command) error {
 }
 
 func digitalEmployeeAdapterFlagNames() []string {
-	return []string{"agent-cmd", "agent-model", "agent-workdir", "agent-memory", "agent-timeout", "agent-permission-mode", "agent-approval-mode", "yolo", "allowed-users", "allowed-groups", "reply-mode", "reply-card-forward", "daemon", "alwayson", "local-worker", "local-supervise"}
+	return []string{"agent-cmd", "agent-model", "agent-workdir", "agent-memory", "agent-timeout", "agent-permission-mode", "agent-permissions-profile", "agent-approval-mode", "yolo", "allowed-users", "allowed-groups", "reply-mode", "reply-card-forward", "daemon", "alwayson", "local-worker", "local-supervise"}
 }
 
 func digitalEmployeeOptions(cmd *cobra.Command) (connectAgentOptions, error) {
@@ -185,6 +185,15 @@ func digitalEmployeeOptions(cmd *cobra.Command) (connectAgentOptions, error) {
 		opts.Command = strings.TrimSpace(os.Getenv("DWS_AGENT_CMD"))
 	}
 	channel, _ := resolveDigitalEmployeeChannel(cmd)
+	opts.CodexPermissionProfile = strings.TrimSpace(devAppStringFlag(cmd, "agent-permissions-profile"))
+	if opts.CodexPermissionProfile != "" {
+		if channel != "codex" || opts.WorkDir == "" || !opts.Memory || commandBoolFlag(cmd, "yolo") || cmd.Flags().Changed("agent-permission-mode") || cmd.Flags().Changed("agent-approval-mode") {
+			return opts, fmt.Errorf("native permission isolation requires Codex, an explicit workdir, memory, and no legacy permission options")
+		}
+		if err := validateCodexIsolationOptions(opts); err != nil {
+			return opts, err
+		}
+	}
 	if channel == "codex" {
 		// 只记住显式模式；旧的 Yolo 布尔默认值不能等价为用户选择完全访问。
 		mode := ""
@@ -241,6 +250,7 @@ func digitalEmployeeAgentFlags() []LeafFlag {
 		{Name: "agent-cmd", Usage: "custom 命令；问题作为末参，stdout 作为回复"},
 		{Name: "agent-model", Usage: "Agent 模型；同 dev connect"},
 		{Name: "agent-workdir", Usage: "Agent 工作目录；同 dev connect"},
+		{Name: "agent-permissions-profile", Usage: "Codex 原生命名权限 profile；启用独立会话目录和新历史命名空间，须显式工作目录及独立 CODEX_HOME，恢复不允许扩大权限"},
 		{Name: "agent-memory", Kind: LeafBool, Default: "true", Usage: "按员工和会话保留 Agent 上下文"},
 		{Name: "agent-timeout", Kind: LeafInt, Usage: "Agent 每轮超时秒数；0 不限制 Agent 回合，Codex 桌面共享仍受连接和结果等待上限约束"},
 		{Name: "agent-permission-mode", Enum: []string{"ask", "bypass"}, Usage: "Agent 权限模式；Codex 仅初始化新会话，未传默认帮我批准，已有会话跟随 Codex 人工设置；其他 Agent 同 dev connect"},
@@ -429,6 +439,14 @@ const codexEmployeeDeveloperInstructions = "你是通过钉钉协作的本地数
 
 // 保留此接口参数中的 context，所有运行操作必须服从宿主取消。
 var digitalEmployeeNewForwarder = func(ctx context.Context, cfg digitalEmployeeAdapterConfig) (forwarder, error) {
+	if cfg.Options.CodexPermissionProfile != "" {
+		if bindingChannel(cfg.Binding) != "codex" {
+			return nil, fmt.Errorf("native permission isolation requires Codex")
+		}
+		if err := validateCodexIsolationOptions(cfg.Options); err != nil {
+			return nil, err
+		}
+	}
 	if bindingChannel(cfg.Binding) == "codex" {
 		mode, err := employeeCodexInitialMode(cfg.Options)
 		if err != nil {

@@ -58,6 +58,7 @@ type employeeEvent struct {
 }
 
 type employeeTaskRecord struct {
+	SenderID string `json:"senderId,omitempty"`
 	EventID              string                  `json:"eventId"`
 	MessageID            string                  `json:"messageId"`
 	ConversationID       string                  `json:"conversationId"`
@@ -305,7 +306,7 @@ func (r *employeeRuntime) enqueue(e employeeEvent) error {
 		return employeeTerminal("queue_capacity")
 	}
 	key := sha256.Sum256([]byte(r.cfg.Binding.DWSProfile + "\x00" + e.ConversationID + "\x00" + e.MessageID))
-	record := employeeTaskRecord{EventID: e.EventID, MessageID: e.MessageID, ConversationID: e.ConversationID, Status: "accepted", IdempotencyKey: fmt.Sprintf("%x", key[:16]), UpdatedAt: time.Now()}
+	record := employeeTaskRecord{SenderID: e.SenderID, EventID: e.EventID, MessageID: e.MessageID, ConversationID: e.ConversationID, Status: "accepted", IdempotencyKey: fmt.Sprintf("%x", key[:16]), UpdatedAt: time.Now()}
 	if err := r.audit(record); err != nil {
 		return err
 	}

@@ -7661,6 +7661,7 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 				{Name: "extension", Property: "extension", Required: boolPtr(false), InterfaceType: "object"},
 				{Name: "a2ui-annotations", Property: "a2uiAnnotations", Required: boolPtr(false), InterfaceType: "array"},
 				{Name: "support-forward", Property: "supportForward", Required: boolPtr(false), InterfaceType: "boolean"},
+				{Name: "employee-context", Description: "本地员工绑定及原消息元数据；发送前校验绑定与目标，不传给远端接口"},
 				{Name: "summary", Property: "summary", Required: boolPtr(false), InterfaceType: "string", Description: "卡片无法渲染时的降级文案；省略时为“互动卡片”，显式空白会被拒绝"},
 				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(false)},
 				{Name: "open-dingtalk-id", Property: "receiverOpenDingTalkId", Required: boolPtr(false)},
@@ -7670,6 +7671,7 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 		},
 	})
 	chatMessageSendA2UICardCmd.Flags().String("conversation-id", "", "群聊 openConversationId（群聊时必填，与 --open-dingtalk-id 互斥）")
+	chatMessageSendA2UICardCmd.Flags().String("employee-context", "", "本地员工绑定 JSON；已登记员工必填，卡片仅可发固定主管或已接收任务的原会话")
 	chatMessageSendA2UICardCmd.Flags().String("open-dingtalk-id", "", "单聊接收者 openDingTalkId（单聊时必填，与 --conversation-id 互斥）")
 	chatMessageSendA2UICardCmd.Flags().String("a2ui-annotations", "", "A2UI 组件注解 JSON 对象数组（可选，支持空数组 []）")
 	chatMessageSendA2UICardCmd.Flags().String("extension", "", "AICard 消息扩展 JSON 对象，key 非空白且 value 必须为字符串；业务 key 由服务端白名单控制（可选，支持 {}）")

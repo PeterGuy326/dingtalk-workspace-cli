@@ -38,12 +38,23 @@ func prepareEmployeeForwarder(parent context.Context, fwd forwarder) error {
 	defer cancel()
 	switch f := fwd.(type) {
 	case *codexAppServerForwarder:
-		client, err := codexNewAppServerClient(ctx, f.bin, f.env, f.cwd())
+		env := f.env
+		if f.permissionProfile != "" {
+			var err error
+			env, err = codexIsolatedEnvironment(env)
+			if err != nil { return err }
+		}
+		client, err := codexNewAppServerClient(ctx, f.bin, env, f.cwd())
 		if err != nil {
 			return err
 		}
 		defer client.close()
-		return client.initialize(ctx)
+		if err := client.initialize(ctx); err != nil { return err }
+		if f.permissionProfile != "" {
+			_, err := client.isolatedProfileFilesystem(ctx, f.permissionProfile, f.cwd())
+			return err
+		}
+		return nil
 	case *qoderStreamForwarder:
 		f.mu.Lock()
 		defer f.mu.Unlock()

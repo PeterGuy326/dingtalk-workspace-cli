@@ -177,6 +177,8 @@ type forwarderCloser interface {
 // channel's built-in model, per-conversation memory on (where the CLI supports
 // it), empty scratch workdir.
 type connectAgentOptions struct {
+	// CodexPermissionProfile opts employees into isolated native permissions and fresh history.
+	CodexPermissionProfile string `json:",omitempty"`
 	// CodexInitialPermissionMode 仅初始化数字员工新会话；空值使用自动审核，恢复时不覆盖权限。
 	CodexInitialPermissionMode string `json:",omitempty"`
 	// Command 是显式 custom argv；数字员工无需修改进程级环境变量。

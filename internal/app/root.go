@@ -1114,6 +1114,9 @@ func newRootCommandWithMode(rootCtx context.Context, engine *pipeline.Engine, lo
 			}
 
 			authpkg.SetRuntimeProfile(flags.Profile)
+			if err := helpers.ValidateEmployeeChatSendCommand(cmd); err != nil {
+				return err
+			}
 
 			// Configure global slog level based on --debug / --verbose flags.
 			configureLogLevel(flags)

@@ -54,6 +54,7 @@ type codexAppServerForwarder struct {
 	model                 string
 	yolo                  bool
 	initialPermissionMode string
+	permissionProfile     string
 	developerInstructions string
 	sessions              *codexThreadSessions
 }
@@ -64,7 +65,11 @@ func newCodexAppServerForwarder(bin string, env []string, timeout time.Duration,
 		// Scope the on-disk thread store by clientId so multiple bots on one
 		// machine stay isolated; an empty clientId disables persistence and the
 		// map stays in memory (original behaviour).
-		sessions = newCodexThreadSessions(codexThreadStorePath(clientID))
+		path := codexThreadStorePath(clientID)
+		if opts.CodexPermissionProfile != "" && path != "" {
+			path = codexIsolatedStorePath(path, opts)
+		}
+		sessions = newCodexThreadSessions(path)
 	}
 	return &codexAppServerForwarder{
 		privateDiagnostics: opts.PrivateDiagnostics,
@@ -72,6 +77,7 @@ func newCodexAppServerForwarder(bin string, env []string, timeout time.Duration,
 		env:                env,
 		timeout:            timeout,
 		workDir:            opts.WorkDir,
+		permissionProfile:  opts.CodexPermissionProfile,
 		model:              opts.Model,
 		yolo:               opts.Yolo,
 		sessions:           sessions,
@@ -139,14 +145,40 @@ func (f *codexAppServerForwarder) forwardAppServer(ctx context.Context, convID, 
 		defer state.mu.Unlock()
 	}
 
-	cli, err := codexNewAppServerClient(ctx, f.bin, f.env, f.cwd())
+	cwd := f.cwd()
+	env := f.env
+	if f.permissionProfile != "" {
+		var err error
+		cwd, err = codexIsolatedConversationDir(f.workDir, convID)
+		if err != nil {
+			return "", err
+		}
+		env, err = codexIsolatedEnvironment(env)
+		if err != nil {
+			return "", err
+		}
+		if err := f.checkIsolatedStore(); err != nil {
+			return "", err
+		}
+	}
+	cli, err := codexNewAppServerClient(ctx, f.bin, env, cwd)
 	if err != nil {
 		return "", err
 	}
 	defer cli.close()
+	if f.permissionProfile != "" {
+		for _, entry := range env { if strings.HasPrefix(entry, "CODEX_HOME=") { cli.isolatedHome = strings.TrimPrefix(entry, "CODEX_HOME=") } }
+	}
 
 	if err := cli.initialize(ctx); err != nil {
 		return "", err
+	}
+	var filesystem map[string]string
+	if f.permissionProfile != "" {
+		filesystem, err = cli.isolatedProfileFilesystem(ctx, f.permissionProfile, cwd)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	_ = state // held only for its per-conversation turn lock (see above)
@@ -157,6 +189,12 @@ func (f *codexAppServerForwarder) forwardAppServer(ctx context.Context, convID, 
 	}
 	params := func(threadID string) map[string]any {
 		p := f.threadParams(threadID)
+		if f.permissionProfile != "" {
+			delete(p, "sandbox")
+			delete(p, "config")
+			p["permissions"], p["cwd"], p["runtimeWorkspaceRoots"] = f.permissionProfile, cwd, []string{cwd}
+			p["approvalPolicy"], p["approvalsReviewer"] = "on-request", "user"
+		}
 		if managed {
 			if threadID == "" {
 				p["developerInstructions"] = p["developerInstructions"].(string) + "\n\n" + codexManagedReplyContext
@@ -173,7 +211,9 @@ func (f *codexAppServerForwarder) forwardAppServer(ctx context.Context, convID, 
 	}
 	if threadID != "" {
 		resumeParams := params(threadID)
-		if f.developerInstructions != "" {
+		if f.permissionProfile != "" {
+			err = cli.verifyIsolatedSavedSettings(ctx, threadID, cwd, filesystem)
+		} else if f.developerInstructions != "" {
 			resumeParams, err = cli.employeeResumeParams(ctx, threadID)
 		}
 		var resumed string
@@ -181,6 +221,9 @@ func (f *codexAppServerForwarder) forwardAppServer(ctx context.Context, convID, 
 			resumed, err = cli.resumeThread(ctx, resumeParams)
 		}
 		if err != nil {
+			if f.permissionProfile != "" {
+				return "", fmt.Errorf("%w: %w", errCodexEmployeeResumeFailed, err)
+			}
 			if f.developerInstructions != "" {
 				if codexThreadHasActiveWriter(err) || errors.Is(err, errCodexSavedPermissions) {
 					reply, sharedErr := codexForwardDesktopTurn(ctx, threadID, text, attachments, onDelta, f.developerInstructions)
@@ -198,6 +241,7 @@ func (f *codexAppServerForwarder) forwardAppServer(ctx context.Context, convID, 
 			threadID = ""
 			f.sessions.setThreadID(sessionKey, "")
 		} else {
+			if f.permissionProfile != "" && resumed != threadID { return "", errCodexSavedPermissions }
 			threadID = resumed
 		}
 	}
@@ -209,10 +253,18 @@ func (f *codexAppServerForwarder) forwardAppServer(ctx context.Context, convID, 
 		threadID = started
 		if f.sessions != nil {
 			f.sessions.setThreadID(sessionKey, threadID)
+			if f.permissionProfile != "" && f.sessions.path != "" {
+				data, readErr := os.ReadFile(f.sessions.path)
+				var stored map[string]string
+				if readErr != nil || json.Unmarshal(data, &stored) != nil || stored[codexConvKey(sessionKey)] != threadID { return "", errCodexSavedPermissions }
+			}
 		}
 	}
 
 	instructions := f.developerInstructions
+	if f.permissionProfile != "" {
+		cli.isolatedTurnParams = map[string]any{"permissions": f.permissionProfile, "cwd": cwd, "runtimeWorkspaceRoots": []string{cwd}, "approvalPolicy": "on-request", "approvalsReviewer": "user"}
+	}
 	if managed && instructions != "" {
 		// 保留公共员工策略更新，同时明确当前回合由运行时独占卡片投递。
 		instructions += "\n\n" + codexManagedReplyContext
@@ -371,6 +423,8 @@ func (s *codexThreadSessions) reset(convID string) {
 }
 
 type codexAppServerClient struct {
+	isolatedHome string
+	isolatedTurnParams map[string]any
 	cmd             *exec.Cmd
 	stdin           io.WriteCloser
 	msgs            chan codexRPCMessage
@@ -423,9 +477,21 @@ func codexThreadHasActiveWriter(err error) bool {
 
 func newCodexAppServerClient(ctx context.Context, bin string, env []string, cwd string) (*codexAppServerClient, error) {
 	// 连接路径会显式选择新建/恢复权限。协议不兼容时默认只读，避免配置回退造成扩权。
-	cmd := codexExecCommandContext(ctx, bin, "app-server", "--stdio", "-c", `sandbox_mode="read-only"`)
+	args := []string{"app-server", "--stdio", "-c", `sandbox_mode="read-only"`}
+	isolated := false
+	for _, entry := range env {
+		if entry == "DWS_CODEX_ISOLATION=1" {
+			isolated = true
+		}
+	}
+	if isolated {
+		args = []string{"app-server", "--stdio", "-c", "apps.enabled=false"}
+	}
+	cmd := codexExecCommandContext(ctx, bin, args...)
 	cmd.Dir = cwd
-	if len(env) > 0 {
+	if isolated {
+		cmd.Env = env
+	} else if len(env) > 0 {
 		cmd.Env = append(os.Environ(), env...)
 	}
 	stdin, err := cmd.StdinPipe()
@@ -527,7 +593,11 @@ func (c *codexAppServerClient) startThread(ctx context.Context, params map[strin
 	if err := c.send(map[string]any{"id": id, "method": "thread/start", "params": params}); err != nil {
 		return "", err
 	}
-	return codexThreadIDFromResult(c.waitResponse(ctx, id))
+	result, err := c.waitResponse(ctx, id)
+	if err == nil && params["permissions"] != nil {
+		err = verifyCodexResumedPermissions(result, params)
+	}
+	return codexThreadIDFromResult(result, err)
 }
 
 func (c *codexAppServerClient) resumeThread(ctx context.Context, params map[string]any) (string, error) {
@@ -555,6 +625,9 @@ func (c *codexAppServerClient) runTurnWithContext(ctx context.Context, threadID,
 		}
 	}
 	params := map[string]any{"input": input, "threadId": threadID}
+	for key, value := range c.isolatedTurnParams {
+		params[key] = value
+	}
 	if instructions != "" {
 		// resume 不会重写已存历史中的开发者指令；通过本轮应用上下文更新员工策略，保留 thread。
 		params["additionalContext"] = map[string]any{

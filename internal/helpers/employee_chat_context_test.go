@@ -75,7 +75,7 @@ func TestCrossPlatformCoverageEmployeeChatContext(t *testing.T) {
 			cmd.Flags().Bool("body-stdin", body, "")
 			cmd.Flags().Bool("wait-delivery", wait, "")
 			err := ValidateEmployeeChatContext(cmd, op, "conversation", ref, target, key)
-			wantOK := scenario == "reply" || scenario == "operator" || scenario == "no-context"
+			wantOK := scenario == "reply" || scenario == "operator"
 			if (err == nil) != wantOK {
 				t.Fatalf("err=%v", err)
 			}
