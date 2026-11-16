@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -161,6 +162,30 @@ func TestCrossPlatformCoverageCodexIsolationOptions(t *testing.T) {
 		if (err == nil) != (scenario == "valid") {
 			t.Fatalf("%s: %v", scenario, err)
 		}
+	}
+}
+
+func TestCrossPlatformCoverageCodexIsolationLaunchNeverUsesLegacySandbox(t *testing.T) {
+	t.Setenv("CODEX_HOME", t.TempDir())
+	env, err := codexIsolatedEnvironment(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var command *exec.Cmd
+	testseam.Swap(t, &codexExecCommandContext, func(ctx context.Context, bin string, args ...string) *exec.Cmd {
+		command = exec.CommandContext(ctx, filepath.Join(t.TempDir(), "missing-codex"))
+		command.Args = append([]string{bin}, args...)
+		return command
+	})
+	if _, err := newCodexAppServerClient(context.Background(), "codex", env, t.TempDir()); err == nil {
+		t.Fatal("missing executable unexpectedly started")
+	}
+	args := strings.Join(command.Args, " ")
+	if strings.Contains(args, "sandbox") || strings.Contains(args, "--remote") || !strings.Contains(args, "features.apps=false") || !strings.Contains(args, "features.plugins=false") {
+		t.Fatalf("unsafe isolated launch: %s", args)
+	}
+	if !reflect.DeepEqual(command.Env, env) {
+		t.Fatal("isolated process inherited additional environment")
 	}
 }
 
