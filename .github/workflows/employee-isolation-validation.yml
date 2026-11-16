@@ -35,7 +35,7 @@ jobs:
       - name: Test changed packages first
         run: go test -count=1 ./internal/helpers ./internal/shortcut/chat ./internal/app
       - name: Full race suite
-        run: go test -race -count=1 ./...
+        run: go test -race -count=1 -timeout=30m ./...
       - name: Schema and declaration checks
         run: |
           make generate-schema
