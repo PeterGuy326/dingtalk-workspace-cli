@@ -58,7 +58,7 @@ type employeeEvent struct {
 }
 
 type employeeTaskRecord struct {
-	SenderID string `json:"senderId,omitempty"`
+	SenderID             string                  `json:"senderId,omitempty"`
 	EventID              string                  `json:"eventId"`
 	MessageID            string                  `json:"messageId"`
 	ConversationID       string                  `json:"conversationId"`

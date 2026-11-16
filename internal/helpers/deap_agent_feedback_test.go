@@ -189,6 +189,7 @@ func TestCrossPlatformCoverageEmployeeFeedbackShutdownAndCache(t *testing.T) {
 }
 
 func TestCrossPlatformCoverageEmployeeFeedbackWireAndCommands(t *testing.T) {
+	installEmployeeReplyBinding(t)
 	largeID, err := decodeEmployeeFeedbackResult([]byte(`{"success":true,"emotionId":9223372036854775807}`))
 	if err != nil || findJSONScalar(largeID, "emotionId") != "9223372036854775807" {
 		t.Fatal("表情 ID 精度丢失", err)

@@ -23,6 +23,10 @@ package cli
 // that must not deliver a direct interface property (provenance
 // reviewed_mapping_exclusion). Edit only with an exact reviewed reason.
 var reviewedSchemaParameterMappingExclusions = map[string]string{
+	"chat.send_a2ui_card --employee-context":                             "Local employee binding and accepted-source validation; never sent to create_and_send_a2ui_card.",
+	"chat.update_a2ui_card --employee-context":                           "Local ownership validation against reply/approval ledgers; never sent to update_a2ui_card.",
+	"chat.add_text_emotion --employee-context":                           "Local owned-feedback validation; never sent to add_text_emotion.",
+	"chat.remove_text_emotion --employee-context":                        "Local owned-feedback validation; never sent to remove_text_emotion.",
 	"dingtalk-tag.create_mcp --config-file":                              "Local JSON file expands into create_mcp root fields name, configString and optional MCP settings; neither configFile nor config is a direct RPC property.",
 	"aitable.table_create --wait":                                        "Local read-back capability; never sent to create_table.",
 	"aitable.table_create --wait-timeout":                                "Local bounded read-back deadline in seconds; never sent to create_table.",

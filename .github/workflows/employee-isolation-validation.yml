@@ -22,25 +22,16 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Build private Darwin formatter cache
-        env:
-          GOOS: darwin
-          GOARCH: arm64
-          CGO_ENABLED: '0'
-        run: go build -o /tmp/dws-isolation-gofmt cmd/gofmt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: formatter-darwin-arm64
-          path: /tmp/dws-isolation-gofmt
-      - name: Capture formatting patch
+      - name: Check formatting
         run: |
-          git diff --name-only 4cc7767c70a874b189463ebfb07ad8a3c424389c HEAD -- '*.go' | xargs -r gofmt -w
-          git diff > /tmp/formatting.patch
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: formatting-${{ github.sha }}
-          path: /tmp/formatting.patch
+          git diff --name-only 4cc7767c70a874b189463ebfb07ad8a3c424389c HEAD -- '*.go' | xargs -r gofmt -l > /tmp/unformatted
+          cat /tmp/unformatted
+          test ! -s /tmp/unformatted
+      - name: Test isolation regressions first
+        run: >-
+          go test -count=1
+          -run 'CodexNativeIsolation|CodexIsolation|EmployeeChatContext|EmployeeCommonSendGuard|EmployeeNativeCardSource|EmployeeOwnedFeedback|EmployeeDefaultAndAliasProfile|EmployeeTrustedTurnIdentity|EmployeeSendGuardCoversAssembledChatTree|EmployeeRawCallsStopAtPublicPreflight|EmployeeCardLifecycle|DingTalkTagConnectReachesFinalSchema|ChatEmployeeBindingAtPublicLeaf'
+          ./internal/helpers ./internal/shortcut/chat ./internal/app
       - name: Test changed packages first
         run: go test -count=1 ./internal/helpers ./internal/shortcut/chat ./internal/app
       - name: Full race suite

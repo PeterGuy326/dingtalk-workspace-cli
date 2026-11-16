@@ -167,7 +167,11 @@ func (f *codexAppServerForwarder) forwardAppServer(ctx context.Context, convID, 
 	}
 	defer cli.close()
 	if f.permissionProfile != "" {
-		for _, entry := range env { if strings.HasPrefix(entry, "CODEX_HOME=") { cli.isolatedHome = strings.TrimPrefix(entry, "CODEX_HOME=") } }
+		for _, entry := range env {
+			if strings.HasPrefix(entry, "CODEX_HOME=") {
+				cli.isolatedHome = strings.TrimPrefix(entry, "CODEX_HOME=")
+			}
+		}
 	}
 
 	if err := cli.initialize(ctx); err != nil {
@@ -241,7 +245,9 @@ func (f *codexAppServerForwarder) forwardAppServer(ctx context.Context, convID, 
 			threadID = ""
 			f.sessions.setThreadID(sessionKey, "")
 		} else {
-			if f.permissionProfile != "" && resumed != threadID { return "", errCodexSavedPermissions }
+			if f.permissionProfile != "" && resumed != threadID {
+				return "", errCodexSavedPermissions
+			}
 			threadID = resumed
 		}
 	}
@@ -256,7 +262,9 @@ func (f *codexAppServerForwarder) forwardAppServer(ctx context.Context, convID, 
 			if f.permissionProfile != "" && f.sessions.path != "" {
 				data, readErr := os.ReadFile(f.sessions.path)
 				var stored map[string]string
-				if readErr != nil || json.Unmarshal(data, &stored) != nil || stored[codexConvKey(sessionKey)] != threadID { return "", errCodexSavedPermissions }
+				if readErr != nil || json.Unmarshal(data, &stored) != nil || stored[codexConvKey(sessionKey)] != threadID {
+					return "", errCodexSavedPermissions
+				}
 			}
 		}
 	}
@@ -423,19 +431,19 @@ func (s *codexThreadSessions) reset(convID string) {
 }
 
 type codexAppServerClient struct {
-	isolatedHome string
+	isolatedHome       string
 	isolatedTurnParams map[string]any
-	cmd             *exec.Cmd
-	stdin           io.WriteCloser
-	msgs            chan codexRPCMessage
-	readErr         chan error
-	done            chan struct{}
-	closeOnce       sync.Once
-	stderr          *lockedBuffer
-	nextID          int
-	approvalWG      sync.WaitGroup
-	approvalReplies chan map[string]any
-	approvalCancels map[int]context.CancelFunc
+	cmd                *exec.Cmd
+	stdin              io.WriteCloser
+	msgs               chan codexRPCMessage
+	readErr            chan error
+	done               chan struct{}
+	closeOnce          sync.Once
+	stderr             *lockedBuffer
+	nextID             int
+	approvalWG         sync.WaitGroup
+	approvalReplies    chan map[string]any
+	approvalCancels    map[int]context.CancelFunc
 }
 
 type lockedBuffer struct {
@@ -486,6 +494,9 @@ func newCodexAppServerClient(ctx context.Context, bin string, env []string, cwd 
 	}
 	if isolated {
 		args = []string{"app-server", "--stdio", "-c", "apps._default.enabled=false"}
+		for _, feature := range []string{"apps", "plugins", "remote_plugin", "computer_use", "browser_use", "browser_use_external", "in_app_browser", "in_app_local_automation", "multi_agent", "skill_mcp_dependency_install", "hooks"} {
+			args = append(args, "-c", "features."+feature+"=false")
+		}
 	}
 	cmd := codexExecCommandContext(ctx, bin, args...)
 	cmd.Dir = cwd

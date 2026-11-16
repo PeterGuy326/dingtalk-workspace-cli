@@ -179,6 +179,14 @@ func TestCrossPlatformCoverageChatEmployeeBindingAtPublicLeaf(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(dir, "digital-employees", fmt.Sprintf("%x.json", sum)), raw, 0600); err != nil {
 				t.Fatal(err)
 			}
+			taskID := sha256.Sum256([]byte("cid\x00msg"))
+			taskPath := filepath.Join(dir, "digital-employees", "employee-"+fmt.Sprintf("%x", sum), "tasks", fmt.Sprintf("%x.json", taskID))
+			if err := os.MkdirAll(filepath.Dir(taskPath), 0700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(taskPath, []byte(`{"conversationId":"cid","messageId":"msg","status":"running"}`), 0600); err != nil {
+				t.Fatal(err)
+			}
 			fake := &larkAlignmentCaller{responses: map[string]string{"im/list_messages_by_ids": `{"result":[{"openMessageId":"msg","openConversationId":"cid","senderOpenDingTalkId":"D-sender"}]}`, "chat/send_personal_message": `{"openMessageId":"sent","openConversationId":"cid","sendStatus":"SUCCESS"}`}}
 			helpers.InitDepsForTest(t, fake)
 			root := newPlatformCoverageRoot()

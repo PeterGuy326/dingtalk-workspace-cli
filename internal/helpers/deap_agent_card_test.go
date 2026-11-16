@@ -95,6 +95,21 @@ func TestCrossPlatformCoverageEmployeeCardLifecycle(t *testing.T) {
 					t.Fatal("write attempted without durable ledger")
 				}
 				if calls == 1 {
+					var targetArgs []string
+					for i := 0; i < len(args); i++ {
+						if args[i] == "--employee-context" && i+1 < len(args) {
+							var metadata EmployeeChatContext
+							if json.Unmarshal([]byte(args[i+1]), &metadata) != nil || metadata.AgentUUID != b.AgentUUID || metadata.ConversationID != e.ConversationID || metadata.MessageID != e.MessageID {
+								t.Fatal("card context does not match its accepted source")
+							}
+							i++
+							continue
+						}
+						targetArgs = append(targetArgs, args[i])
+					}
+					if len(targetArgs) == len(args) {
+						t.Fatal("card source context missing")
+					}
 					wantTarget := "--open-dingtalk-id sender"
 					if scenario == "group" || scenario == "group-forward" {
 						wantTarget = "--conversation-id conversation"
@@ -104,7 +119,7 @@ func TestCrossPlatformCoverageEmployeeCardLifecycle(t *testing.T) {
 					} else {
 						wantTarget += " --support-forward=false"
 					}
-					if strings.Join(args, " ") != "send-a2ui-card "+wantTarget || ledger.Status != "card_creating" || agentCalls != 0 {
+					if strings.Join(targetArgs, " ") != "send-a2ui-card "+wantTarget || ledger.Status != "card_creating" || agentCalls != 0 {
 						t.Fatalf("placeholder must precede model and use trusted target: %v %v", args, ledger)
 					}
 					surface = ledger.SurfaceID

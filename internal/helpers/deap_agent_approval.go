@@ -42,11 +42,11 @@ type employeeApprovalOrigin struct {
 type employeeApprovalOriginKey struct{}
 
 type employeeTurnIdentity struct {
-	DWSProfile string `json:"dwsProfile,omitempty"`
-	SenderID string `json:"senderOpenDingTalkId,omitempty"`
-	ConversationID string `json:"conversationId,omitempty"`
-	MessageID string `json:"messageId,omitempty"`
-	SupervisorID string `json:"supervisorOpenDingTalkId,omitempty"`
+	DWSProfile       string `json:"dwsProfile,omitempty"`
+	SenderID         string `json:"senderOpenDingTalkId,omitempty"`
+	ConversationID   string `json:"conversationId,omitempty"`
+	MessageID        string `json:"messageId,omitempty"`
+	SupervisorID     string `json:"supervisorOpenDingTalkId,omitempty"`
 	SupervisorStatus string `json:"supervisorStatus"`
 }
 type employeeTurnIdentityKey struct{}
@@ -61,7 +61,7 @@ func (r *employeeRuntime) turnContext(events ...employeeEvent) context.Context {
 		return r.ctx
 	}
 	ctx := context.WithValue(r.ctx, codexApprovalKey{}, codexApprovalHandler(r.requestApproval))
-	identity := employeeTurnIdentity{DWSProfile:r.cfg.Binding.DWSProfile, SupervisorStatus:"unknown"}
+	identity := employeeTurnIdentity{DWSProfile: r.cfg.Binding.DWSProfile, SupervisorStatus: "unknown"}
 	if len(events) != 0 {
 		e := events[0]
 		kind := "私聊"
@@ -75,7 +75,9 @@ func (r *employeeRuntime) turnContext(events ...employeeEvent) context.Context {
 			if validMachineString(r.cfg.Binding.OperatorOpenDingTalkID) {
 				identity.SupervisorID = r.cfg.Binding.OperatorOpenDingTalkID
 				identity.SupervisorStatus = "not_supervisor"
-				if e.SenderID == identity.SupervisorID { identity.SupervisorStatus = "verified_supervisor" }
+				if e.SenderID == identity.SupervisorID {
+					identity.SupervisorStatus = "verified_supervisor"
+				}
 			}
 		}
 	}
@@ -230,7 +232,8 @@ func (r *employeeRuntime) requestApproval(parent context.Context, method string,
 	// 去掉按钮；更新失败不重发卡片，也不扩大已确认的审批范围。
 	updateCtx, stop := context.WithTimeout(r.ctx, 10*time.Second)
 	defer stop()
-	_, _ = employeeA2UICall(updateCtx, r.cfg.Binding, employeeApprovalMessages(surface, id, summary, status, false, cardInfo), "update-a2ui-card", "--biz-id", biz, "--flow-status", "FINISH")
+	metadata, _ := json.Marshal(EmployeeChatContext{AgentUUID: r.cfg.Binding.AgentUUID, Channel: bindingChannel(r.cfg.Binding), BindingRevision: r.cfg.Binding.BindingRevision, ApprovalID: id})
+	_, _ = employeeA2UICall(updateCtx, r.cfg.Binding, employeeApprovalMessages(surface, id, summary, status, false, cardInfo), "update-a2ui-card", "--biz-id", biz, "--flow-status", "FINISH", "--employee-context", string(metadata))
 	return allow
 }
 

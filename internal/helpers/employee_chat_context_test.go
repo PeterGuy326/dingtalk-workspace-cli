@@ -15,7 +15,7 @@ import (
 
 func TestCrossPlatformCoverageEmployeeChatContext(t *testing.T) {
 	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
-	for _, scenario := range []string{"reply", "operator", "no-context", "bad-json", "unknown-field", "extra-json", "oversize", "missing-id", "missing-stdin", "missing-wait", "missing-key", "missing-profile", "load-error", "wrong-profile", "wrong-agent", "wrong-channel", "stale", "unbound", "stopped", "wrong-operator", "missing-message", "unsupported"} {
+	for _, scenario := range []string{"reply", "operator", "no-context", "bad-json", "unknown-field", "extra-json", "oversize", "missing-id", "missing-stdin", "missing-wait", "missing-key", "missing-profile", "load-error", "wrong-profile", "wrong-agent", "wrong-channel", "stale", "unbound", "stopped", "wrong-operator", "missing-message", "unaccepted-source", "unsupported"} {
 		t.Run(scenario, func(t *testing.T) {
 			old := auth.RuntimeProfile()
 			auth.SetRuntimeProfile("corp:employee")
@@ -67,10 +67,16 @@ func TestCrossPlatformCoverageEmployeeChatContext(t *testing.T) {
 				target = "allowed-user"
 			case "missing-message":
 				ref = ""
+			case "unaccepted-source":
+				ref = "outside-message"
 			case "unsupported":
 				op = "other"
 			}
 			testseam.Swap(t, &deapChannelLoadBinding, func(string, string) (digitalEmployeeBinding, error) { return b, loadErr })
+			runtime := employeeRuntime{dir: digitalEmployeeRuntimeDir("corp:employee")}
+			if err := writeEmployeeJSON(runtime.recordPath(employeeEvent{ConversationID: "conversation", MessageID: "message"}), employeeTaskRecord{ConversationID: "conversation", MessageID: "message", Status: "running"}); err != nil {
+				t.Fatal(err)
+			}
 			cmd := &cobra.Command{}
 			cmd.Flags().String("employee-context", raw, "")
 			cmd.Flags().Bool("body-stdin", body, "")

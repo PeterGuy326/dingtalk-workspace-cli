@@ -57,7 +57,9 @@ func (c *codexAppServerClient) employeeSavedSettings(ctx context.Context, thread
 	if c.isolatedHome != "" {
 		path, err := filepath.EvalSymlinks(result.Thread.Path)
 		rel, relErr := filepath.Rel(c.isolatedHome, path)
-		if err != nil || relErr != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) { return codexSavedSettings{}, errCodexSavedPermissions }
+		if err != nil || relErr != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+			return codexSavedSettings{}, errCodexSavedPermissions
+		}
 	}
 	return readCodexSavedSettings(result.Thread.Path, threadID)
 }

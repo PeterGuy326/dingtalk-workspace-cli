@@ -260,11 +260,26 @@ func (f *employeeFeedback) emotionID(ctx context.Context, e employeeEvent, label
 
 var employeeFeedbackCall = runEmployeeFeedbackCall
 
+func validEmployeeFeedbackLabel(label string) bool {
+	switch label {
+	case "排队中", "思考中", "已完成", "回复发送失败", "结果待确认", "执行失败", "收到", "已中断，待核查", "处理失败", "已取消", "送达待确认", "发送待确认":
+		return true
+	default:
+		return false
+	}
+}
+
 // 复用员工 Profile 和现有 IM 文字表情命令，不使用机器人凭据或固定 emotionId。
 func runEmployeeFeedbackCall(ctx context.Context, profile, operation string, e employeeEvent, emotion employeeEmotion) (map[string]any, error) {
 	args := []string{"chat", "message", operation, "--emotion-name", emotion.Label, "--text", emotion.Label, "--background-id", "im_bg_1", "--format", "json"}
 	if operation != "create-text-emotion" {
 		args = append(args, "--conversation-id", e.ConversationID, "--message-id", e.MessageID, "--emotion-id", emotion.ID)
+		binding, err := deapChannelLoadBinding(deapConnectConfigDir(), profile)
+		if err != nil || binding.DWSProfile != profile {
+			return nil, employeeTerminal("binding_not_authorized")
+		}
+		metadata, _ := json.Marshal(EmployeeChatContext{AgentUUID: binding.AgentUUID, Channel: bindingChannel(binding), BindingRevision: binding.BindingRevision, ConversationID: e.ConversationID, MessageID: e.MessageID})
+		args = append(args, "--employee-context", string(metadata))
 	}
 	cmd, err := employeeCommand(ctx, profile, args...)
 	if err != nil {

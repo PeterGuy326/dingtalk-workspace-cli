@@ -37,6 +37,7 @@ func TestEmployeeFeedbackErrorSubprocessFixture(t *testing.T) {
 }
 
 func TestCrossPlatformCoverageEmployeeFeedbackWireFailures(t *testing.T) {
+	installEmployeeReplyBinding(t)
 	for _, mode := range []string{"overflow", "rejected"} {
 		t.Run(mode, func(t *testing.T) {
 			t.Setenv("DWS_FEEDBACK_ERROR_FIXTURE", mode)
@@ -86,6 +87,7 @@ func TestCrossPlatformCoverageEmployeeCardNoticeLedgerFailureStopsSend(t *testin
 }
 
 func TestCrossPlatformCoverageEmployeeFeedbackKeepsSafeDiagnostic(t *testing.T) {
+	installEmployeeReplyBinding(t)
 	t.Setenv("DWS_FEEDBACK_ERROR_FIXTURE", "1")
 	testseam.Swap(t, &employeeExecCommand, func(ctx context.Context, _ string, _ ...string) *exec.Cmd {
 		return exec.CommandContext(ctx, os.Args[0], "-test.run=^TestEmployeeFeedbackErrorSubprocessFixture$")

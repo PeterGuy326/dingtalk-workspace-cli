@@ -7212,6 +7212,7 @@ chat message edit 或 chat message recall 的 --message-id 和 --conversation-id
 		},
 	})
 	chatMessageAddTextEmotionCmd.Flags().String("conversation-id", "", "会话 openConversationId (必填，支持单聊/群聊)")
+	chatMessageAddTextEmotionCmd.Flags().String("employee-context", "", "已登记员工必填；只允许更新账本所记录原消息的已拥有状态表情")
 	chatMessageAddTextEmotionCmd.Flags().String("group", "", "--conversation-id 的别名")
 	chatMessageAddTextEmotionCmd.Flags().String("id", "", "--conversation-id 的别名")
 	chatMessageAddTextEmotionCmd.Flags().String("chat", "", "--conversation-id 的别名")
@@ -7285,6 +7286,7 @@ chat message edit 或 chat message recall 的 --message-id 和 --conversation-id
 		},
 	})
 	chatMessageRemoveTextEmotionCmd.Flags().String("conversation-id", "", "会话 openConversationId (必填，支持单聊/群聊)")
+	chatMessageRemoveTextEmotionCmd.Flags().String("employee-context", "", "已登记员工必填；只允许移除账本所记录原消息的已拥有状态表情")
 	chatMessageRemoveTextEmotionCmd.Flags().String("group", "", "--conversation-id 的别名")
 	chatMessageRemoveTextEmotionCmd.Flags().String("id", "", "--conversation-id 的别名")
 	chatMessageRemoveTextEmotionCmd.Flags().String("chat", "", "--conversation-id 的别名")
@@ -7866,6 +7868,7 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 		},
 	})
 	chatMessageUpdateA2UICardCmd.Flags().String("biz-id", "", "卡片业务 ID (必填)")
+	chatMessageUpdateA2UICardCmd.Flags().String("employee-context", "", "已登记员工必填；只允许更新本运行器账本所记录的回复或主管审批卡片")
 	_ = chatMessageUpdateA2UICardCmd.MarkFlagRequired("biz-id")
 	chatMessageUpdateA2UICardCmd.Flags().String("a2ui-annotations", "", "A2UI 组件注解 JSON 对象数组（可选，支持空数组 []）")
 	chatMessageUpdateA2UICardCmd.Flags().String("content", "", "A2UI 卡片消息 JSON 字符串数组，或 - 从 stdin 读取 (必填)")

@@ -117,7 +117,9 @@ func (c *codexAppServerClient) isolatedProfileFilesystem(ctx context.Context, na
 	if err != nil {
 		return nil, err
 	}
-	var response struct { Config map[string]json.RawMessage `json:"config"` }
+	var response struct {
+		Config map[string]json.RawMessage `json:"config"`
+	}
 	if json.Unmarshal(raw, &response) != nil {
 		return nil, errCodexSavedPermissions
 	}
@@ -130,16 +132,26 @@ func (c *codexAppServerClient) isolatedProfileFilesystem(ctx context.Context, na
 			}
 		}
 	}
-	var apps map[string]struct { Enabled bool `json:"enabled"` }
+	var apps map[string]struct {
+		Enabled bool `json:"enabled"`
+	}
 	if value := response.Config["apps"]; len(value) > 0 && string(value) != "null" {
-		if json.Unmarshal(value, &apps) != nil { return nil, errCodexSavedPermissions }
-		for _, app := range apps { if app.Enabled { return nil, errCodexSavedPermissions } }
+		if json.Unmarshal(value, &apps) != nil {
+			return nil, errCodexSavedPermissions
+		}
+		for _, app := range apps {
+			if app.Enabled {
+				return nil, errCodexSavedPermissions
+			}
+		}
 	}
 	var profiles map[string]struct {
-		Extends *string `json:"extends"`
-		Roots []string `json:"workspace_roots"`
+		Extends    *string                    `json:"extends"`
+		Roots      []string                   `json:"workspace_roots"`
 		Filesystem map[string]json.RawMessage `json:"filesystem"`
-		Network struct { Enabled *bool `json:"enabled"` } `json:"network"`
+		Network    struct {
+			Enabled *bool `json:"enabled"`
+		} `json:"network"`
 	}
 	if json.Unmarshal(response.Config["permissions"], &profiles) != nil {
 		return nil, errCodexSavedPermissions
@@ -150,37 +162,55 @@ func (c *codexAppServerClient) isolatedProfileFilesystem(ctx context.Context, na
 	}
 	filesystem := map[string]string{}
 	for path, raw := range profile.Filesystem {
-		if string(raw) == "null" { continue }
+		if string(raw) == "null" {
+			continue
+		}
 		var access string
 		if json.Unmarshal(raw, &access) != nil || (access != "deny" && access != "read" && access != "write") {
 			return nil, errCodexSavedPermissions
 		}
 		if strings.HasPrefix(path, ":") {
-			switch path { case ":root", ":minimal", ":workspace_roots", ":tmpdir", ":slash_tmp": default: return nil, errCodexSavedPermissions }
+			switch path {
+			case ":root", ":minimal", ":workspace_roots", ":tmpdir", ":slash_tmp":
+			default:
+				return nil, errCodexSavedPermissions
+			}
 		} else {
 			canonical, err := filepath.EvalSymlinks(path)
-			if !filepath.IsAbs(path) || err != nil || canonical != path || access == "write" { return nil, errCodexSavedPermissions }
+			if !filepath.IsAbs(path) || err != nil || canonical != path || access == "write" {
+				return nil, errCodexSavedPermissions
+			}
 		}
 		filesystem[path] = access
 	}
-	for path, access := range map[string]string{":root":"deny", ":minimal":"read", ":workspace_roots":"write", ":tmpdir":"deny", ":slash_tmp":"deny"} {
-		if filesystem[path] != access { return nil, errCodexSavedPermissions }
+	for path, access := range map[string]string{":root": "deny", ":minimal": "read", ":workspace_roots": "write", ":tmpdir": "deny", ":slash_tmp": "deny"} {
+		if filesystem[path] != access {
+			return nil, errCodexSavedPermissions
+		}
 	}
 	return filesystem, nil
 }
 
 func (c *codexAppServerClient) verifyIsolatedSavedSettings(ctx context.Context, thread, cwd string, filesystem map[string]string) error {
 	saved, err := c.employeeSavedSettings(ctx, thread)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	if saved.Cwd != cwd || !reflect.DeepEqual(saved.Roots, []string{cwd}) || string(saved.Approval) != `"on-request"` || saved.Reviewer != "user" {
 		return errCodexSavedPermissions
 	}
 	params, err := saved.resumeParams(thread)
-	if err != nil || params["sandbox"] != nil { return errCodexSavedPermissions }
+	if err != nil || params["sandbox"] != nil {
+		return errCodexSavedPermissions
+	}
 	config, ok := params["config"].(map[string]any)
-	if !ok { return errCodexSavedPermissions }
+	if !ok {
+		return errCodexSavedPermissions
+	}
 	profiles := config["permissions"].(map[string]any)
 	actual := profiles[params["permissions"].(string)].(map[string]any)["filesystem"]
-	if !reflect.DeepEqual(actual, filesystem) { return errCodexSavedPermissions }
+	if !reflect.DeepEqual(actual, filesystem) {
+		return errCodexSavedPermissions
+	}
 	return nil
 }

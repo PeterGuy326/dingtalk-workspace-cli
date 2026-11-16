@@ -400,14 +400,15 @@ func TestCrossPlatformCoverageDingTalkTagConnectReachesFinalSchema(t *testing.T)
 		}
 	}
 	parameters := schemaContractMap(tool["parameters"])
-	if len(parameters) != 20 {
-		t.Fatalf("dingtalk-tag.connect parameter count = %d, want 20", len(parameters))
+	if len(parameters) != 21 {
+		t.Fatalf("dingtalk-tag.connect parameter count = %d, want 21", len(parameters))
 	}
 	for name, property := range map[string]string{
 		"agent-uuid": "agentUuid", "channel": "channel", "client-id": "clientId",
 		"device-id": "deviceId", "local-agent-name": "localAgentName", "extensions": "extensions",
-		"reply-mode":         "replyMode",
-		"reply-card-forward": "replyCardForward",
+		"reply-mode":                "replyMode",
+		"reply-card-forward":        "replyCardForward",
+		"agent-permissions-profile": "agentPermissionsProfile",
 	} {
 		parameter := parameters[name]
 		if parameter == nil {

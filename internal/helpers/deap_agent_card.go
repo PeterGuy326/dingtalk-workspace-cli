@@ -10,9 +10,9 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
-	"slices"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chatmsg"
 	"github.com/google/uuid"
@@ -36,8 +36,8 @@ func runEmployeeA2UICall(ctx context.Context, binding digitalEmployeeBinding, me
 	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
 	argv := append([]string{"chat", "message"}, args...)
-	if len(args) > 0 && args[0] == "send-a2ui-card" && !slices.Contains(args, "--employee-context") {
-		metadata, _ := json.Marshal(EmployeeChatContext{AgentUUID: b.AgentUUID, Channel: bindingChannel(b), BindingRevision:b.BindingRevision})
+	if len(args) > 0 && (args[0] == "send-a2ui-card" || args[0] == "update-a2ui-card") && !slices.Contains(args, "--employee-context") {
+		metadata, _ := json.Marshal(EmployeeChatContext{AgentUUID: b.AgentUUID, Channel: bindingChannel(b), BindingRevision: b.BindingRevision})
 		argv = append(argv, "--employee-context", string(metadata))
 	}
 	// Keep the payload out of argv, including Windows' 32767-character limit.
@@ -279,7 +279,7 @@ func (r *employeeRuntime) processCard(e employeeEvent, record *employeeTaskRecor
 		initialView.messages(record.SurfaceID, "思考中…", true)[1],
 	}
 	createArgs := append([]string{"send-a2ui-card"}, target...)
-	metadata, _ := json.Marshal(EmployeeChatContext{AgentUUID:r.cfg.Binding.AgentUUID, Channel:bindingChannel(r.cfg.Binding), BindingRevision:r.cfg.Binding.BindingRevision, ConversationID:e.ConversationID, MessageID:e.MessageID})
+	metadata, _ := json.Marshal(EmployeeChatContext{AgentUUID: r.cfg.Binding.AgentUUID, Channel: bindingChannel(r.cfg.Binding), BindingRevision: r.cfg.Binding.BindingRevision, ConversationID: e.ConversationID, MessageID: e.MessageID})
 	createArgs = append(createArgs, "--employee-context", string(metadata))
 	if r.cfg.ReplyCardForward {
 		createArgs = append(createArgs, "--support-forward")
@@ -323,7 +323,7 @@ func (r *employeeRuntime) processCard(e employeeEvent, record *employeeTaskRecor
 			if err := writeEmployeeJSON(r.recordPath(e), record); err != nil {
 				return employeeTerminal("ledger_unavailable")
 			}
-			args := []string{"update-a2ui-card", "--biz-id", record.BizID, "--flow-status", batchFlow}
+			args := []string{"update-a2ui-card", "--biz-id", record.BizID, "--flow-status", batchFlow, "--employee-context", string(metadata)}
 			if i == len(batches)-1 && view.answer != "" {
 				annotation, _ := json.Marshal([]map[string]string{{"surfaceId": record.SurfaceID, "componentId": "answer", "type": "artifact"}})
 				args = append(args, "--a2ui-annotations", string(annotation))
@@ -378,7 +378,7 @@ func (r *employeeRuntime) processCard(e employeeEvent, record *employeeTaskRecor
 		}
 		result, err := employeeA2UICall(r.ctx, r.cfg.Binding, []map[string]any{
 			employeeCardMessage("updateComponents", record.SurfaceID, map[string]any{"components": []map[string]any{panel, {"id": "root", "component": "Column", "children": children}}}),
-		}, "update-a2ui-card", "--biz-id", record.BizID, "--flow-status", "FINISH")
+		}, "update-a2ui-card", "--biz-id", record.BizID, "--flow-status", "FINISH", "--employee-context", string(metadata))
 		if err != nil {
 			return r.cardFailure(e, record, "finish_unconfirmed", err)
 		}
