@@ -22,6 +22,16 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Build private Darwin formatter cache
+        env:
+          GOOS: darwin
+          GOARCH: arm64
+          CGO_ENABLED: '0'
+        run: go build -o /tmp/dws-isolation-gofmt cmd/gofmt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: formatter-darwin-arm64
+          path: /tmp/dws-isolation-gofmt
       - name: Capture formatting patch
         run: |
           git diff --name-only 4cc7767c70a874b189463ebfb07ad8a3c424389c HEAD -- '*.go' | xargs -r gofmt -w

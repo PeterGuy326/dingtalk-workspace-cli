@@ -51,7 +51,7 @@ enabled = false
 
 发送调用路径为 `app root PersistentPreRunE → ValidateEmployeeChatSendCommand → 已登记员工绑定`，在 dry-run 与实际执行前检查；普通 Profile 沿用原路径。已登记员工的个人文字发送和原消息引用回复分别进入 `+messages-send / +messages-reply → ValidateEmployeeChatContext → 目标解析/原消息核验 → 原传输`，固定主管私聊仍可发送。原生 send、Bot/Webhook、名片/媒体、个人表情发送、转发、合并转发和话题转发及对应 shortcut 不提供员工绕行路径；`+dm` 别名按实际解析后的命令检查。
 
-托管 A2UI 新卡通过 `runEmployeeA2UICall → chat message send-a2ui-card → 同一公共检查`。固定主管审批卡校验同一绑定；普通回复卡还核对已接收任务账本、原会话/发送者和 `card_creating` 状态。已有卡片更新、原消息状态表情、通用 raw MCP/API 和外部宿主不是该“新消息发送”检查的覆盖声明；它不构成全 CLI 授权系统，也不能替代平台对员工账号实际可调用接口的约束。
+托管 A2UI 新卡通过 `runEmployeeA2UICall → chat message send-a2ui-card → 同一公共检查`。固定主管审批卡校验同一绑定；普通回复卡还核对已接收任务账本、原会话/发送者和 `card_creating` 状态。已登记员工不能执行通用 `api`、`mcp` 或插件来源命令；构造执行树时也不预加载其个人插件，防止在公共检查之前初始化个人传输或凭据。普通 Profile 保留原行为。已有卡片更新和原消息状态表情沿用原有宿主桥；外部宿主不受本 CLI 控制。这些检查不构成所有业务产品的通用授权系统，也不能替代平台对员工账号实际可调用接口的约束。
 
 验证工作流仅在个人 fork 上执行合成协议/文件系统测试及源码测试，构建独立 darwin-arm64 产物并归档 SHA；不发布 release，不安装，不发送真实钉钉消息。部署时应先独立复审，再用构建产物的绝对路径做验收；安装和员工生命周期变更由部署者完成。回退前先停止该员工，恢复已备份二进制和配置，保留两套历史映射，不向访客自动恢复旧历史。
 

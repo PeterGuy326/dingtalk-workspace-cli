@@ -11,6 +11,8 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/testseam"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/cmdutil"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +20,13 @@ func TestCrossPlatformCoverageEmployeeCommonSendGuard(t *testing.T) {
 	old:=auth.RuntimeProfile();auth.SetRuntimeProfile("corp:employee");t.Cleanup(func(){auth.SetRuntimeProfile(old)})
 	b:=digitalEmployeeBinding{DWSProfile:"corp:employee",AgentUUID:"employee",Channel:"codex",BindingRevision:3,BindingState:"bound",DesiredState:"running",OperatorOpenDingTalkID:"operator"}
 	testseam.Swap(t,&deapChannelLoadBinding,func(string,string)(digitalEmployeeBinding,error){return b,nil})
+	for _,entry:=range []string{"api","mcp","plugin-command"} {
+		cmd:=&cobra.Command{Use:"invoke"};root:=&cobra.Command{Use:entry};root.AddCommand(cmd)
+		if entry=="plugin-command" { cmdutil.MarkPluginSource(root) }
+		if err:=ValidateEmployeeChatSendCommand(cmd);err==nil { t.Fatalf("generic %s escaped employee guard",entry) }
+	}
+	pluginCommand:=&cobra.Command{Use:"arbitrary-name"};cmdutil.MarkPluginSource(pluginCommand)
+	if err:=ValidateEmployeeChatSendCommand(pluginCommand);err==nil { t.Fatal("plugin transport escaped employee guard") }
 	for _,name:=range []string{"send","send-by-bot","send-by-webhook","send-card","send-a2ui-card","reply","forward","combine-forward","forward-topic","+dm","+messages-send","+messages-reply","+messages-send-by-bot","+messages-batch-send-by-bot","+messages-send-by-webhook","+messages-send-card","+messages-forward","+messages-combine-forward","+messages-forward-topic"} {
 		for _,dry:=range []bool{false,true} {
 			cmd:=&cobra.Command{Use:name};cmd.Flags().Bool("dry-run",dry,"")

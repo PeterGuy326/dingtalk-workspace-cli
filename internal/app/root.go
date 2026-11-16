@@ -992,6 +992,10 @@ func newRootCommandWithMode(rootCtx context.Context, engine *pipeline.Engine, lo
 	if !declarationOnly {
 		profileSelector = preparseProfileFlag(os.Args[1:])
 		authpkg.SetRuntimeProfile(profileSelector)
+		// Employee invocations never preload personal plugin transports or credentials.
+		if employee, err := helpers.EmployeeProfileIsRegistered(); employee || err != nil {
+			loadRuntimeExtensions = false
+		}
 	}
 	runner := rootNewCommandRunnerWithFlags(flags)
 	patCaller := newRecordingToolCaller(newToolCallerAdapter(runner, flags))

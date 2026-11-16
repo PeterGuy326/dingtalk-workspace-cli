@@ -13,6 +13,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
 
@@ -43,11 +44,27 @@ func registeredChatEmployee() (digitalEmployeeBinding, bool, error) {
 	return b, err == nil, err
 }
 
+// EmployeeProfileIsRegistered uses the same local identity discovery as send validation.
+func EmployeeProfileIsRegistered() (bool, error) {
+	_, registered, err := registeredChatEmployee()
+	return registered, err
+}
+
 // Every reviewed chat entry that creates/forwards a message enters here before dry-run or transport.
 // Unsupported employee transports are closed; existing card updates and reactions remain separate operations.
 func ValidateEmployeeChatSendCommand(cmd *cobra.Command) error {
 	var product *cobra.Command
-	for node := cmd; node != nil; node = node.Parent() { if node.Name() == "chat" { product = node; break } }
+	generic := false
+	for node := cmd; node != nil; node = node.Parent() {
+		if node.Name() == "api" || node.Name() == "mcp" || node.Name() == "plugin" || cmdutil.IsPluginSourced(node) || cmdutil.IsEnvelopeSourced(node) { generic = true }
+		if node.Name() == "chat" { product = node }
+	}
+	if generic {
+		employee, err := EmployeeProfileIsRegistered()
+		if err != nil { return apperrors.NewValidation("cannot verify chat profile registration") }
+		if employee { return apperrors.NewValidation("registered employees cannot use raw API, generic MCP or plugin command transports") }
+		return nil
+	}
 	if product == nil { return nil }
 	switch cmd.Name() {
 	case "send", "send-by-bot", "send-by-webhook", "send-card", "send-a2ui-card", "reply", "forward", "combine-forward", "forward-topic",
